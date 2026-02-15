@@ -1,0 +1,17 @@
+*{box-sizing:border-box}html,body{margin:0;padding:0;font-family:Inter,Arial,sans-serif;background:#0b0b0d;color:#f1f1f1}
+.header{position:sticky;top:0;z-index:40;display:flex;justify-content:space-between;align-items:center;padding:14px 20px;background:#111115;border-bottom:1px solid #222}
+.brand a{color:#fff;text-decoration:none;font-weight:600}
+.nav{display:flex;gap:14px;flex-wrap:wrap}.nav a{font-size:12px;letter-spacing:.06em;color:#d0b076;text-decoration:none}.nav a.active{color:#fff}
+.hero{min-height:calc(100vh - 60px);display:grid;place-items:center;text-align:center;padding:20px;background:radial-gradient(circle at center, #1e1e22 0%, #09090b 60%)}
+.hero h1{font-size:52px;line-height:1.1;margin:0 0 10px}.hero p{color:#c6c6cc;margin:0 0 24px}
+.btn{display:inline-block;padding:12px 18px;border:1px solid #b69258;border-radius:999px;color:#f5deb3;text-decoration:none}
+.page{padding:28px;max-width:1100px;margin:0 auto}
+.layout{display:grid;grid-template-columns:320px 1fr;gap:16px;padding:16px}
+.filters{background:#16161a;border:1px solid #292931;border-radius:14px;padding:14px;position:sticky;top:72px;height:calc(100vh - 90px);overflow:auto}
+.filters h2{font-size:16px;color:#c6a469;margin:0 0 12px}.filters label{font-size:12px;color:#aeb3bf;display:block;margin-bottom:8px}.filters section{margin-bottom:12px}
+.pills{display:flex;flex-wrap:wrap;gap:8px}.pill{background:#212128;color:#eee;border:1px solid #3a3a45;border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer}.pill.active{background:#c6a469;color:#111;border-color:#c6a469}
+.range{display:flex;gap:8px;align-items:center}.range input{width:100%;background:#0e0e13;border:1px solid #333;color:#fff;padding:8px;border-radius:8px}
+.reset{width:100%;border:1px solid #594826;background:transparent;color:#d4b277;padding:9px;border-radius:10px;cursor:pointer}
+.cardsWrap .count{font-size:12px;color:#bfc4cd;margin-bottom:8px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}.card{background:#16161a;border:1px solid #2b2b34;border-radius:12px;padding:12px}.card h3{margin:0 0 8px}.card p{margin:0 0 8px;color:#c7ccd3;font-size:13px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.filters{position:static;height:auto}.hero h1{font-size:38px}}
