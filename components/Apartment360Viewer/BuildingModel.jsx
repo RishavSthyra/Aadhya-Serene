@@ -7,6 +7,9 @@ import * as THREE from 'three';
 import trackingData from '../../public/data/unreal_tracking_data.json';
 import { flatsData } from '../../lib/flats';
 
+const BASE_OVERLAY_SCALE = 1.0035;
+const HOVER_OVERLAY_SCALE = 1.008;
+
 function makeAvailableOverlay(isHover) {
     return new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(isHover ? '#8d7331' : '#6f7930'),
@@ -103,6 +106,15 @@ function makeEdgeLines(mesh, material) {
     lines.userData.isEdge = true;
     lines.renderOrder = 2;
     return lines;
+}
+
+function setOverlayScale(mesh, edgeLines, meshScale = 1) {
+    mesh.scale.setScalar(meshScale);
+
+    if (!edgeLines) return;
+
+    const edgeScale = meshScale === 1 ? 1 : 1 / meshScale;
+    edgeLines.scale.setScalar(edgeScale);
 }
 
 function parseFlatId(name) {
@@ -380,11 +392,10 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
 
         mesh.material = available ? makeAvailableOverlay(true) : makeSoldOverlay(true);
         mesh.visible = true;
-        mesh.scale.setScalar(1.008);
 
         edgeLines.material = edgeMatHover(available);
         edgeLines.visible = true;
-        edgeLines.scale.setScalar(1.006);
+        setOverlayScale(mesh, edgeLines, HOVER_OVERLAY_SCALE);
     }, []);
 
     const restoreState = useCallback((flatId) => {
@@ -399,18 +410,16 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
         if (!shouldShow) {
             mesh.visible = false;
             edgeLines.visible = false;
-            mesh.scale.setScalar(1);
-            edgeLines.scale.setScalar(1);
+            setOverlayScale(mesh, edgeLines, 1);
             return;
         }
 
         mesh.material = available ? makeAvailableOverlay(false) : makeSoldOverlay(false);
         mesh.visible = true;
-        mesh.scale.setScalar(1);
 
         edgeLines.material = available ? edgeMatAvailable() : edgeMatSold();
         edgeLines.visible = true;
-        edgeLines.scale.setScalar(1);
+        setOverlayScale(mesh, edgeLines, BASE_OVERLAY_SCALE);
     }, [isFlatHoverable, shouldShowFlatFromFilter]);
 
     const setHoveredFlat = useCallback((flatId, clientX = 0, clientY = 0) => {
@@ -450,18 +459,16 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
             if (!shouldShow) {
                 mesh.visible = false;
                 edgeLines.visible = false;
-                mesh.scale.setScalar(1);
-                edgeLines.scale.setScalar(1);
+                setOverlayScale(mesh, edgeLines, 1);
                 return;
             }
 
             mesh.material = available ? makeAvailableOverlay(false) : makeSoldOverlay(false);
             mesh.visible = true;
-            mesh.scale.setScalar(1);
 
             edgeLines.material = available ? edgeMatAvailable() : edgeMatSold();
             edgeLines.visible = true;
-            edgeLines.scale.setScalar(1);
+            setOverlayScale(mesh, edgeLines, BASE_OVERLAY_SCALE);
         });
 
         if (hoveredIdRef.current && !isFlatHoverable(hoveredIdRef.current)) {

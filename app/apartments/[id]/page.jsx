@@ -106,6 +106,7 @@ export default function FlatDetailPage() {
     const params = useParams();
     const router = useRouter();
     const id = params?.id;
+    const pageShellRef = useRef(null);
     const introVideoRef = useRef(null);
     const loopVideoRef = useRef(null);
     const reverseVideoRef = useRef(null);
@@ -119,6 +120,7 @@ export default function FlatDetailPage() {
     const [useVideoFallback, setUseVideoFallback] = useState(false);
     const [videoPhase, setVideoPhase] = useState('intro');
     const [isExitTransitionActive, setIsExitTransitionActive] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     const flat = getFlatById(id);
     const fallbackId = flat ? flatVideoFallbackId(id) : null;
@@ -178,6 +180,18 @@ export default function FlatDetailPage() {
             clearReverseFallbackTimeout();
         };
     }, [clearReverseFallbackTimeout]);
+
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(document.fullscreenElement === pageShellRef.current);
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        };
+    }, []);
 
     const revealLoopVideo = useCallback(() => {
         window.requestAnimationFrame(() => {
@@ -334,19 +348,21 @@ export default function FlatDetailPage() {
         setMuted((currentMuted) => !currentMuted);
     }, []);
 
-    const goFullscreen = useCallback(() => {
-        if (videoPhase === 'reverse') {
-            reverseVideoRef.current?.requestFullscreen?.();
-            return;
-        }
+    const goFullscreen = useCallback(async () => {
+        const pageShell = pageShellRef.current;
+        if (!pageShell) return;
 
-        if (videoPhase === 'loop') {
-            loopVideoRef.current?.requestFullscreen?.();
-            return;
-        }
+        try {
+            if (document.fullscreenElement) {
+                await document.exitFullscreen?.();
+                return;
+            }
 
-        introVideoRef.current?.requestFullscreen?.();
-    }, [videoPhase]);
+            await pageShell.requestFullscreen?.();
+        } catch (error) {
+            console.error('Unable to toggle fullscreen view', error);
+        }
+    }, []);
 
     if (!flat) {
         return (
@@ -382,7 +398,10 @@ export default function FlatDetailPage() {
     });
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-[#07090e] text-white">
+        <div
+            ref={pageShellRef}
+            className="relative min-h-screen overflow-hidden bg-[#07090e] text-white"
+        >
             <div className="absolute inset-0 bg-black">
                 <video
                     ref={introVideoRef}
@@ -459,11 +478,15 @@ export default function FlatDetailPage() {
                             </button>
                             <button
                                 type="button"
-                                onClick={goFullscreen}
+                                onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    void goFullscreen();
+                                }}
                                 className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.05] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/82 backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08]"
                             >
                                 <Maximize2 className="h-4 w-4" />
-                                Fullscreen
+                                {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
                             </button>
                             <a
                                 href={`${WHATSAPP_URL}${flat.flat}`}
@@ -614,10 +637,10 @@ export default function FlatDetailPage() {
                         <div className="min-h-0 lg:sticky lg:top-6 lg:self-start">
                             <div
                                 ref={sidebarPanelRef}
-                                className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,11,17,0.9),rgba(8,11,17,0.58))] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.32)] backdrop-blur-[28px] sm:p-4 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto"
+                                className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(5,7,12,0.96),rgba(5,7,12,0.84))] p-3 shadow-[0_28px_90px_rgba(0,0,0,0.4)] backdrop-blur-[30px] sm:p-4 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto"
                             >
                                 <div className="space-y-4">
-                            <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
+                            <div className="rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(5,8,12,0.78),rgba(5,8,12,0.52))] p-4">
                                 <div className="mb-4 flex items-center justify-between gap-3">
                                     <div>
                                         <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
@@ -632,7 +655,7 @@ export default function FlatDetailPage() {
                                     </span>
                                 </div>
 
-                                <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.03]">
+                                <div className="overflow-hidden rounded-[22px] border border-white/10 bg-black/25">
                                     {!floorPlanError ? (
                                         <img
                                             src={planSrc}
@@ -676,7 +699,7 @@ export default function FlatDetailPage() {
                                 </div>
                             </div>
 
-                            <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
+                            <div className="rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(5,8,12,0.78),rgba(5,8,12,0.52))] p-4">
                                 <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
                                     Interior Preview
                                 </p>
@@ -687,7 +710,7 @@ export default function FlatDetailPage() {
                                 <button
                                     type="button"
                                     onClick={() => router.push(interiorPanosHref)}
-                                    className="group mt-4 block w-full overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.03] text-left"
+                                    className="group mt-4 block w-full overflow-hidden rounded-[22px] border border-white/10 bg-black/25 text-left"
                                 >
                                     <div className="relative">
                                         <img
@@ -709,7 +732,7 @@ export default function FlatDetailPage() {
                                     </div>
                                 </button>
 
-                                <div className="mt-4 rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-4">
+                                <div className="mt-4 rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(5,8,12,0.74),rgba(5,8,12,0.48))] px-4 py-4">
                                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/36">
                                         Design Note
                                     </p>

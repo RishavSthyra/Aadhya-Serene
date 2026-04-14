@@ -39,7 +39,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
     sublabel: "Aadhya Serene",
     description: "Sky lounge and open-air leisure space.",
     image:
-      "https://cdn.sthyra.com/AADHYA%20SERENE/images/analog-landscape-city-with-buildings%20(1).jpg",
+      "https://cdn.sthyra.com/AADHYA%20SERENE/images/rooftop-sunset-city-view%20(1).jpg",
   },
   {
     label: "Children's Play Area",
@@ -47,7 +47,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
     sublabel: "Aadhya Serene",
     description: "Safe, playful, and family-friendly zone.",
     image:
-      "https://cdn.sthyra.com/AADHYA%20SERENE/images/3d-rendering-loft-luxury-living-room-with-shelf-near-dining-table%20(1).jpg",
+      "https://cdn.sthyra.com/AADHYA%20SERENE/images/ground-red-outdoor-child-complex-colorful%20(1).jpg",
   },
   {
     label: "Swimming Pool",
@@ -55,7 +55,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
     sublabel: "Aadhya Serene",
     description: "Resort-style relaxation and daily refresh.",
     image:
-      "https://cdn.sthyra.com/AADHYA%20SERENE/images/rooftop-sunset-city-view%20(1).jpg",
+      "https://cdn.sthyra.com/AADHYA%20SERENE/images/umbrella-chair2.jpg",
   },
   {
     label: "Gymnasium",
@@ -63,7 +63,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
     sublabel: "Aadhya Serene",
     description: "Fitness-focused everyday wellness space.",
     image:
-      "https://cdn.sthyra.com/AADHYA%20SERENE/images/analog-landscape-city-with-buildings%20(1).jpg",
+      "https://cdn.sthyra.com/AADHYA%20SERENE/images/3d-rendering-modern-loft-gym-fitness%20(1).jpg",
   },
   {
     label: "Indoor Games Lounge",
@@ -71,7 +71,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
     sublabel: "Aadhya Serene",
     description: "Recreation and social indoor activities.",
     image:
-      "https://cdn.sthyra.com/AADHYA%20SERENE/images/3d-rendering-loft-luxury-living-room-with-shelf-near-dining-table%20(1).jpg",
+      "https://cdn.sthyra.com/AADHYA%20SERENE/images/close-up-foosball-table-play-football-game-empty-office-table-used-soccer-game-after-work-space-celebrate-party-with-drinks-entertainment-workplace-have-fun%20(1).jpg",
   },
   {
     label: "Clubhouse",
@@ -87,7 +87,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
     sublabel: "Aadhya Serene",
     description: "Active outdoor sports and play.",
     image:
-      "https://cdn.sthyra.com/AADHYA%20SERENE/images/analog-landscape-city-with-buildings%20(1).jpg",
+      "https://cdn.sthyra.com/AADHYA%20SERENE/images/basketball-player-attempting-distance-throw%20(1).jpg",
   },
   {
     label: "Outdoor Badminton Court",
@@ -95,7 +95,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
     sublabel: "Aadhya Serene",
     description: "Open-air court for quick matches.",
     image:
-      "https://cdn.sthyra.com/AADHYA%20SERENE/images/3d-rendering-loft-luxury-living-room-with-shelf-near-dining-table%20(1).jpg",
+      "https://cdn.sthyra.com/AADHYA%20SERENE/images/side-view-people-playing-badminton%20(1).jpg",
   },
 ];
 
