@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { useApartmentsData } from "../../hooks/useApartmentsData";
@@ -8,6 +8,7 @@ import Filters from "./Filters";
 import ApartmentList from "./ApartmentList";
 import Apartment360Viewer from "../Apartment360Viewer";
 import { preloadInteriorStartPano } from "../../lib/interior-panos";
+import { preloadFlatEntryVideo } from "../../lib/flats";
 
 const PANEL_WIDTH = 360;
 
@@ -31,6 +32,7 @@ export default function Apartments() {
   const [activeTab, setActiveTab] = useState("filters");
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [viewerVersion, setViewerVersion] = useState(0);
+  const prefetchedFlatRoutesRef = useRef(new Set());
 
   const resetApartmentsExperience = useCallback((remountViewer = false) => {
     document.body.style.opacity = "1";
@@ -90,6 +92,20 @@ export default function Apartments() {
     [router],
   );
 
+  const handleFlatHoverStart = useCallback(
+    (flatId) => {
+      if (!flatId) return;
+
+      preloadFlatEntryVideo(flatId);
+
+      if (!prefetchedFlatRoutesRef.current.has(flatId)) {
+        prefetchedFlatRoutesRef.current.add(flatId);
+        router.prefetch(`/apartments/${flatId}`);
+      }
+    },
+    [router],
+  );
+
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#050608]">
       <div
@@ -103,6 +119,7 @@ export default function Apartments() {
         <Apartment360Viewer
           key={viewerVersion}
           onFlatClick={handleFlatClick}
+          onFlatHoverStart={handleFlatHoverStart}
           filteredFlatIds={filteredFlatIds}
         />
       </div>

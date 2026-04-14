@@ -73,16 +73,16 @@ export type Poi = {
 };
 
 const centerPlace = {
-  name: "Trifecta Veranza.",
-  lng: 77.75138250386782,
-  lat: 12.863519959225334,
+  name: "Aadhya Serene",
+  lng: 77.63329855545808,
+  lat: 13.062332269229891, 
 };
 
 const projectCard = {
-  title: "Trifecta Veranza",
+  title: "Aadhya Serene",
   description:
     "A premium residential community positioned at the heart of a fast-growing neighborhood, with strong access to workplaces, schools, retail, healthcare, and everyday conveniences.",
-  image: "/VeranzaFavicon.svg",
+  image: "/favicon.ico",
 };
 
 const pois : Poi[] = poidata as Poi[];

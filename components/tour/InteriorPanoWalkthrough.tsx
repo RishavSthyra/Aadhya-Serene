@@ -23,7 +23,6 @@ import {
   buildPhotoSpherePanorama,
   getResolvedPreviewUrl,
   PanoAssetStore,
-  selectWarmupTiles,
 } from "@/lib/exterior-tour/pano";
 import type {
   DirectionalNavMap,
@@ -67,6 +66,28 @@ type RoomTab = {
   label: string;
   previewUrl: string;
 };
+
+function isAbortLikeError(error: unknown) {
+  if (!error) {
+    return false;
+  }
+
+  if (typeof error === "object") {
+    const maybeError = error as { name?: string; message?: string };
+    if (maybeError.name === "AbortError") {
+      return true;
+    }
+
+    if (
+      typeof maybeError.message === "string" &&
+      maybeError.message.toLowerCase().includes("abort")
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 function ArrowButton({
   icon: Icon,
@@ -205,7 +226,6 @@ export default function InteriorPanoWalkthrough({
   const currentNodeIdRef = useRef("");
   const cacheRef = useRef(new Map<string, ResolvedPano>());
   const transitionLockRef = useRef(false);
-  const viewerPreloadRef = useRef(new Map<string, Promise<void>>());
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -358,48 +378,6 @@ export default function InteriorPanoWalkthrough({
     [graph.byId, resolvePano],
   );
 
-  const preloadViewerPanorama = useCallback(
-    async (nodeId: string, viewerOverride?: Viewer | null) => {
-      const viewer = viewerOverride ?? bindingsRef.current?.viewer;
-      if (!viewer) {
-        return;
-      }
-
-      const existing = viewerPreloadRef.current.get(nodeId);
-      if (existing) {
-        await existing;
-        return;
-      }
-
-      const task = (async () => {
-        const resolved = await resolvePano(nodeId);
-        await viewer.textureLoader.preloadPanorama(resolved.panorama);
-      })().catch((error) => {
-        viewerPreloadRef.current.delete(nodeId);
-        throw error;
-      });
-
-      viewerPreloadRef.current.set(nodeId, task);
-      await task;
-    },
-    [resolvePano],
-  );
-
-  const preloadLinkedPanoramas = useCallback(
-    async (nodeId: string, viewerOverride?: Viewer | null) => {
-      const viewer = viewerOverride ?? bindingsRef.current?.viewer;
-      const node = graph.byId[nodeId];
-      if (!viewer || !node?.neighbors.length) {
-        return;
-      }
-
-      await Promise.allSettled(
-        node.neighbors.map((neighbor) => preloadViewerPanorama(neighbor.id, viewer)),
-      );
-    },
-    [graph.byId, preloadViewerPanorama],
-  );
-
   const goToNode = useCallback(
     async (targetId: string) => {
       const bindings = bindingsRef.current;
@@ -421,7 +399,6 @@ export default function InteriorPanoWalkthrough({
       try {
         const refreshedNode = await buildTourNode(targetNode);
         bindings.virtualTour.updateNode(refreshedNode);
-        await preloadViewerPanorama(targetId, bindings.viewer);
 
         setIsTransitioning(true);
         const completed = await bindings.virtualTour.setCurrentNode(targetId, {
@@ -442,7 +419,7 @@ export default function InteriorPanoWalkthrough({
         transitionLockRef.current = false;
       }
     },
-    [buildTourNode, graph.byId, isTransitioning, preloadViewerPanorama],
+    [buildTourNode, graph.byId, isTransitioning],
   );
 
   const navigateToDirection = useCallback(
@@ -496,52 +473,6 @@ export default function InteriorPanoWalkthrough({
   }, []);
 
   useEffect(() => {
-    if (!currentNodeId) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const warmCurrentPanorama = async () => {
-      const node = graph.byId[currentNodeId];
-      if (!node) return;
-
-      try {
-        const resolved = await resolvePano(node.id);
-
-        await assetStore.preloadPreview(
-          resolved.panoId,
-          resolved.meta.preview ?? "preview.jpg",
-          "high",
-        );
-
-        const warmupTiles = selectWarmupTiles(
-          resolved.panoId,
-          resolved.meta,
-          INTERIOR_PANO_BASE_URL,
-          isSlowNetwork ? 6 : 12,
-        );
-
-        await Promise.allSettled(
-          warmupTiles.slice(0, isSlowNetwork ? 6 : 12).map((tile, index) =>
-            assetStore.preloadTile(tile, index < 2 ? "high" : "low"),
-          ),
-        );
-      } catch (error) {
-        if (!cancelled) {
-          console.debug("Warmup skipped for interior pano:", error);
-        }
-      }
-    };
-
-    void warmCurrentPanorama();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [assetStore, currentNodeId, graph.byId, isSlowNetwork, resolvePano]);
-
-  useEffect(() => {
     if (!viewerHostRef.current || !graph.nodes.length || !currentNodeId || availableNodeIds === null) {
       return;
     }
@@ -551,26 +482,6 @@ export default function InteriorPanoWalkthrough({
 
     const initializeViewer = async () => {
       const startNodeId = currentNodeIdRef.current;
-      const startResolved = await resolvePano(startNodeId);
-
-      await assetStore.preloadPreview(
-        startResolved.panoId,
-        startResolved.meta.preview ?? "preview.jpg",
-        "high",
-      );
-
-      const warmupTiles = selectWarmupTiles(
-        startResolved.panoId,
-        startResolved.meta,
-        INTERIOR_PANO_BASE_URL,
-        isSlowNetwork ? 6 : 10,
-      );
-
-      await Promise.allSettled(
-        warmupTiles.slice(0, isSlowNetwork ? 6 : 10).map((tile, index) =>
-          assetStore.preloadTile(tile, index < 2 ? "high" : "low"),
-        ),
-      );
 
       const builtNodes = await Promise.allSettled(graph.nodes.map((node) => buildTourNode(node)));
       const tourNodes = builtNodes
@@ -615,10 +526,10 @@ export default function InteriorPanoWalkthrough({
             renderMode: "3d",
             nodes: tourNodes,
             startNodeId: actualStartNodeId,
-            preload: !isSlowNetwork,
+            preload: false,
             transitionOptions: {
               effect: "none",
-              showLoader: false,
+              showLoader: true,
               speed: 380,
               rotation: false,
             },
@@ -634,7 +545,6 @@ export default function InteriorPanoWalkthrough({
         setViewerError(null);
         setIsTransitioning(false);
         transitionLockRef.current = false;
-        void preloadLinkedPanoramas(node.id, viewer);
       };
       const handlePanoramaError = () => {
         setViewerError("Panorama failed to load.");
@@ -653,14 +563,11 @@ export default function InteriorPanoWalkthrough({
       viewer.addEventListener(viewerEvents.PositionUpdatedEvent.type, handlePositionUpdated);
 
       bindingsRef.current = { viewer, virtualTour };
-      viewerPreloadRef.current = new Map();
       setActiveNodeId(actualStartNodeId);
       setViewYaw(viewer.getPosition().yaw);
       setViewerError(null);
       setIsTransitioning(false);
       transitionLockRef.current = false;
-      void preloadViewerPanorama(actualStartNodeId, viewer);
-      void preloadLinkedPanoramas(actualStartNodeId, viewer);
 
       if (disposed) {
         virtualTour.removeEventListener(virtualTourEvents.NodeChangedEvent.type, handleNodeChanged);
@@ -675,6 +582,10 @@ export default function InteriorPanoWalkthrough({
 
     initTimer = globalThis.setTimeout(() => {
       void initializeViewer().catch((error) => {
+        if (disposed || isAbortLikeError(error)) {
+          return;
+        }
+
         console.error("Failed to initialize interior pano viewer:", error);
         setViewerError("Viewer failed to initialize.");
         setIsTransitioning(false);
@@ -692,18 +603,14 @@ export default function InteriorPanoWalkthrough({
         bindingsRef.current = null;
       }
 
-      viewerPreloadRef.current = new Map();
       transitionLockRef.current = false;
     };
   }, [
-    assetStore,
     availableNodeIds,
     buildTourNode,
     currentNodeId,
     graph.nodes,
     isSlowNetwork,
-    preloadLinkedPanoramas,
-    preloadViewerPanorama,
     resolvePano,
   ]);
 
@@ -723,9 +630,7 @@ export default function InteriorPanoWalkthrough({
     );
   }
 
-  const backHref = walkthroughContext.flatNumber
-    ? `/apartments/${walkthroughContext.flatNumber}`
-    : "/apartments";
+  const backHref = "/apartments";
 
   return (
     <section
@@ -892,12 +797,6 @@ export default function InteriorPanoWalkthrough({
         .psv-navbar,
         .psv-virtual-tour-arrows {
           display: none !important;
-        }
-
-        .psv-loader-container {
-          opacity: 0 !important;
-          visibility: hidden !important;
-          pointer-events: none !important;
         }
       `}</style>
     </section>

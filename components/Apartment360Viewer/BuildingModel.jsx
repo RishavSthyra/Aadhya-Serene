@@ -125,7 +125,7 @@ function getMeshWorldCenter(mesh) {
     return center;
 }
 
-function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatClick }) {
+function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHoverStart, onFlatClick }) {
     const { scene: sourceScene } = useGLTF('/assets/building.glb');
     const scene = useMemo(() => sourceScene.clone(true), [sourceScene]);
     const { size, gl, camera } = useThree();
@@ -431,10 +431,11 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatCli
             return;
         }
 
+        onFlatHoverStart?.(flatId);
         applyHover(flatId);
         document.body.style.cursor = 'pointer';
         onFlatHover?.(flatId, clientX, clientY);
-    }, [applyHover, onFlatHover, restoreState]);
+    }, [applyHover, onFlatHover, onFlatHoverStart, restoreState]);
 
     useEffect(() => {
         Object.entries(flatRefs.current).forEach(([flatId, refs]) => {
@@ -606,7 +607,7 @@ function FlatTooltip({ flatId, x, y }) {
     );
 }
 
-export default function BuildingModel({ currentFrame, filteredFlatIds, onFlatClick }) {
+export default function BuildingModel({ currentFrame, filteredFlatIds, onFlatClick, onFlatHoverStart }) {
     const [tooltip, setTooltip] = useState({ flatId: null, x: 0, y: 0 });
 
     const handleFlatHover = useCallback((flatId, x, y) => {
@@ -624,6 +625,7 @@ export default function BuildingModel({ currentFrame, filteredFlatIds, onFlatCli
                     currentFrame={currentFrame}
                     filteredFlatIds={filteredFlatIds}
                     onFlatHover={handleFlatHover}
+                    onFlatHoverStart={onFlatHoverStart}
                     onFlatClick={onFlatClick}
                 />
             </Canvas>

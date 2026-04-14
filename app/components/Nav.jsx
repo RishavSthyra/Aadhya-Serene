@@ -166,6 +166,7 @@ const megaItemVariants = {
 
 export default function Nav() {
   const pathname = usePathname();
+  const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
   const [openMenu, setOpenMenu] = useState(null);
   const [amenitiesCarouselIndex, setAmenitiesCarouselIndex] = useState(0);
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -174,7 +175,7 @@ export default function Nav() {
     pathname === "/location" ||
     pathname === "/amenities" ||
     pathname.startsWith("/apartments") ||
-    pathname.startsWith("/interior-panos");
+    isInteriorPanosRoute;
   const maxAmenitiesStartIndex = Math.max(
     0,
     AMENITIES_DROPDOWN_ITEMS.length - AMENITIES_VISIBLE_COUNT
@@ -231,6 +232,10 @@ export default function Nav() {
       Math.min(maxAmenitiesStartIndex, current + 1)
     );
   };
+
+  if (isInteriorPanosRoute) {
+    return null;
+  }
 
   return (
     <>

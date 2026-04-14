@@ -13,13 +13,15 @@
     cursor: grabbing;
 }
 
-.backgroundImage {
+.backgroundCanvas {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: contain;
     display: block;
     user-select: none;
     -webkit-user-drag: none;
+    touch-action: none;
 }
 
 .canvasOverlay {
@@ -28,6 +30,7 @@
     left: 0;
     width: 100%;
     height: 100%;
+    z-index: 1;
     pointer-events: none;
     /* Let drag events pass through to viewerContainer */
 }
@@ -44,6 +47,7 @@
     font-size: 14px;
     pointer-events: none;
     backdrop-filter: blur(4px);
+    z-index: 2;
 }
 
 .pointIndicator {
@@ -58,4 +62,5 @@
     pointer-events: none;
     backdrop-filter: blur(4px);
     transition: opacity 0.3s;
+    z-index: 2;
 }

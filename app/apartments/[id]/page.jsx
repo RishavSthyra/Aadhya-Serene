@@ -27,7 +27,7 @@ import {
 import {
     floorPlanSrc,
     flatVideoFallbackId,
-    flatVideoMp4Src,
+    flatReverseVideoSrc,
     flatVideoSrc,
     getFlatById,
     WALKTHROUGH_VIDEO,
@@ -105,63 +105,186 @@ export default function FlatDetailPage() {
     const params = useParams();
     const router = useRouter();
     const id = params?.id;
-    const videoRef = useRef(null);
+    const introVideoRef = useRef(null);
+    const loopVideoRef = useRef(null);
+    const reverseVideoRef = useRef(null);
     const mainPanelRef = useRef(null);
     const sidebarPanelRef = useRef(null);
     const isNavigatingRef = useRef(false);
+    const reverseFallbackTimeoutRef = useRef(null);
 
-    const [angle, setAngle] = useState(1);
     const [muted, setMuted] = useState(true);
     const [floorPlanError, setFloorPlanError] = useState(false);
+    const [useVideoFallback, setUseVideoFallback] = useState(false);
+    const [videoPhase, setVideoPhase] = useState('intro');
+    const [isExitTransitionActive, setIsExitTransitionActive] = useState(false);
 
     const flat = getFlatById(id);
     const fallbackId = flat ? flatVideoFallbackId(id) : null;
     const hasVideo = !!fallbackId;
+    const hasFlatSpecificVideo = hasVideo && !useVideoFallback;
+
+    const clearReverseFallbackTimeout = useCallback(() => {
+        if (!reverseFallbackTimeoutRef.current) return;
+
+        window.clearTimeout(reverseFallbackTimeoutRef.current);
+        reverseFallbackTimeoutRef.current = null;
+    }, []);
+
+    const finalizeBackNavigation = useCallback(() => {
+        clearReverseFallbackTimeout();
+        router.push('/apartments');
+    }, [clearReverseFallbackTimeout, router]);
+
+    useEffect(() => {
+        clearReverseFallbackTimeout();
+        setUseVideoFallback(false);
+        setVideoPhase('intro');
+        setIsExitTransitionActive(false);
+        isNavigatingRef.current = false;
+    }, [clearReverseFallbackTimeout, id]);
+
+    useEffect(() => {
+        const introVideo = introVideoRef.current;
+        const loopVideo = loopVideoRef.current;
+        const reverseVideo = reverseVideoRef.current;
+
+        setVideoPhase('intro');
+
+        if (introVideo) {
+            introVideo.pause();
+            introVideo.currentTime = 0;
+            introVideo.load();
+            introVideo.play().catch(() => {});
+        }
+
+        if (loopVideo) {
+            loopVideo.pause();
+            loopVideo.currentTime = 0;
+            loopVideo.load();
+        }
+
+        if (reverseVideo) {
+            reverseVideo.pause();
+            reverseVideo.currentTime = 0;
+            reverseVideo.load();
+        }
+    }, [hasFlatSpecificVideo, id, useVideoFallback]);
+
+    useEffect(() => {
+        return () => {
+            clearReverseFallbackTimeout();
+        };
+    }, [clearReverseFallbackTimeout]);
+
+    const revealLoopVideo = useCallback(() => {
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                introVideoRef.current?.pause();
+                setVideoPhase('loop');
+            });
+        });
+    }, []);
+
+    const handleIntroEnded = useCallback(() => {
+        if (!hasFlatSpecificVideo) return;
+
+        const loopVideo = loopVideoRef.current;
+        if (!loopVideo) return;
+
+        let didRevealLoop = false;
+        const revealWhenReady = () => {
+            if (didRevealLoop) return;
+            didRevealLoop = true;
+            loopVideo.removeEventListener('playing', revealWhenReady);
+            revealLoopVideo();
+        };
+
+        loopVideo.currentTime = 0;
+        loopVideo.addEventListener('playing', revealWhenReady);
+
+        loopVideo.play().catch(() => {
+            loopVideo.removeEventListener('playing', revealWhenReady);
+            const introVideo = introVideoRef.current;
+            if (!introVideo) return;
+
+            introVideo.loop = true;
+            introVideo.play().catch(() => {});
+        });
+
+        if (loopVideo.readyState >= 2) {
+            revealLoopVideo();
+        }
+    }, [hasFlatSpecificVideo, revealLoopVideo]);
 
     const navigateBack = useCallback(() => {
         if (isNavigatingRef.current) return;
 
         isNavigatingRef.current = true;
-        document.body.style.opacity = '0';
-        document.body.style.transition = 'opacity 0.55s ease';
+        setIsExitTransitionActive(true);
 
-        setTimeout(() => {
-            router.push('/apartments');
-        }, 580);
-    }, [router]);
+        if (!hasFlatSpecificVideo) {
+            window.setTimeout(() => {
+                finalizeBackNavigation();
+            }, 180);
+            return;
+        }
 
-    useEffect(() => {
-        const videoElement = videoRef.current;
-        if (!videoElement) return;
+        const introVideo = introVideoRef.current;
+        const loopVideo = loopVideoRef.current;
+        const reverseVideo = reverseVideoRef.current;
 
-        videoElement.load();
-        videoElement.play().catch(() => {});
-    }, [angle, fallbackId, hasVideo, id]);
+        if (!reverseVideo) {
+            finalizeBackNavigation();
+            return;
+        }
 
-    useEffect(() => {
-        const videoElement = videoRef.current;
-        if (!videoElement || !hasVideo) return;
-
-        const handleEnded = () => {
-            if (angle === 1) {
-                setAngle(2);
-            }
+        let didRevealReverse = false;
+        const revealReverse = () => {
+            if (didRevealReverse) return;
+            didRevealReverse = true;
+            reverseVideo.removeEventListener('playing', revealReverse);
+            window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => {
+                    introVideo?.pause();
+                    loopVideo?.pause();
+                    setVideoPhase('reverse');
+                });
+            });
         };
 
-        videoElement.addEventListener('ended', handleEnded);
-        return () => videoElement.removeEventListener('ended', handleEnded);
-    }, [angle, hasVideo]);
+        const fallbackDelay = Number.isFinite(reverseVideo.duration) && reverseVideo.duration > 0
+            ? Math.ceil(reverseVideo.duration * 1000) + 500
+            : 4000;
+
+        clearReverseFallbackTimeout();
+        reverseFallbackTimeoutRef.current = window.setTimeout(() => {
+            finalizeBackNavigation();
+        }, fallbackDelay);
+
+        introVideo?.pause();
+        loopVideo?.pause();
+        reverseVideo.pause();
+        reverseVideo.currentTime = 0;
+        reverseVideo.addEventListener('playing', revealReverse);
+
+        reverseVideo.play().then(() => {
+            if (reverseVideo.readyState >= 2) {
+                revealReverse();
+            }
+        }).catch(() => {
+            reverseVideo.removeEventListener('playing', revealReverse);
+            finalizeBackNavigation();
+        });
+    }, [clearReverseFallbackTimeout, finalizeBackNavigation, hasFlatSpecificVideo]);
 
     useEffect(() => {
         void preloadInteriorStartPano();
         router.prefetch('/interior-panos');
+        router.prefetch('/apartments');
     }, [router]);
 
     useEffect(() => {
-        document.body.style.opacity = '1';
-        document.body.style.transition = '';
-        isNavigatingRef.current = false;
-
         const isInsideInteractivePanel = (target) => {
             if (!(target instanceof Node)) return false;
 
@@ -206,16 +329,22 @@ export default function FlatDetailPage() {
     }, [navigateBack]);
 
     const toggleMute = useCallback(() => {
-        const videoElement = videoRef.current;
-        if (!videoElement) return;
-
-        videoElement.muted = !videoElement.muted;
-        setMuted(videoElement.muted);
+        setMuted((currentMuted) => !currentMuted);
     }, []);
 
     const goFullscreen = useCallback(() => {
-        videoRef.current?.requestFullscreen?.();
-    }, []);
+        if (videoPhase === 'reverse') {
+            reverseVideoRef.current?.requestFullscreen?.();
+            return;
+        }
+
+        if (videoPhase === 'loop') {
+            loopVideoRef.current?.requestFullscreen?.();
+            return;
+        }
+
+        introVideoRef.current?.requestFullscreen?.();
+    }, [videoPhase]);
 
     if (!flat) {
         return (
@@ -238,8 +367,9 @@ export default function FlatDetailPage() {
     const facingLabel = formatFacing(flat.facing);
     const isAvailable = flat.status === 'available';
     const planSrc = floorPlanSrc(flat.flat);
-    const primaryVideoSrc = hasVideo ? flatVideoSrc(fallbackId, angle) : WALKTHROUGH_VIDEO;
-    const secondaryVideoSrc = hasVideo ? flatVideoMp4Src(fallbackId, angle) : null;
+    const introVideoSrc = hasFlatSpecificVideo ? flatVideoSrc(fallbackId, 1) : WALKTHROUGH_VIDEO;
+    const loopVideoSrc = hasFlatSpecificVideo ? flatVideoSrc(fallbackId, 2) : null;
+    const reverseVideoSrc = hasFlatSpecificVideo ? flatReverseVideoSrc(fallbackId) : null;
     const bhkValue = Number.parseInt(flat.type, 10);
     const interiorPanosHref = buildInteriorPanosHref({
         apartmentId: flat.id,
@@ -250,27 +380,63 @@ export default function FlatDetailPage() {
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-[#07090e] text-white">
-            <div className="absolute inset-0">
+            <div className="absolute inset-0 bg-black">
                 <video
-                    ref={videoRef}
-                    className="h-full w-full object-cover"
+                    ref={introVideoRef}
+                    key={introVideoSrc}
+                    src={introVideoSrc}
+                    className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+                    style={{ opacity: videoPhase === 'intro' ? 1 : 0, zIndex: videoPhase === 'intro' ? 3 : 1 }}
                     muted={muted}
                     playsInline
                     preload="auto"
                     autoPlay
-                    loop={!hasVideo || angle === 2}
-                >
-                    <source src={primaryVideoSrc} type="video/mp4" />
-                    {secondaryVideoSrc ? (
-                        <source src={secondaryVideoSrc} type="video/webm" />
-                    ) : null}
-                </video>
+                    loop={!hasFlatSpecificVideo}
+                    onEnded={handleIntroEnded}
+                    onError={() => {
+                        if (hasFlatSpecificVideo) {
+                            setVideoPhase('intro');
+                            setUseVideoFallback(true);
+                        }
+                    }}
+                />
+                {loopVideoSrc ? (
+                    <video
+                        ref={loopVideoRef}
+                        key={loopVideoSrc}
+                        src={loopVideoSrc}
+                        className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+                        style={{ opacity: videoPhase === 'loop' ? 1 : 0, zIndex: videoPhase === 'loop' ? 4 : 1 }}
+                        muted={muted}
+                        playsInline
+                        preload="auto"
+                        loop
+                        onError={() => {
+                            setVideoPhase('intro');
+                            setUseVideoFallback(true);
+                        }}
+                    />
+                ) : null}
+                {reverseVideoSrc ? (
+                    <video
+                        ref={reverseVideoRef}
+                        key={reverseVideoSrc}
+                        src={reverseVideoSrc}
+                        className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300"
+                        style={{ opacity: videoPhase === 'reverse' ? 1 : 0, zIndex: videoPhase === 'reverse' ? 5 : 1 }}
+                        muted={muted}
+                        playsInline
+                        preload="auto"
+                        onEnded={finalizeBackNavigation}
+                        onError={finalizeBackNavigation}
+                    />
+                ) : null}
             </div>
 
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(220,194,124,0.14),transparent_34%),linear-gradient(90deg,rgba(7,9,14,0.8)_0%,rgba(7,9,14,0.34)_42%,rgba(7,9,14,0.68)_100%)]" />
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,14,0.72)_0%,rgba(7,9,14,0.18)_28%,rgba(7,9,14,0.62)_100%)]" />
 
-            <div className="relative z-10 min-h-screen px-3 pb-24 pt-4 sm:px-5 lg:px-6 lg:pb-28 lg:pt-6 2xl:px-8">
+            <div className={`relative z-10 min-h-screen px-3 pb-24 pt-4 transition-opacity duration-300 sm:px-5 lg:px-6 lg:pb-28 lg:pt-6 2xl:px-8 ${isExitTransitionActive ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
                 <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-none flex-col">
                     <div className="fixed inset-x-0 bottom-6 z-20 flex justify-center px-4">
                         <div className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-white/10 bg-[#0d1016]/78 px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.35)] backdrop-blur-[24px]">
@@ -336,6 +502,11 @@ export default function FlatDetailPage() {
                                             <p className="mt-3 text-[12px] leading-6 text-white/58">
                                                 A calmer expression of premium living shaped with balanced proportions, refined daylight, and everyday ease.
                                             </p>
+                                            {useVideoFallback ? (
+                                                <p className="mt-3 rounded-full border border-white/12 bg-white/[0.05] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/58">
+                                                    Sample exterior video shown while the flat-specific preview is unavailable.
+                                                </p>
+                                            ) : null}
                                         </div>
 
                                         <div className="mt-4 rounded-[22px] border border-white/8 bg-white/[0.03] p-3.5">
