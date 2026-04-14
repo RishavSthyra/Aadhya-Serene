@@ -54,8 +54,10 @@ export default function Filters({
   onSetRange,
   onToggleBoolean,
   onClose,
+  onReset,
   resultCount,
   totalCount,
+  showCloseButton = true,
 }) {
   const {
     type,
@@ -74,7 +76,7 @@ export default function Filters({
     <section className="px-4 pb-5 pt-4">
       <div className="relative">
         <div className="mb-6 flex items-start justify-between gap-4">
-          <div className="max-w-[230px]">
+          <div className="max-w-[280px]">
             <p className="text-[9px] font-semibold uppercase tracking-[0.26em] text-[#d4b96e]/85">
               Apartment Curation
             </p>
@@ -86,16 +88,29 @@ export default function Filters({
               that suit your pace of living.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/14 bg-white/5 text-white/50 transition hover:border-white/25 hover:bg-white/10 hover:text-white/80"
-            aria-label="Close panel"
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M1 1L11 11M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            {onReset ? (
+              <button
+                type="button"
+                onClick={onReset}
+                className="rounded-full border border-white/12 bg-white/5 px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/60 transition hover:border-white/22 hover:bg-white/10 hover:text-white/86"
+              >
+                Reset
+              </button>
+            ) : null}
+            {showCloseButton ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-white/14 bg-white/5 text-white/50 transition hover:border-white/25 hover:bg-white/10 hover:text-white/80"
+                aria-label="Close panel"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 1L11 11M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <div className="mb-6 rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3">
@@ -123,7 +138,7 @@ export default function Filters({
             <p className="mb-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/40">
               Type
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {TYPE_OPTIONS.map((value) => (
                 <FilterChip
                   key={value}
@@ -174,7 +189,7 @@ export default function Filters({
             <p className="mb-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/40">
               Balconies
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {BALCONY_OPTIONS.map((value) => (
                 <FilterChip
                   key={value}
@@ -234,7 +249,7 @@ export default function Filters({
           </div>
 
           {/* Toggles */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <BooleanPill
               active={availableOnly}
               label="Available"

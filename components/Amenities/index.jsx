@@ -37,10 +37,12 @@ const AMENITIES_LIST = [
     { name: "outdoor badminton court", icon: GiShuttlecock, url: "badminton" }
 ];
 
-export default function Amenities() {
+export default function Amenities({ initialAmenity = null }) {
     const router = useRouter();
-    // Default to the first amenity in the list to match the default background video mapping
-    const [activeAmenity, setActiveAmenity] = useState('rooftopLeisureDeck');
+    const defaultAmenity = 'rooftopLeisureDeck';
+    const isValidRequestedAmenity = AMENITIES_LIST.some((item) => item.url === initialAmenity);
+    const selectedAmenityFromUrl = isValidRequestedAmenity ? initialAmenity : defaultAmenity;
+    const [activeAmenity, setActiveAmenity] = useState(selectedAmenityFromUrl);
     const [isVideoPlaying, setIsVideoPlaying] = useState(true);
 
     // When mounted, default to no active amenity, but listen for video triggers
@@ -64,14 +66,19 @@ export default function Amenities() {
         };
     }, []);
 
+    useEffect(() => {
+        setActiveAmenity(selectedAmenityFromUrl);
+        window.dispatchEvent(new CustomEvent('bg-layout', { detail: `amenities-${selectedAmenityFromUrl}` }));
+    }, [selectedAmenityFromUrl]);
+
     const handleAmenityClick = (amenityUrl) => {
         if (activeAmenity === amenityUrl) {
-            // Toggle off - return to default amenities view
-            setActiveAmenity(null);
-            window.dispatchEvent(new CustomEvent('bg-layout', { detail: 'amenities' }));
+            setActiveAmenity(defaultAmenity);
+            router.replace('/amenities');
+            window.dispatchEvent(new CustomEvent('bg-layout', { detail: `amenities-${defaultAmenity}` }));
         } else {
-            // Activate new amenity video
             setActiveAmenity(amenityUrl);
+            router.replace(`/amenities?amenity=${amenityUrl}`);
             window.dispatchEvent(new CustomEvent('bg-layout', { detail: `amenities-${amenityUrl}` }));
         }
     };

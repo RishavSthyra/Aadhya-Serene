@@ -132,10 +132,12 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
             const imageRatio = image.naturalWidth / image.naturalHeight;
             const canvasRatio = bounds.width / bounds.height;
 
+            // Use "cover" sizing so the 360 frames always fill the full viewport
+            // without left/right or top/bottom black gaps on larger screens.
             let drawWidth = canvasWidth;
             let drawHeight = canvasWidth / imageRatio;
 
-            if (drawHeight > canvasHeight) {
+            if (drawHeight < canvasHeight) {
                 drawHeight = canvasHeight;
                 drawWidth = canvasHeight * imageRatio;
             }
@@ -449,12 +451,6 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
                 Drag to rotate · Click a flat to explore
             </div>
 
-            <div className={styles.pointIndicator}>
-                {snappedFrame === 1 || snappedFrame === 360 ? 'A1 Point' :
-                    snappedFrame === 90 ? 'A2 Point' :
-                        snappedFrame === 180 ? 'A3 Point' :
-                            snappedFrame === 270 ? 'A4 Point' : ''}
-            </div>
         </div>
     );
 }

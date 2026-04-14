@@ -35,6 +35,7 @@ const MEGA_MENU_IMAGES = [
 const AMENITIES_DROPDOWN_ITEMS = [
   {
     label: "Rooftop Leisure Deck",
+    url: "rooftopLeisureDeck",
     sublabel: "Aadhya Serene",
     description: "Sky lounge and open-air leisure space.",
     image:
@@ -42,6 +43,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
   },
   {
     label: "Children's Play Area",
+    url: "childrensPlayArea",
     sublabel: "Aadhya Serene",
     description: "Safe, playful, and family-friendly zone.",
     image:
@@ -49,6 +51,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
   },
   {
     label: "Swimming Pool",
+    url: "swimmingPool",
     sublabel: "Aadhya Serene",
     description: "Resort-style relaxation and daily refresh.",
     image:
@@ -56,6 +59,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
   },
   {
     label: "Gymnasium",
+    url: "gymnasium",
     sublabel: "Aadhya Serene",
     description: "Fitness-focused everyday wellness space.",
     image:
@@ -63,6 +67,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
   },
   {
     label: "Indoor Games Lounge",
+    url: "indoorGames",
     sublabel: "Aadhya Serene",
     description: "Recreation and social indoor activities.",
     image:
@@ -70,6 +75,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
   },
   {
     label: "Clubhouse",
+    url: "clubhouse",
     sublabel: "Aadhya Serene",
     description: "A central social and celebration hub.",
     image:
@@ -77,6 +83,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
   },
   {
     label: "Outdoor Basketball Court",
+    url: "basketball",
     sublabel: "Aadhya Serene",
     description: "Active outdoor sports and play.",
     image:
@@ -84,6 +91,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
   },
   {
     label: "Outdoor Badminton Court",
+    url: "badminton",
     sublabel: "Aadhya Serene",
     description: "Open-air court for quick matches.",
     image:
@@ -453,16 +461,24 @@ export default function Nav() {
                           className="flex gap-3"
                         >
                           {AMENITIES_DROPDOWN_ITEMS.map((item) => (
-                            <div
+                            <Link
                               key={item.label}
+                              href={{
+                                pathname: "/amenities",
+                                query: { amenity: item.url },
+                              }}
                               style={{ flex: `0 0 ${amenitiesCardBasis}` }}
-                              className="overflow-hidden rounded-[12px] bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.02)_100%)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
+                              className="block overflow-hidden rounded-[12px] bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.02)_100%)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[inset_0_0_0_1px_rgba(243,208,86,0.22)]"
+                              onClick={() => {
+                                setOpenMenu(null);
+                                scheduleHideNav();
+                              }}
                             >
                               <div className="relative h-[300px] overflow-hidden">
                                 <img
                                   src={item.image}
                                   alt={item.label}
-                                  className="h-full w-full object-cover"
+                                  className="h-full w-full object-cover transition duration-500 hover:scale-[1.02]"
                                 />
                                  <div className="px-4 absolute bottom-0 bg-white/5 backdrop-blur-sm w-full pb-4 pt-3">
                                 <p className="m-0 text-[9px] font-semibold uppercase tracking-[0.15em] text-white/55">
@@ -474,10 +490,10 @@ export default function Nav() {
                                 {/* <p className="mt-2 text-[11px] leading-[1.55] text-white/62">
                                   {item.description}
                                 </p> */}
-                              </div>
+                               </div>
                               </div>
                              
-                            </div>
+                            </Link>
                           ))}
                         </motion.div>
                       </div>

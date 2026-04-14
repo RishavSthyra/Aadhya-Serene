@@ -23,17 +23,13 @@ export default function Page() {
       return;
     }
 
-    window.dispatchEvent(new Event("bg-pause"));
-
     const timer = setTimeout(() => {
       setShowLoader(false);
       sessionStorage.setItem("homeLoaderShown", "true"); // I am adding it to session storage
-      window.dispatchEvent(new Event("bg-play"));
     }, 3500);
 
     return () => {
       clearTimeout(timer);
-      window.dispatchEvent(new Event("bg-play"));
     };
   }, []);
 
