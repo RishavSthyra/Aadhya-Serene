@@ -9,7 +9,7 @@
     "timeLabel": "22 min",
     "rating": 4.4,
     "featured": true,
-    "image": "/RGA.webp"
+    "image": "/assets/manyata.jpg"
   },
   {
     "id": 102,
@@ -21,7 +21,7 @@
     "timeLabel": "19 mins",
     "rating": 4.3,
     "featured": true,
-    "image": "/wipro.webp"
+    "image": "/assets/embassyman.jpg"
   },
   {
     "id": 103,

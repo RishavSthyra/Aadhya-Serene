@@ -15,6 +15,7 @@ import ApartmentList from "./ApartmentList";
 import Apartment360Viewer from "../Apartment360Viewer";
 import { preloadInteriorStartPano } from "../../lib/interior-panos";
 import { preloadFlatEntryVideo } from "../../lib/flats";
+import { isBackgroundTransitionActive } from "../../lib/background-transition";
 
 const DESKTOP_PANEL_WIDTH = 392;
 const COMPACT_BREAKPOINT = 1280;
@@ -42,14 +43,14 @@ export default function Apartments() {
   const [isCompactLayout, setIsCompactLayout] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState("filters");
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(() => isBackgroundTransitionActive("apartments"));
   const [viewerVersion, setViewerVersion] = useState(0);
   const prefetchedFlatRoutesRef = useRef(new Set());
 
   const resetApartmentsExperience = useCallback((remountViewer = false) => {
     document.body.style.opacity = "1";
     document.body.style.transition = "";
-    setIsVideoPlaying(false);
+    setIsVideoPlaying(isBackgroundTransitionActive("apartments"));
 
     if (remountViewer) {
       setViewerVersion((current) => current + 1);
@@ -325,7 +326,12 @@ export default function Apartments() {
   );
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[#050608]">
+    <div
+      className="fixed inset-0 overflow-hidden"
+      style={{
+        backgroundColor: isVideoPlaying ? "transparent" : "#050608",
+      }}
+    >
       <div
         className="absolute inset-0 z-0"
         style={{

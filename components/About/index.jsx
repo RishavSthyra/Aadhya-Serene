@@ -152,9 +152,7 @@ export default function About() {
         if (isNavigatingRef.current) return;
         isNavigatingRef.current = true;
 
-        if (path === '/apartments') {
-            window.dispatchEvent(new CustomEvent('bg-layout', { detail: 'apartments' }));
-        } else if (path === '/') {
+        if (path === '/') {
             window.dispatchEvent(new CustomEvent('bg-layout', { detail: 'home' }));
         }
 

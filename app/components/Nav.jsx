@@ -242,10 +242,13 @@ export default function Nav() {
     );
   };
 
-  const navigateWithTransition = (href, layoutKey) => {
+  const navigateWithTransition = (href, layoutKey, options = {}) => {
     if (pathname === href) return;
 
-    window.dispatchEvent(new CustomEvent("bg-layout", { detail: layoutKey }));
+    const { eagerLayout = true } = options;
+    if (layoutKey && eagerLayout) {
+      window.dispatchEvent(new CustomEvent("bg-layout", { detail: layoutKey }));
+    }
 
     const containerId =
       pathname === "/" ? "home-inner" : pathname.startsWith("/about") ? "about-container" : null;
@@ -344,11 +347,13 @@ export default function Nav() {
                         event.preventDefault();
                         navigateWithTransition("/about", "about");
                       }
-
-                      if (href === "/apartments" && pathname.startsWith("/about")) {
+                      if (href === "/apartments") {
                         event.preventDefault();
-                        navigateWithTransition("/apartments", "apartments");
+                        navigateWithTransition("/apartments", "apartments", {
+                          eagerLayout: false,
+                        });
                       }
+
                     }}
                     className={`relative pb-1 text-sm transition ${
                       active
@@ -549,6 +554,14 @@ export default function Nav() {
               <Link
                 key={href}
                 href={href}
+                onClick={(event) => {
+                  if (href === "/apartments") {
+                    event.preventDefault();
+                    navigateWithTransition("/apartments", "apartments", {
+                      eagerLayout: false,
+                    });
+                  }
+                }}
                 className={`flex flex-col items-center text-[9px] ${
                   active ? "text-[#f3d056]" : "text-white/80"
                 }`}

@@ -3,11 +3,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import BackgroundVideo from '../BackgroundVideo';
+import {
+    isBackgroundTransitionActive,
+    setBackgroundTransitionState,
+} from '@/lib/background-transition';
 
 export default function GlobalBackground() {
     const pathname = usePathname();
     const [layout, setLayout] = useState('home');
     const [playing, setPlaying] = useState(true);
+    const [replayKey, setReplayKey] = useState(0);
     const prevPathname = useRef(pathname);
 
     useEffect(() => {
@@ -20,8 +25,21 @@ export default function GlobalBackground() {
         else if (pathname.includes('/location')) newLayout = 'location';
         else if (pathname.includes('/contact')) newLayout = 'contact';
 
+        const didPathChange = pathname !== prevPathname.current;
+        const isEnteringApartmentsPage = pathname === '/apartments' && didPathChange;
+
+        if (isEnteringApartmentsPage && newLayout === layout) {
+            setBackgroundTransitionState('apartments', true);
+            setReplayKey((current) => current + 1);
+        }
+
         // We just navigated to a new route, but the layout didn't fundamentally change
-        if (newLayout === layout && pathname !== prevPathname.current) {
+        if (
+            newLayout === layout
+            && didPathChange
+            && !isEnteringApartmentsPage
+            && !isBackgroundTransitionActive(newLayout)
+        ) {
             // Because no new transition video will play, instantly unblock any listening UI
             window.dispatchEvent(new CustomEvent('bg-transition-ended'));
         }
@@ -35,7 +53,10 @@ export default function GlobalBackground() {
     }, [pathname]); // <-- IMPORTANT: 'layout' removed to prevent overwriting custom events
 
     useEffect(() => {
-        const handleLayout = (e) => setLayout(e.detail);
+        const handleLayout = (e) => {
+            setBackgroundTransitionState(e.detail, true);
+            setLayout(e.detail);
+        };
         const handlePlay = () => setPlaying(true);
         const handlePause = () => setPlaying(false);
 
@@ -50,5 +71,5 @@ export default function GlobalBackground() {
         };
     }, []);
 
-    return <BackgroundVideo layout={layout} playing={playing} />;
+    return <BackgroundVideo layout={layout} playing={playing} replayKey={replayKey} />;
 }
