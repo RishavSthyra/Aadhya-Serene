@@ -1,0 +1,376 @@
+/* === Flat Detail Page === */
+
+.page {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+}
+
+.notFound {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: #aaa;
+    gap: 16px;
+    font-size: 14px;
+}
+
+.notFound a {
+    color: #c6a469;
+    text-decoration: underline;
+}
+
+/* Video background */
+.mediaRoot {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+.video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Gradient overlays */
+.gradLeft {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.35) 45%, transparent 65%);
+    pointer-events: none;
+}
+
+.gradRight {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(to left, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.3) 40%, transparent 60%);
+    pointer-events: none;
+}
+
+/* ── Left Panel ── */
+.leftPanel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 340px;
+    z-index: 10;
+    padding: 28px 28px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.leftPanel::-webkit-scrollbar {
+    display: none;
+}
+
+.backBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.18s;
+    padding: 0;
+}
+
+.backBtn:hover {
+    color: #fff;
+}
+
+.title {
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 0.04em;
+    margin: 0;
+    line-height: 1.1;
+}
+
+/* Meta grid */
+.metaGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 16px;
+}
+
+.metaItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.metaLabel {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.45);
+    text-transform: uppercase;
+    width: 80px;
+    flex-shrink: 0;
+}
+
+.metaValue {
+    font-size: 13px;
+    font-weight: 500;
+    color: #f1f1f1;
+}
+
+.avail {
+    color: #6ee7b7;
+    font-weight: 700;
+}
+
+.sold {
+    color: #fca5a5;
+    font-weight: 700;
+}
+
+/* Room list */
+.rooms {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 14px;
+}
+
+.roomItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.roomIcon {
+    font-size: 14px;
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.roomText {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex: 1;
+    gap: 8px;
+}
+
+.roomName {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.roomSize {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: right;
+    font-family: 'Courier New', monospace;
+}
+
+/* ── Right Panel ── */
+.rightPanel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 300px;
+    z-index: 10;
+    padding: 36px 24px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.rightPanel::-webkit-scrollbar {
+    display: none;
+}
+
+.sectionTitle {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.45);
+    text-transform: uppercase;
+    margin: 0 0 10px;
+}
+
+/* Floor Plan */
+.floorPlanSection {
+    display: flex;
+    flex-direction: column;
+}
+
+.floorPlanImg {
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.floorPlanImg img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.floorPlanFallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 12px;
+    padding: 40px;
+    text-align: center;
+}
+
+.floorPlanFallback span:first-child {
+    font-size: 36px;
+}
+
+/* Walkthrough */
+.walkthroughSection {
+    display: flex;
+    flex-direction: column;
+}
+
+.walkthroughThumb {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    border: none;
+    cursor: pointer;
+    background: #000;
+    aspect-ratio: 16/9;
+    display: block;
+    width: 100%;
+}
+
+.walkthroughThumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.2s;
+}
+
+.walkthroughThumb:hover img {
+    opacity: 0.7;
+}
+
+.playCircle {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* ── Bottom Toolbar ── */
+.toolbar {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    padding: 8px 12px;
+}
+
+.toolBtn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    cursor: pointer;
+    transition: all 0.18s;
+}
+
+.toolBtn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+.toolBtnMuted {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.toolBtnMuted:hover {
+    color: #fff;
+}
+
+.whatsappBtn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #25D366;
+    transition: background 0.18s, transform 0.18s;
+}
+
+.whatsappBtn:hover {
+    background: #1eb354;
+    transform: scale(1.1);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .leftPanel {
+        width: 100%;
+        bottom: auto;
+        max-height: 50vh;
+        padding: 80px 16px 20px;
+    }
+
+    .rightPanel {
+        display: none;
+    }
+
+    .toolbar {
+        bottom: 12px;
+    }
+}

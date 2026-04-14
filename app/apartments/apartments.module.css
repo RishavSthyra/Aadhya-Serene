@@ -1,0 +1,464 @@
+/* === Page Root === */
+.page {
+    position: fixed;
+    inset: 0;
+    top: 40px;
+    /* below nav */
+    overflow: hidden;
+}
+
+/* === 360 Viewer fills full screen === */
+.viewerBackground {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+/* === Toggle Button (D-shaped, left edge of sidebar) === */
+.panelToggle {
+    position: fixed;
+    top: 50%;
+    right: 372px;
+    /* matches sidebar width */
+    transform: translateY(-50%);
+    z-index: 200;
+    width: 32px;
+    height: 52px;
+    background: rgba(22, 22, 26, 0.9);
+    border: 1px solid #292931;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: right 0.3s ease, background 0.2s;
+}
+
+.panelToggle:hover {
+    background: rgba(40, 40, 48, 0.95);
+}
+
+.panelToggleOpen {
+    right: 372px;
+}
+
+.panelToggle:not(.panelToggleOpen) {
+    right: 0;
+}
+
+.toggleArrow {
+    font-size: 18px;
+    color: #c6a469;
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+.panelToggleOpen .toggleArrow {
+    transform: rotate(0deg);
+}
+
+.panelToggle:not(.panelToggleOpen) .toggleArrow {
+    transform: rotate(180deg);
+}
+
+/* === Right Sidebar === */
+.sidebar {
+    position: fixed;
+    top: 200px;
+    right: 0;
+    bottom: 0;
+    width: 368px;
+    z-index: 120;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    transition: transform 0.3s ease;
+    overflow: hidden;
+}
+
+.sidebarHidden {
+    transform: translateX(100%);
+}
+
+/* === Sidebar Content Wrapping === */
+.sidebarContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    background: rgba(43, 44, 49, 0.95);
+    backdrop-filter: blur(14px);
+    border-left: 1px solid #3a3a41;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    padding: 24px 16px;
+    gap: 16px;
+}
+
+.sidebarContent::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebarContent::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 2px;
+}
+
+/* === Top Action Buttons === */
+.actionButtons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+.actionBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.actionBtn:hover {
+    transform: translateY(-2px);
+}
+
+.actionBtnPrimary {
+    background: linear-gradient(135deg, #fceb90, #ddc15f);
+    color: #1a1a1f;
+    box-shadow: 0 4px 12px rgba(221, 193, 95, 0.2);
+}
+
+.actionBtnSecondary {
+    background: #5b6068;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* === Filters Container === */
+.filtersContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px 12px;
+    background: #62656d;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.filtersContainer[data-hidden="true"] {
+    display: none;
+}
+
+.filtersContainer h2 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* === Card List Pane === */
+.listPane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.listPane[data-hidden="true"] {
+    display: none;
+}
+
+.stateMsg {
+    padding: 40px;
+    text-align: center;
+    color: #ccc;
+    font-size: 13px;
+}
+
+/* === Filter Groups === */
+.filterGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #a0a5b1;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.buttonGroup {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.filterButton {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid #3a3a45;
+    color: #ddd;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+}
+
+.filterButton:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.filterButton[data-active="true"] {
+    background: #c6a469;
+    color: #0b0b0d;
+    border-color: #c6a469;
+    font-weight: 600;
+}
+
+/* Checkbox Row */
+.checkboxRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+    cursor: pointer;
+}
+
+.checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #c6a469;
+    cursor: pointer;
+}
+
+/* Footer */
+.filterFooter {
+    padding-top: 10px;
+    border-top: 1px dashed #3a3a45;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.resultsCount {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+}
+
+.count {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ddc15f;
+}
+
+.resetButton {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 10px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.resetButton:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* === Range Slider === */
+.rangeWrapper {
+    padding: 4px 0;
+}
+
+.rangeInput {
+    width: 100%;
+    cursor: pointer;
+    accent-color: #c6a469;
+}
+
+.rangeValues {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #888;
+    margin-top: 4px;
+}
+
+/* === Card List === */
+.listContainer {
+    width: 100%;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+/* === Apartment Card === */
+.card {
+    background: linear-gradient(180deg, #18191c 0%, #0d0e11 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.card:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.cardColumns {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.cardLeft,
+.cardMiddle {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cardLeft {
+    min-width: 90px;
+}
+
+.cardTextRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cardLabel {
+    font-size: 10px;
+    font-weight: 500;
+    color: #888;
+    letter-spacing: 0.02em;
+    width: 45px;
+}
+
+.cardValueMain {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.cardAreaMain {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    margin-top: 2px;
+}
+
+.cardRight {
+    display: flex;
+    align-items: center;
+}
+
+.viewBtn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.card:hover .viewBtn {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* === Mobile Tabs (hidden on desktop) === */
+.mobileTabs {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .page {
+        top: 0;
+    }
+
+    .sidebar {
+        top: 0;
+        width: 100%;
+        bottom: 0;
+    }
+
+.panelToggle {
+    position: fixed;
+    top: calc(50% + 40px);
+    right: 372px;
+    z-index: 120;
+}
+
+    .mobileTabs {
+        display: flex;
+        background: #111;
+        padding: 8px;
+        gap: 8px;
+        border-bottom: 1px solid #222;
+        flex-shrink: 0;
+    }
+
+    .mobileTab {
+        flex: 1;
+        padding: 9px;
+        text-align: center;
+        background: #1a1a1f;
+        border-radius: 8px;
+        font-size: 11px;
+        color: #777;
+        border: 1px solid transparent;
+        cursor: pointer;
+    }
+
+    .mobileTab[data-active="true"] {
+        background: #292931;
+        color: #fff;
+        border-color: #3a3a45;
+    }
+
+    .filtersContainer[data-hidden="true"] {
+        display: none;
+    }
+
+    .listPane[data-hidden="true"] {
+        display: none;
+    }
+
+    .filtersContainer {
+        border-left: none;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .listPane {
+        border-left: none;
+    }
+}

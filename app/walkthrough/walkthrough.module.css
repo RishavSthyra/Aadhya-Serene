@@ -1,0 +1,125 @@
+
+.wrapper {
+  background: #000;
+  position: fixed;
+  inset: 0;
+}
+
+.pano {
+  width: 100%;
+  height: 100%;
+}
+
+.loader {
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  color: white;
+  font-family: sans-serif;
+}
+
+.controls {
+  z-index: 10;
+  transform-origin: 50%;
+  grid-template-rows: 52px 52px;
+  grid-template-columns: 52px 52px 52px;
+  gap: 10px;
+  display: grid;
+  position: absolute;
+  bottom: 56px;
+  left: 50%;
+  transform: translate(-50%);
+}
+
+.btn {
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  background: #ffffff26;
+  border: 1px solid #ffffff4d;
+  border-radius: 12px;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  transition: background .2s, transform .2s, opacity .2s, box-shadow .2s, border-color .2s;
+  display: grid;
+  box-shadow: 0 4px 8px #0006;
+}
+
+.btn:hover {
+  background: #ffffff47;
+  transform: scale(1.05);
+}
+
+.btn:active {
+  background: #ffffff73;
+  transform: scale(.96);
+}
+
+.btn:disabled {
+  opacity: .12;
+  pointer-events: none;
+  box-shadow: none;
+  border-color: #0000;
+}
+
+.icon {
+  filter: drop-shadow(1px 1px 6px #0000008c);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+}
+
+.forward {
+  grid-area: 1/2;
+}
+
+.left {
+  grid-area: 2/1;
+}
+
+.right {
+  grid-area: 2/3;
+}
+
+.back {
+  grid-area: 2/2;
+}
+
+.minimap {
+  z-index: 10;
+  border-radius: 10px;
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3); /* improved visibility */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.minimapCanvas {
+  touch-action: none;
+  cursor: default;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@media (max-width: 1000px) {
+  .controls {
+    transform-origin: 50%;
+    grid-template-rows: 50px 50px;
+    grid-template-columns: 50px 50px 50px;
+    bottom: 200px;
+    transform: translate(-50%, -50%) scale(.85);
+  }
+}
+
+@media (max-width: 768px) {
+  .minimap {
+    bottom: 80px;
+  }
+}

@@ -3,13 +3,36 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "dev": "node scripts/next-runner.mjs dev",
+    "build": "node scripts/next-runner.mjs build",
+    "start": "node scripts/next-runner.mjs start"
   },
   "dependencies": {
+    "@photo-sphere-viewer/core": "^5.14.1",
+    "@photo-sphere-viewer/equirectangular-tiles-adapter": "^5.14.1",
+    "@photo-sphere-viewer/markers-plugin": "^5.14.1",
+    "@photo-sphere-viewer/virtual-tour-plugin": "^5.14.1",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
+    "@tailwindcss/postcss": "^4.2.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.18.2",
+    "lucide-react": "^0.577.0",
+    "maplibre-gl": "^5.22.0",
+    "marzipano": "^0.10.2",
     "next": "15.1.6",
+    "postcss": "^8.5.8",
     "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "react-dom": "19.0.0",
+    "react-icons": "^5.5.0",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.1",
+    "three": "^0.183.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^6.0.2"
   }
 }

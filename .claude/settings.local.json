@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__OpusCode__understand_image"
+    ]
+  }
+}

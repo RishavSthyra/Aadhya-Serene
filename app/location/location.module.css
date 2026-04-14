@@ -1,0 +1,294 @@
+/* Location Page Styles */
+.wrapper {
+    position: fixed;
+    inset: 40px 0 0 0;
+    /* below nav */
+    display: flex;
+    overflow: hidden;
+    pointer-events: none;
+    /* Let video clicks pass */
+}
+
+.mapShell {
+    pointer-events: auto;
+    position: absolute;
+    right: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: calc(100vw - 460px);
+    max-width: 700px;
+    height: 520px;
+    background: rgba(18, 18, 22, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    z-index: 10;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.mapContainer {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mapPlaceholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #e5e7eb;
+    gap: 16px;
+    z-index: 10;
+    text-align: center;
+}
+
+.mapPlaceholder h2 {
+    font-size: 24px;
+    font-weight: 500;
+    margin: 0;
+    color: #fff;
+    font-family: serif;
+}
+
+.mapPlaceholder p {
+    margin: 0;
+    opacity: 0.8;
+    font-size: 13px;
+}
+
+.sidebar {
+    pointer-events: auto;
+    position: absolute;
+    left: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 380px;
+    max-height: calc(100vh - 120px);
+    display: flex;
+    flex-direction: column;
+    background: rgba(18, 18, 22, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    z-index: 10;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    padding: 30px;
+    gap: 12px;
+}
+
+.title {
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: #fff;
+}
+
+.subtitle {
+    opacity: 0.75;
+    margin-top: 6px;
+    margin-bottom: 0;
+    font-size: 13px;
+    color: #ccc;
+}
+
+.filtersHeader {
+    opacity: 0.92;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #e5e7eb;
+}
+
+.filterActions {
+    display: flex;
+    gap: 8px;
+}
+
+.actionBtn {
+    color: #e5e7eb;
+    cursor: pointer;
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    transition: transform 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.actionBtn:hover {
+    background: rgba(15, 23, 42, 0.75);
+    border-color: rgba(148, 163, 184, 0.5);
+    transform: translateY(-1px);
+}
+
+.filters {
+    gap: 8px;
+    margin-top: 10px;
+    display: grid;
+}
+
+.filterRow {
+    cursor: pointer;
+    user-select: none;
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 12px;
+    display: grid;
+    grid-template-columns: 18px 10px 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    transition: transform 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.filterRow:hover {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(148, 163, 184, 0.4);
+    transform: translateY(-1px);
+}
+
+.filterCheckbox {
+    accent-color: #0ea5e9;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.filterDot {
+    border-radius: 999px;
+    width: 10px;
+    height: 10px;
+    box-shadow: 0 0 0 2px rgba(2, 6, 23, 0.6);
+}
+
+.filterLabel {
+    color: #e5e7eb;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.7) transparent;
+    border-top: 1px solid rgba(148, 163, 184, 0.25);
+    max-height: calc(100svh - 528px);
+    margin-top: 14px;
+    padding-top: 12px;
+    overflow-y: auto;
+}
+
+.listHeader {
+    opacity: 0.9;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-right: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    color: #ccc;
+}
+
+.listItemButton {
+    cursor: pointer;
+    text-align: left;
+    background: transparent;
+    border: none;
+    width: 100%;
+    padding: 4px 0;
+    color: inherit;
+    font-family: inherit;
+}
+
+.listItem {
+    color: #fff;
+    border-bottom: 1px dashed rgba(148, 163, 184, 0.28);
+    border-radius: 10px;
+    padding: 8px 6px;
+    transition: background 0.12s, color 0.12s;
+}
+
+.listItemButton:hover .listItem {
+    color: #000;
+    background: #fff;
+}
+
+.placeName {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.placeMeta {
+    opacity: 0.78;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+    font-size: 11px;
+    display: flex;
+}
+
+.placeCategoryDot {
+    border-radius: 999px;
+    width: 7px;
+    height: 7px;
+}
+
+@media (max-width: 768px) {
+    .wrapper {
+        inset: 72px 0 0 0;
+        flex-direction: column;
+        pointer-events: auto;
+        overflow-y: auto;
+        align-items: center;
+        padding-bottom: 40px;
+    }
+
+    .mapShell {
+        position: relative;
+        transform: none;
+        right: auto;
+        top: auto;
+        left: auto;
+        width: 90%;
+        max-width: 90%;
+        height: 300px;
+        order: 1;
+        margin-top: 20px;
+    }
+
+    .sidebar {
+        position: relative;
+        transform: none;
+        left: auto;
+        right: auto;
+        top: auto;
+        width: 90%;
+        order: 2;
+        margin-top: 20px;
+        max-height: none;
+        overflow: visible;
+    }
+
+    .list {
+        max-height: none;
+    }
+}

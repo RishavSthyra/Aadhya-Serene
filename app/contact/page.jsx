@@ -1,3 +1,10 @@
-export default function Page(){
-  return <main className="page"><h1>Contact</h1><p>Native Next.js page scaffold in progress for pixel parity with original.</p></main>
+import Contact from '../../components/Contact';
+
+export const metadata = {
+  title: 'Contact & Site Visit - Aadhya Serene',
+  description: 'Register your interest, book a unit, or schedule a site visit at Aadhya Serene in Thanisandra, Bengaluru.',
+};
+
+export default function Page() {
+  return <Contact />;
 }

@@ -1,0 +1,542 @@
+[
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath4interior_F0000",
+        "x": 4031.74,
+        "y": 86.432,
+        "z": 976.819,
+        "pitch": 0.0,
+        "yaw": 0.0,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath4interior_F0000.png",
+        "facing_axis": "+X",
+        "forward_vector": {
+            "x": 1.0,
+            "y": 0.0,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": 0.0,
+            "y": -1.0,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath4interior_F0001",
+        "x": 4180.567,
+        "y": 96.606,
+        "z": 976.819,
+        "pitch": 0.0,
+        "yaw": 15.6612,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath4interior_F0001.png",
+        "facing_axis": "+X",
+        "forward_vector": {
+            "x": 0.963,
+            "y": 0.27,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": -0.27,
+            "y": 0.963,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": 0.27,
+            "y": -0.963,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath3interior_F0002",
+        "x": 4003.966,
+        "y": 203.377,
+        "z": 987.819,
+        "pitch": 0.0,
+        "yaw": -89.7868,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath3interior_F0002.png",
+        "facing_axis": "-Y",
+        "forward_vector": {
+            "x": 0.004,
+            "y": -1.0,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 1.0,
+            "y": 0.004,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -1.0,
+            "y": -0.004,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath3interior_F0003",
+        "x": 4003.561,
+        "y": 53.37,
+        "z": 987.819,
+        "pitch": 0.0,
+        "yaw": -89.1024,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath3interior_F0003.png",
+        "facing_axis": "-Y",
+        "forward_vector": {
+            "x": 0.016,
+            "y": -1.0,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 1.0,
+            "y": 0.016,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -1.0,
+            "y": -0.016,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath3interior_F0004",
+        "x": 4004.851,
+        "y": -96.649,
+        "z": 987.819,
+        "pitch": 0.0,
+        "yaw": -85.3217,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath3interior_F0004.png",
+        "facing_axis": "-Y",
+        "forward_vector": {
+            "x": 0.082,
+            "y": -0.997,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 0.997,
+            "y": 0.082,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -0.997,
+            "y": -0.082,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath3interior_F0005",
+        "x": 4107.131,
+        "y": -180.084,
+        "z": 987.819,
+        "pitch": 0.0,
+        "yaw": -12.3703,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath3interior_F0005.png",
+        "facing_axis": "+X",
+        "forward_vector": {
+            "x": 0.977,
+            "y": -0.214,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 0.214,
+            "y": 0.977,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -0.214,
+            "y": -0.977,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath3interior_F0006",
+        "x": 4171.091,
+        "y": -297.864,
+        "z": 987.819,
+        "pitch": 0.0,
+        "yaw": -89.8565,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath3interior_F0006.png",
+        "facing_axis": "-Y",
+        "forward_vector": {
+            "x": 0.003,
+            "y": -1.0,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 1.0,
+            "y": 0.003,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -1.0,
+            "y": -0.003,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath3interior_F0007",
+        "x": 4171.082,
+        "y": -409.094,
+        "z": 987.819,
+        "pitch": 0.0,
+        "yaw": -85.703,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath3interior_F0007.png",
+        "facing_axis": "-Y",
+        "forward_vector": {
+            "x": 0.075,
+            "y": -0.997,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 0.997,
+            "y": 0.075,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -0.997,
+            "y": -0.075,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath5interior_F0008",
+        "x": 3505.411,
+        "y": 224.461,
+        "z": 976.819,
+        "pitch": 0.0,
+        "yaw": -77.3108,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath5interior_F0008.png",
+        "facing_axis": "-Y",
+        "forward_vector": {
+            "x": 0.22,
+            "y": -0.976,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 0.976,
+            "y": 0.22,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -0.976,
+            "y": -0.22,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath5interior_F0009",
+        "x": 3527.714,
+        "y": 125.409,
+        "z": 987.819,
+        "pitch": 0.0,
+        "yaw": -77.3108,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath5interior_F0009.png",
+        "facing_axis": "-Y",
+        "forward_vector": {
+            "x": 0.22,
+            "y": -0.976,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 0.976,
+            "y": 0.22,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -0.976,
+            "y": -0.22,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath2interior_F0010",
+        "x": 3382.068,
+        "y": -207.991,
+        "z": 976.819,
+        "pitch": 0.0,
+        "yaw": -24.2588,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath2interior_F0010.png",
+        "facing_axis": "+X",
+        "forward_vector": {
+            "x": 0.912,
+            "y": -0.411,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 0.411,
+            "y": 0.912,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -0.411,
+            "y": -0.912,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath2interior_F0011",
+        "x": 3518.823,
+        "y": -269.62,
+        "z": 976.819,
+        "pitch": 0.0,
+        "yaw": -24.2588,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath2interior_F0011.png",
+        "facing_axis": "+X",
+        "forward_vector": {
+            "x": 0.912,
+            "y": -0.411,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 0.411,
+            "y": 0.912,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -0.411,
+            "y": -0.912,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath2interior_F0012",
+        "x": 3655.578,
+        "y": -331.249,
+        "z": 976.819,
+        "pitch": 0.0,
+        "yaw": -24.2588,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath2interior_F0012.png",
+        "facing_axis": "+X",
+        "forward_vector": {
+            "x": 0.912,
+            "y": -0.411,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 0.411,
+            "y": 0.912,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -0.411,
+            "y": -0.912,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath2interior_F0013",
+        "x": 3792.333,
+        "y": -392.878,
+        "z": 976.819,
+        "pitch": 0.0,
+        "yaw": -24.2588,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath2interior_F0013.png",
+        "facing_axis": "+X",
+        "forward_vector": {
+            "x": 0.912,
+            "y": -0.411,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 0.411,
+            "y": 0.912,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -0.411,
+            "y": -0.912,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath6interior_F0014",
+        "x": 4120.687,
+        "y": -80.051,
+        "z": 982.819,
+        "pitch": 0.0,
+        "yaw": 180.0,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath6interior_F0014.png",
+        "facing_axis": "-X",
+        "forward_vector": {
+            "x": -1.0,
+            "y": 0.0,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 0.0,
+            "y": -1.0,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath6interior2_F0015",
+        "x": 3710.628,
+        "y": -204.008,
+        "z": 976.819,
+        "pitch": 0.0,
+        "yaw": 75.0,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath6interior2_F0015.png",
+        "facing_axis": "+Y",
+        "forward_vector": {
+            "x": 0.259,
+            "y": 0.966,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": -0.966,
+            "y": 0.259,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": 0.966,
+            "y": -0.259,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath6interior2_F0016",
+        "x": 3744.8,
+        "y": -58.522,
+        "z": 976.819,
+        "pitch": 0.0,
+        "yaw": 79.6743,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath6interior2_F0016.png",
+        "facing_axis": "+Y",
+        "forward_vector": {
+            "x": 0.179,
+            "y": 0.984,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": -0.984,
+            "y": 0.179,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": 0.984,
+            "y": -0.179,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath6interior2_F0017",
+        "x": 3737.8,
+        "y": 84.44,
+        "z": 976.819,
+        "pitch": 0.0,
+        "yaw": 152.3871,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath6interior2_F0017.png",
+        "facing_axis": "-X",
+        "forward_vector": {
+            "x": -0.886,
+            "y": 0.463,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": -0.463,
+            "y": -0.886,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": 0.463,
+            "y": 0.886,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath6interior2_F0018",
+        "x": 3589.672,
+        "y": 76.732,
+        "z": 976.819,
+        "pitch": 0.0,
+        "yaw": -162.3267,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath6interior2_F0018.png",
+        "facing_axis": "-X",
+        "forward_vector": {
+            "x": -0.953,
+            "y": -0.304,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 0.304,
+            "y": -0.953,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -0.304,
+            "y": 0.953,
+            "z": 0.0
+        }
+    },
+    {
+        "id": "Bp_panoPath_interiorBP_panoPath6interior2_F0019",
+        "x": 3574.046,
+        "y": 12.082,
+        "z": 976.819,
+        "pitch": 0.0,
+        "yaw": -115.8045,
+        "roll": 0.0,
+        "frame": 0,
+        "image_filename": "LS_Bp_panoPath_interiorBP_panoPath6interior2_F0019.png",
+        "facing_axis": "-Y",
+        "forward_vector": {
+            "x": -0.435,
+            "y": -0.9,
+            "z": 0.0
+        },
+        "right_vector": {
+            "x": 0.9,
+            "y": -0.435,
+            "z": 0.0
+        },
+        "left_vector": {
+            "x": -0.9,
+            "y": 0.435,
+            "z": 0.0
+        }
+    }
+]

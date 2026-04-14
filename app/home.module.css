@@ -1,0 +1,330 @@
+/* ═══════════════════════════════════════════
+   Home Page — Award Winning Hero
+   ═══════════════════════════════════════════ */
+
+.heroSection {
+    position: relative;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    overflow: hidden;
+    background: transparent;
+    /* Ensure video shows through */
+}
+
+/* Subtle vignette overlay */
+.heroSection::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 70%,
+            transparent 0%,
+            rgba(0, 0, 0, 0.45) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.heroInner {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0 24px;
+    gap: 0;
+}
+
+/* ── Logo Row ── */
+.heroLogoContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 36px;
+    animation: fadeInDown 1s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+
+.heroLogo1,
+.heroLogo2 {
+    height: 52px;
+    width: auto;
+}
+
+.heroLogo1 svg,
+.heroLogo2 svg {
+    height: 100%;
+    width: auto;
+    filter: drop-shadow(0 2px 12px rgba(198, 164, 105, 0.3));
+}
+
+.heroLogoSpacer {
+    font-family: 'Cedarville Cursive', cursive;
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.65);
+    padding: 0 4px;
+}
+
+/* ── Main Title ── */
+.heroTitle {
+    margin: 0 0 48px;
+    text-align: center;
+    font-size: clamp(2.2rem, 5vw, 4rem);
+    font-weight: 200;
+    letter-spacing: 0.06em;
+    line-height: 1.15;
+    color: #fff;
+    text-shadow: 0 2px 40px rgba(0, 0, 0, 0.5);
+    animation: fadeInUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.6s both;
+}
+
+/* ── CTA Group ── */
+.heroButtonContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    animation: fadeInUp 1s cubic-bezier(0.22, 1, 0.36, 1) 1s both;
+}
+
+/* Small diamond icon above CTA */
+.amenityIconContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.amenityIconContainer img {
+    opacity: 0.6;
+    filter: invert(1);
+}
+
+/* Gold gradient CTA */
+.heroCtaButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 36px;
+    background: linear-gradient(135deg, #c6a469 0%, #a8843c 60%, #c6a469 100%);
+    background-size: 200% 100%;
+    color: #0a0a0c;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 220, 140, 0.4);
+    box-shadow: 0 6px 32px rgba(198, 164, 105, 0.35),
+        0 2px 8px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transition: transform 0.25s, box-shadow 0.25s, background-position 0.4s, filter 0.25s;
+    position: relative;
+    overflow: hidden;
+}
+
+.heroCtaButton::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+}
+
+.heroCtaButton:hover {
+    transform: translateY(-3px);
+    background-position: 100% 0;
+    box-shadow: 0 12px 48px rgba(198, 164, 105, 0.5),
+        0 4px 12px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    filter: brightness(1.08);
+}
+
+.heroCtaButton:hover::before {
+    transform: translateX(100%);
+}
+
+.heroCtaButton:active {
+    transform: translateY(0);
+}
+
+.heroCtaIcon {
+    display: flex;
+    align-items: center;
+    font-size: 1.1em;
+}
+
+/* ── Scroll Indicator ── */
+.desktopScroll {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.desktopScroll::before,
+.desktopScroll::after {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Pulsing dot at bottom */
+.heroSection::before {
+    content: '';
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    background: rgba(198, 164, 105, 0.7);
+    border-radius: 50%;
+    z-index: 2;
+    animation: pulse 2.5s ease-in-out 1.5s infinite;
+}
+
+/* ── Keyframes ── */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.4;
+        transform: translateX(-50%) scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) scale(1.6);
+    }
+}
+
+/* ── Mobile ── */
+@media (max-width: 600px) {
+    .heroTitle {
+        font-size: 2rem;
+        letter-spacing: 0.04em;
+    }
+
+    .heroCtaButton {
+        padding: 14px 28px;
+        font-size: 11px;
+    }
+
+    .heroLogo1,
+    .heroLogo2 {
+        height: 40px;
+    }
+}
+
+/* ── Award Winning Preloader ── */
+.awardLoader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #0b0b0d;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: loaderFadeOut 1s ease 2.8s forwards;
+    pointer-events: none;
+}
+
+.awardContent {
+    text-align: center;
+    color: #fff;
+    opacity: 0;
+    animation: contentFadeInUp 1.2s ease 0.3s forwards, contentFadeOut 0.8s ease 2.1s forwards;
+}
+
+.awardTitle {
+    font-size: 3rem;
+    font-weight: 300;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.awardSubtitle {
+    font-size: 1rem;
+    font-weight: 300;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #d4af37;
+    /* Elegant Gold */
+    margin-top: 1rem;
+}
+
+@keyframes contentFadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+        filter: blur(10px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+@keyframes contentFadeOut {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+        filter: blur(10px);
+    }
+}
+
+@keyframes loaderFadeOut {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        visibility: hidden;
+    }
+}

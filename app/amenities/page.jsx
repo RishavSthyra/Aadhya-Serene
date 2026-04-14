@@ -1,3 +1,7 @@
-export default function Page(){
-  return <main className="page"><h1>Amenities</h1><p>Native Next.js page scaffold in progress for pixel parity with original.</p></main>
+import Amenities from '../../components/Amenities';
+
+export const metadata = { title: 'Amenities | Aadhya Serene' };
+
+export default function Page() {
+  return <Amenities />;
 }

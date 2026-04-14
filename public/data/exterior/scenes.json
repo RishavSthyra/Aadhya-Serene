@@ -1,0 +1,255 @@
+[
+    {
+        "id": "0-ls_bp_panopath_exterior_f0022",
+        "title": "LS_BP_panoPath_Exterior_F0022",
+        "tilesPath": "/tiles/0-ls_bp_panopath_exterior_f0022",
+        "preview": "/tiles/0-ls_bp_panopath_exterior_f0022/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "1-ls_bp_panopath_exterior_f0021",
+        "title": "LS_BP_panoPath_Exterior_F0021",
+        "tilesPath": "/tiles/1-ls_bp_panopath_exterior_f0021",
+        "preview": "/tiles/1-ls_bp_panopath_exterior_f0021/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "2-ls_bp_panopath_exterior_f0020",
+        "title": "LS_BP_panoPath_Exterior_F0020",
+        "tilesPath": "/tiles/2-ls_bp_panopath_exterior_f0020",
+        "preview": "/tiles/2-ls_bp_panopath_exterior_f0020/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "3-ls_bp_panopath_exterior_f0019",
+        "title": "LS_BP_panoPath_Exterior_F0019",
+        "tilesPath": "/tiles/3-ls_bp_panopath_exterior_f0019",
+        "preview": "/tiles/3-ls_bp_panopath_exterior_f0019/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "4-ls_bp_panopath_exterior_f0018",
+        "title": "LS_BP_panoPath_Exterior_F0018",
+        "tilesPath": "/tiles/4-ls_bp_panopath_exterior_f0018",
+        "preview": "/tiles/4-ls_bp_panopath_exterior_f0018/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "5-ls_bp_panopath_exterior_f0017",
+        "title": "LS_BP_panoPath_Exterior_F0017",
+        "tilesPath": "/tiles/5-ls_bp_panopath_exterior_f0017",
+        "preview": "/tiles/5-ls_bp_panopath_exterior_f0017/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "6-ls_bp_panopath_exterior_f0016",
+        "title": "LS_BP_panoPath_Exterior_F0016",
+        "tilesPath": "/tiles/6-ls_bp_panopath_exterior_f0016",
+        "preview": "/tiles/6-ls_bp_panopath_exterior_f0016/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "7-ls_bp_panopath_exterior_f0015",
+        "title": "LS_BP_panoPath_Exterior_F0015",
+        "tilesPath": "/tiles/7-ls_bp_panopath_exterior_f0015",
+        "preview": "/tiles/7-ls_bp_panopath_exterior_f0015/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "8-ls_bp_panopath_exterior_f0014",
+        "title": "LS_BP_panoPath_Exterior_F0014",
+        "tilesPath": "/tiles/8-ls_bp_panopath_exterior_f0014",
+        "preview": "/tiles/8-ls_bp_panopath_exterior_f0014/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "9-ls_bp_panopath_exterior_f0013",
+        "title": "LS_BP_panoPath_Exterior_F0013",
+        "tilesPath": "/tiles/9-ls_bp_panopath_exterior_f0013",
+        "preview": "/tiles/9-ls_bp_panopath_exterior_f0013/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "10-ls_bp_panopath_exterior_f0012",
+        "title": "LS_BP_panoPath_Exterior_F0012",
+        "tilesPath": "/tiles/10-ls_bp_panopath_exterior_f0012",
+        "preview": "/tiles/10-ls_bp_panopath_exterior_f0012/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "11-ls_bp_panopath_exterior_f0011",
+        "title": "LS_BP_panoPath_Exterior_F0011",
+        "tilesPath": "/tiles/11-ls_bp_panopath_exterior_f0011",
+        "preview": "/tiles/11-ls_bp_panopath_exterior_f0011/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "12-ls_bp_panopath_exterior_f0010",
+        "title": "LS_BP_panoPath_Exterior_F0010",
+        "tilesPath": "/tiles/12-ls_bp_panopath_exterior_f0010",
+        "preview": "/tiles/12-ls_bp_panopath_exterior_f0010/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "13-ls_bp_panopath_exterior_f0009",
+        "title": "LS_BP_panoPath_Exterior_F0009",
+        "tilesPath": "/tiles/13-ls_bp_panopath_exterior_f0009",
+        "preview": "/tiles/13-ls_bp_panopath_exterior_f0009/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "14-ls_bp_panopath_exterior_f0008",
+        "title": "LS_BP_panoPath_Exterior_F0008",
+        "tilesPath": "/tiles/14-ls_bp_panopath_exterior_f0008",
+        "preview": "/tiles/14-ls_bp_panopath_exterior_f0008/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "15-ls_bp_panopath_exterior_f0007",
+        "title": "LS_BP_panoPath_Exterior_F0007",
+        "tilesPath": "/tiles/15-ls_bp_panopath_exterior_f0007",
+        "preview": "/tiles/15-ls_bp_panopath_exterior_f0007/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "16-ls_bp_panopath_exterior_f0006",
+        "title": "LS_BP_panoPath_Exterior_F0006",
+        "tilesPath": "/tiles/16-ls_bp_panopath_exterior_f0006",
+        "preview": "/tiles/16-ls_bp_panopath_exterior_f0006/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "17-ls_bp_panopath_exterior_f0005",
+        "title": "LS_BP_panoPath_Exterior_F0005",
+        "tilesPath": "/tiles/17-ls_bp_panopath_exterior_f0005",
+        "preview": "/tiles/17-ls_bp_panopath_exterior_f0005/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "18-ls_bp_panopath_exterior_f0004",
+        "title": "LS_BP_panoPath_Exterior_F0004",
+        "tilesPath": "/tiles/18-ls_bp_panopath_exterior_f0004",
+        "preview": "/tiles/18-ls_bp_panopath_exterior_f0004/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "19-ls_bp_panopath_exterior_f0003",
+        "title": "LS_BP_panoPath_Exterior_F0003",
+        "tilesPath": "/tiles/19-ls_bp_panopath_exterior_f0003",
+        "preview": "/tiles/19-ls_bp_panopath_exterior_f0003/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "20-ls_bp_panopath_exterior_f0002",
+        "title": "LS_BP_panoPath_Exterior_F0002",
+        "tilesPath": "/tiles/20-ls_bp_panopath_exterior_f0002",
+        "preview": "/tiles/20-ls_bp_panopath_exterior_f0002/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "21-ls_bp_panopath_exterior_f0001",
+        "title": "LS_BP_panoPath_Exterior_F0001",
+        "tilesPath": "/tiles/21-ls_bp_panopath_exterior_f0001",
+        "preview": "/tiles/21-ls_bp_panopath_exterior_f0001/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    },
+    {
+        "id": "22-ls_bp_panopath_exterior_f0000",
+        "title": "LS_BP_panoPath_Exterior_F0000",
+        "tilesPath": "/tiles/22-ls_bp_panopath_exterior_f0000",
+        "preview": "/tiles/22-ls_bp_panopath_exterior_f0000/preview.jpg",
+        "initialView": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "fov": 1.5707963267948966
+        }
+    }
+]

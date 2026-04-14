@@ -1,0 +1,6 @@
+https://du67w5n77drxm.cloudfront.net/videos/${O}/${Q()}/${V}-av1.webm
+https://du67w5n77drxm.cloudfront.net/videos/${O}/${Q()}/${V}-vp9.webm
+https://du67w5n77drxm.cloudfront.net/videos/${O}/${Q()}/${V}-h264.mp4
+https://du67w5n77drxm.cloudfront.net/videos/${D}/${Q()}/${H}-av1.webm
+https://du67w5n77drxm.cloudfront.net/videos/${D}/${Q()}/${H}-vp9.webm
+https://du67w5n77drxm.cloudfront.net/videos/${D}/${Q()}/${H}-h264.mp4
