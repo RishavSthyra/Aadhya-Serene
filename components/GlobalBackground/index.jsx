@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import BackgroundVideo from '../BackgroundVideo';
 import {
+    consumeSkipNextApartmentsReplay,
     isBackgroundTransitionActive,
     setBackgroundTransitionState,
 } from '@/lib/background-transition';
@@ -27,10 +28,18 @@ export default function GlobalBackground() {
 
         const didPathChange = pathname !== prevPathname.current;
         const isEnteringApartmentsPage = pathname === '/apartments' && didPathChange;
+        const shouldSkipApartmentsReplay = isEnteringApartmentsPage
+            ? consumeSkipNextApartmentsReplay()
+            : false;
 
-        if (isEnteringApartmentsPage && newLayout === layout) {
+        if (isEnteringApartmentsPage && newLayout === layout && !shouldSkipApartmentsReplay) {
             setBackgroundTransitionState('apartments', true);
             setReplayKey((current) => current + 1);
+        }
+
+        if (isEnteringApartmentsPage && shouldSkipApartmentsReplay) {
+            setBackgroundTransitionState('apartments', false);
+            window.dispatchEvent(new CustomEvent('bg-transition-ended'));
         }
 
         // We just navigated to a new route, but the layout didn't fundamentally change

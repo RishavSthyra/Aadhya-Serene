@@ -37,3 +37,16 @@
 .mediaRoot[data-layout="apartments"] {
     height: 100vh;
 }
+
+@media (max-width: 1279px) {
+    .mediaRoot[data-layout="apartments"] {
+        top: 0;
+        right: auto;
+        bottom: auto;
+        left: 50%;
+        width: min(100vw, 85.333333dvh);
+        height: min(56.25vw, 48dvh);
+        overflow: hidden;
+        transform: translateX(-50%) translateZ(0);
+    }
+}

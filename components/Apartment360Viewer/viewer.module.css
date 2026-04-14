@@ -34,6 +34,53 @@
     /* Let drag events pass through to viewerContainer */
 }
 
+.hotspotControls {
+    position: fixed;
+    top: 104px;
+    left: 50%;
+    z-index: 135;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px;
+    border-radius: 999px;
+    background: rgba(244, 244, 238, 0.64);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.52);
+    backdrop-filter: blur(20px) saturate(1.18);
+    transform: translateX(-50%);
+}
+
+.hotspotButton {
+    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.58);
+    color: rgba(18, 20, 22, 0.78);
+    cursor: pointer;
+    transition: transform 180ms ease, background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.hotspotButton:hover {
+    background: rgba(255, 255, 255, 0.84);
+    color: rgba(12, 14, 16, 0.92);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+    transform: translateY(-1px);
+}
+
+.hotspotButton:active {
+    transform: translateY(0) scale(0.97);
+}
+
+.hotspotButton svg {
+    width: 19px;
+    height: 19px;
+    fill: currentColor;
+}
+
 .instruction {
     position: absolute;
     bottom: 26px;
@@ -50,17 +97,49 @@
 }
 
 @media (max-width: 1279px) {
+    .viewerContainer {
+        height: 100%;
+        min-height: 100%;
+    }
+
     .instruction {
-        bottom: 118px;
+        bottom: 14px;
         max-width: calc(100vw - 32px);
         text-align: center;
         font-size: 13px;
     }
+
+    .hotspotControls {
+        position: absolute;
+        top: auto;
+        bottom: 14px;
+        padding: 5px;
+        gap: 6px;
+    }
+
+    .hotspotButton {
+        width: 38px;
+        height: 38px;
+    }
+
+    .hotspotButton svg {
+        width: 18px;
+        height: 18px;
+    }
 }
 
 @media (max-width: 767px) {
+    .hotspotControls {
+        bottom: 10px;
+    }
+
+    .hotspotButton {
+        width: 36px;
+        height: 36px;
+    }
+
     .instruction {
-        bottom: 110px;
+        bottom: 10px;
         padding: 7px 14px;
         border-radius: 18px;
         font-size: 12px;

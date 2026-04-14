@@ -37,6 +37,7 @@ import {
     preloadInteriorStartPano,
     INTERIOR_START_PREVIEW_URL,
 } from '../../../lib/interior-panos';
+import { skipNextApartmentsReplay } from '../../../lib/background-transition';
 
 const WHATSAPP_URL = 'https://wa.me/919620993333?text=Hi!%20I%20want%20to%20know%20more%20about%20flat%20';
 
@@ -133,6 +134,7 @@ export default function FlatDetailPage() {
 
     const finalizeBackNavigation = useCallback(() => {
         clearReverseFallbackTimeout();
+        skipNextApartmentsReplay();
         router.push('/apartments');
     }, [clearReverseFallbackTimeout, router]);
 

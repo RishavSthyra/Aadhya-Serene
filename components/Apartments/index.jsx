@@ -6,8 +6,6 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
-  ListFilter,
-  SlidersHorizontal,
 } from "lucide-react";
 import { useApartmentsData } from "../../hooks/useApartmentsData";
 import Filters from "./Filters";
@@ -19,9 +17,9 @@ import { isBackgroundTransitionActive } from "../../lib/background-transition";
 
 const DESKTOP_PANEL_WIDTH = 392;
 const COMPACT_BREAKPOINT = 1280;
-const MOBILE_BREAKPOINT = 768;
 const COMPACT_PEEK_HEIGHT = 92;
-const COMPACT_OPEN_HEIGHT = "min(72dvh, 760px)";
+const COMPACT_MEDIA_HEIGHT = "min(56.25vw, 48dvh)";
+const COMPACT_MEDIA_WIDTH = "min(100vw, 85.333333dvh)";
 
 export default function Apartments() {
   const {
@@ -41,7 +39,6 @@ export default function Apartments() {
 
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [isCompactLayout, setIsCompactLayout] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState("filters");
   const [isVideoPlaying, setIsVideoPlaying] = useState(() => isBackgroundTransitionActive("apartments"));
   const [viewerVersion, setViewerVersion] = useState(0);
@@ -88,10 +85,8 @@ export default function Apartments() {
     const handleResize = () => {
       const width = window.innerWidth;
       const nextCompact = width < COMPACT_BREAKPOINT;
-      const nextMobile = width < MOBILE_BREAKPOINT;
 
       setIsCompactLayout(nextCompact);
-      setIsMobile(nextMobile);
       setIsPanelOpen((current) => (nextCompact ? current : true));
     };
 
@@ -201,15 +196,19 @@ export default function Apartments() {
           aria-label="Close apartments panel backdrop"
           onClick={() => setIsPanelOpen(false)}
           className="fixed inset-0 z-[109] bg-black/30 backdrop-blur-[2px] xl:hidden"
+          style={{
+            top: COMPACT_MEDIA_HEIGHT,
+          }}
         />
       ) : null}
 
       <div
         className="fixed inset-x-0 bottom-0 z-[120] xl:hidden"
         style={{
+          top: COMPACT_MEDIA_HEIGHT,
           opacity: isVideoPlaying ? 0 : 1,
           pointerEvents: isVideoPlaying ? "none" : "auto",
-          height: COMPACT_OPEN_HEIGHT,
+          height: "auto",
           transform: isPanelOpen
             ? "translateY(0)"
             : `translateY(calc(100% - ${COMPACT_PEEK_HEIGHT}px))`,
@@ -308,20 +307,6 @@ export default function Apartments() {
           </div>
         </aside>
       </div>
-
-      {!isPanelOpen ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[130] flex justify-center xl:hidden">
-          <button
-            type="button"
-            onClick={() => setIsPanelOpen(true)}
-            className="pointer-events-auto inline-flex min-h-12 items-center gap-3 rounded-full border border-white/14 bg-[#0f1218]/92 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/84 shadow-[0_16px_42px_rgba(0,0,0,0.35)] backdrop-blur-[16px]"
-          >
-            {activeTab === "filters" ? <ListFilter size={16} /> : <SlidersHorizontal size={16} />}
-            <span>{isMobile ? "Open panel" : "Open apartments panel"}</span>
-            <ChevronUp size={16} />
-          </button>
-        </div>
-      ) : null}
     </>
   );
 
@@ -333,8 +318,17 @@ export default function Apartments() {
       }}
     >
       <div
-        className="absolute inset-0 z-0"
+        className="absolute z-0"
         style={{
+          top: 0,
+          right: isCompactLayout ? "auto" : 0,
+          bottom: isCompactLayout ? "auto" : 0,
+          left: isCompactLayout ? "50%" : 0,
+          width: isCompactLayout ? COMPACT_MEDIA_WIDTH : "auto",
+          height: isCompactLayout ? COMPACT_MEDIA_HEIGHT : "auto",
+          transform: isCompactLayout ? "translateX(-50%)" : "none",
+          overflow: "hidden",
+          backgroundColor: "#050608",
           opacity: isVideoPlaying ? 0 : 1,
           transition: "opacity 0.28s ease",
           pointerEvents: isVideoPlaying ? "none" : "auto",

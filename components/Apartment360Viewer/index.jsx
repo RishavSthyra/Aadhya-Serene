@@ -8,10 +8,11 @@ import styles from './viewer.module.css';
 const TOTAL_FRAMES = 360;
 const SNAP_POINTS = [1, 90, 180, 270, 360];
 const ROT360_CDN_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360';
-const DRAG_FRAME_STEP = 2;
-const PRELOAD_RADIUS = 5;
-const PRELOAD_CONCURRENCY = 4;
-const MAX_CACHE_SIZE = 18;
+const DRAG_FRAME_STEP = 1;
+const PRELOAD_RADIUS = 14;
+const PRELOAD_CONCURRENCY = 8;
+const MAX_CACHE_SIZE = 72;
+const DRAG_SENSITIVITY = 0.36;
 
 function getFrameUrl(frameNumber) {
     return `${ROT360_CDN_BASE}/frame_${String(frameNumber).padStart(4, '0')}.avif`;
@@ -56,7 +57,12 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     const [isSettled, setIsSettled] = useState(true);
 
     const frameMotion = useMotionValue(1);
-    const smoothFrame = useSpring(frameMotion, { stiffness: 100, damping: 20 });
+    const smoothFrame = useSpring(frameMotion, {
+        stiffness: 82,
+        damping: 28,
+        mass: 0.72,
+        restDelta: 0.18,
+    });
 
     const canvasRef = useRef(null);
     const mountedRef = useRef(false);
@@ -345,13 +351,11 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     const handlePointerMove = (e) => {
         if (!isDragging.current) return;
         const deltaX = e.clientX - startX.current;
-        frameMotion.set(lastFrame.current - deltaX * 0.5);
+        frameMotion.set(lastFrame.current - deltaX * DRAG_SENSITIVITY);
     };
 
-    const handlePointerUp = () => {
-        if (!isDragging.current) return;
-        isDragging.current = false;
-        let finalFrame = frameMotion.get();
+    const settleToClosestHotspot = useCallback((sourceFrame) => {
+        let finalFrame = sourceFrame;
         let normalized = finalFrame % TOTAL_FRAMES;
         if (normalized <= 0) normalized += TOTAL_FRAMES;
         let closestDist = Infinity;
@@ -373,6 +377,50 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
         const snapTarget = finalFrame + diff;
         targetFrameRef.current = snapTarget;
         frameMotion.set(snapTarget);
+    }, [frameMotion]);
+
+    const moveToHotspot = useCallback((direction) => {
+        const rawFrame = frameMotion.get();
+        const normalizedFrame = normalizeFrame(rawFrame);
+        const orderedPoints = SNAP_POINTS.slice(0, -1);
+        const currentIndex = orderedPoints.findIndex((point) => {
+            const distance = Math.min(
+                Math.abs(normalizedFrame - point),
+                Math.abs(normalizedFrame - (point + TOTAL_FRAMES)),
+                Math.abs(normalizedFrame - (point - TOTAL_FRAMES)),
+            );
+
+            return distance <= 3;
+        });
+
+        let nextPoint;
+
+        if (currentIndex >= 0) {
+            nextPoint = orderedPoints[
+                (currentIndex + direction + orderedPoints.length) % orderedPoints.length
+            ];
+        } else if (direction > 0) {
+            nextPoint = orderedPoints.find((point) => point > normalizedFrame) ?? orderedPoints[0];
+        } else {
+            nextPoint = [...orderedPoints].reverse().find((point) => point < normalizedFrame)
+                ?? orderedPoints[orderedPoints.length - 1];
+        }
+
+        let diff = nextPoint - normalizedFrame;
+        if (diff > 180) diff -= 360;
+        if (diff < -180) diff += 360;
+
+        isDragging.current = false;
+        setIsSettled(false);
+        preloadAroundFrame(nextPoint);
+        targetFrameRef.current = rawFrame + diff;
+        frameMotion.set(targetFrameRef.current);
+    }, [frameMotion, preloadAroundFrame]);
+
+    const handlePointerUp = () => {
+        if (!isDragging.current) return;
+        isDragging.current = false;
+        settleToClosestHotspot(frameMotion.get());
     };
 
     useEffect(() => {
@@ -432,6 +480,35 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
             <canvas ref={canvasRef} className={styles.backgroundCanvas} />
 
             <div
+                className={styles.hotspotControls}
+                aria-label="Apartment view controls"
+                onPointerDown={(event) => event.stopPropagation()}
+                onPointerMove={(event) => event.stopPropagation()}
+                onPointerUp={(event) => event.stopPropagation()}
+            >
+                <button
+                    type="button"
+                    className={styles.hotspotButton}
+                    onClick={() => moveToHotspot(-1)}
+                    aria-label="Previous apartment view"
+                >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M14.6 6.4 9 12l5.6 5.6-1.4 1.4L6.2 12l7-7z" />
+                    </svg>
+                </button>
+                <button
+                    type="button"
+                    className={styles.hotspotButton}
+                    onClick={() => moveToHotspot(1)}
+                    aria-label="Next apartment view"
+                >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m9.4 17.6 5.6-5.6-5.6-5.6L10.8 5l7 7-7 7z" />
+                    </svg>
+                </button>
+            </div>
+
+            <div
                 className={styles.canvasOverlay}
                 style={{
                     opacity: isSettled ? 1 : 0,
@@ -445,10 +522,6 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
                     onFlatClick={onFlatClick}
                     onFlatHoverStart={onFlatHoverStart}
                 />
-            </div>
-
-            <div className={styles.instruction}>
-                Drag to rotate · Click a flat to explore
             </div>
 
         </div>
