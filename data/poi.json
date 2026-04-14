@@ -178,17 +178,7 @@
     "rating": 4.5,
     "image": "/kidztopia.webp"
   },
-  {
-    "id": 117,
-    "name": "Book Factory Thanisandra Bus stop",
-    "category": "bus_stop",
-    "lng": 77.63353848324068,
-    "lat": 13.061972824239696, 
-    "distanceLabel": "0.1 km",
-    "timeLabel": "1 min",
-    "rating": 3.4,
-    "image": "/assets/bookfactory.jpg"
-  },
+
   {
     "id": 118,
     "name": "K Narayanapura Cross",
