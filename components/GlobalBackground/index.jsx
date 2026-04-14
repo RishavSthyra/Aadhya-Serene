@@ -7,7 +7,7 @@ import BackgroundVideo from '../BackgroundVideo';
 export default function GlobalBackground() {
     const pathname = usePathname();
     const [layout, setLayout] = useState('home');
-    const [playing, setPlaying] = useState(pathname !== '/');
+    const [playing, setPlaying] = useState(true);
     const prevPathname = useRef(pathname);
 
     useEffect(() => {
@@ -29,10 +29,9 @@ export default function GlobalBackground() {
         prevPathname.current = pathname;
         setLayout(newLayout);
 
-        // Turn playing ON immediately if we left home
-        if (pathname !== '/') {
-            setPlaying(true);
-        }
+        // Keep the global background actively playing across routes unless
+        // a page explicitly pauses it.
+        setPlaying(true);
     }, [pathname]); // <-- IMPORTANT: 'layout' removed to prevent overwriting custom events
 
     useEffect(() => {

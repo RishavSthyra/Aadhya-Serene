@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const CDN = 'https://du67w5n77drxm.cloudfront.net';
@@ -306,13 +305,14 @@ export default function About() {
 
                     <div className="h-px w-full bg-gradient-to-r from-transparent via-[#dec693]/45 to-transparent" />
 
-                    <Link
-                        href="/apartments"
+                    <button
+                        type="button"
+                        onClick={() => navigateTo('/apartments')}
                         className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[#dbc08a] to-[#b69456] px-5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#111214] shadow-[0_12px_28px_rgba(180,140,67,0.24),inset_0_1px_0_rgba(255,255,255,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:brightness-[1.03]"
                     >
                         <span>Explore Apartments</span>
                         <ChevronRight />
-                    </Link>
+                    </button>
 
                     <p className="m-0 text-center text-[10px] leading-[1.7] text-white/42">
                         The images and walkthroughs shown are artistic representations

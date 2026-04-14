@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -174,6 +174,7 @@ const megaItemVariants = {
 
 export default function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
   const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
   const [openMenu, setOpenMenu] = useState(null);
   const [amenitiesCarouselIndex, setAmenitiesCarouselIndex] = useState(0);
@@ -239,6 +240,28 @@ export default function Nav() {
     setAmenitiesCarouselIndex((current) =>
       Math.min(maxAmenitiesStartIndex, current + 1)
     );
+  };
+
+  const navigateWithTransition = (href, layoutKey) => {
+    if (pathname === href) return;
+
+    window.dispatchEvent(new CustomEvent("bg-layout", { detail: layoutKey }));
+
+    const containerId =
+      pathname === "/" ? "home-inner" : pathname.startsWith("/about") ? "about-container" : null;
+    const container = containerId ? document.getElementById(containerId) : null;
+
+    if (container) {
+      container.style.opacity = "0";
+      container.style.transition = "opacity 0.6s ease";
+    } else {
+      document.body.style.opacity = "0";
+      document.body.style.transition = "opacity 0.6s ease";
+    }
+
+    window.setTimeout(() => {
+      router.push(href);
+    }, 600);
   };
 
   if (isInteriorPanosRoute) {
@@ -316,6 +339,17 @@ export default function Nav() {
                   <Link
                     key={href}
                     href={href}
+                    onClick={(event) => {
+                      if (href === "/about" && pathname === "/") {
+                        event.preventDefault();
+                        navigateWithTransition("/about", "about");
+                      }
+
+                      if (href === "/apartments" && pathname.startsWith("/about")) {
+                        event.preventDefault();
+                        navigateWithTransition("/apartments", "apartments");
+                      }
+                    }}
                     className={`relative pb-1 text-sm transition ${
                       active
                         ? "text-[#f3d056]"
