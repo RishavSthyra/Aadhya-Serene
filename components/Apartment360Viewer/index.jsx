@@ -67,6 +67,8 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     const canvasRef = useRef(null);
     const mountedRef = useRef(false);
     const isDragging = useRef(false);
+    const didDragRef = useRef(false);
+    const suppressFlatClickUntilRef = useRef(0);
     const startX = useRef(0);
     const lastFrame = useRef(1);
     const targetFrameRef = useRef(1);
@@ -342,6 +344,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
 
     const handlePointerDown = (e) => {
         isDragging.current = true;
+        didDragRef.current = false;
         setIsSettled(false);
         startX.current = e.clientX;
         lastFrame.current = smoothFrame.get();
@@ -351,6 +354,9 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     const handlePointerMove = (e) => {
         if (!isDragging.current) return;
         const deltaX = e.clientX - startX.current;
+        if (Math.abs(deltaX) > 6) {
+            didDragRef.current = true;
+        }
         frameMotion.set(lastFrame.current - deltaX * DRAG_SENSITIVITY);
     };
 
@@ -420,8 +426,15 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     const handlePointerUp = () => {
         if (!isDragging.current) return;
         isDragging.current = false;
+        if (didDragRef.current) {
+            suppressFlatClickUntilRef.current = Date.now() + 550;
+        }
         settleToClosestHotspot(frameMotion.get());
     };
+
+    const shouldAllowFlatClick = useCallback(() => {
+        return !isDragging.current && Date.now() >= suppressFlatClickUntilRef.current;
+    }, []);
 
     useEffect(() => {
         const normalizedFrame = normalizeFrame(currentFrame);
@@ -521,6 +534,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
                     filteredFlatIds={filteredFlatIds}
                     onFlatClick={onFlatClick}
                     onFlatHoverStart={onFlatHoverStart}
+                    shouldAllowFlatClick={shouldAllowFlatClick}
                 />
             </div>
 

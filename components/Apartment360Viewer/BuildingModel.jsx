@@ -125,7 +125,7 @@ function getMeshWorldCenter(mesh) {
     return center;
 }
 
-function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHoverStart, onFlatClick }) {
+function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHoverStart, onFlatClick, shouldAllowFlatClick }) {
     const { scene: sourceScene } = useGLTF('/assets/building.glb');
     const scene = useMemo(() => sourceScene.clone(true), [sourceScene]);
     const { size, gl, camera } = useThree();
@@ -495,6 +495,12 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
         };
 
         const handleCanvasClick = (event) => {
+            if (shouldAllowFlatClick && !shouldAllowFlatClick()) {
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+            }
+
             const rect = canvasElement.getBoundingClientRect();
             pointerRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             pointerRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -524,7 +530,7 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
             canvasElement.removeEventListener('click', handleCanvasClick);
             window.removeEventListener('blur', clearHover);
         };
-    }, [camera, gl, isFlatHoverable, onFlatClick, setHoveredFlat]);
+    }, [camera, gl, isFlatHoverable, onFlatClick, setHoveredFlat, shouldAllowFlatClick]);
 
     let position = new THREE.Vector3();
     let quaternion = new THREE.Quaternion();
@@ -607,7 +613,7 @@ function FlatTooltip({ flatId, x, y }) {
     );
 }
 
-export default function BuildingModel({ currentFrame, filteredFlatIds, onFlatClick, onFlatHoverStart }) {
+export default function BuildingModel({ currentFrame, filteredFlatIds, onFlatClick, onFlatHoverStart, shouldAllowFlatClick }) {
     const [tooltip, setTooltip] = useState({ flatId: null, x: 0, y: 0 });
 
     const handleFlatHover = useCallback((flatId, x, y) => {
@@ -627,6 +633,7 @@ export default function BuildingModel({ currentFrame, filteredFlatIds, onFlatCli
                     onFlatHover={handleFlatHover}
                     onFlatHoverStart={onFlatHoverStart}
                     onFlatClick={onFlatClick}
+                    shouldAllowFlatClick={shouldAllowFlatClick}
                 />
             </Canvas>
             <FlatTooltip {...tooltip} />

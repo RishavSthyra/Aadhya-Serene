@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { setBackgroundTransitionState } from '@/lib/background-transition';
 import styles from './background-video.module.css';
 
@@ -12,6 +12,15 @@ const ABOUT_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-1-Av1.
 const ABOUT_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-2-av1.mp4';
 const APARTMENTS_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-1-av1.mp4';
 const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
+
+const MOBILE_VIDEO_FALLBACKS = {
+    [HOME_TRANSITION]: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/1-1-h264.mp4',
+    [HOME_LOOP]: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/1-2-h264.mp4',
+    [ABOUT_TRANSITION]: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-1-h264.mp4',
+    [ABOUT_LOOP]: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-2-h264.mp4',
+    [APARTMENTS_TRANSITION]: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-1-h264.mp4',
+    [APARTMENTS_LOOP]: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-h264.mp4',
+};
 
 const APARTMENTS_LOOP_HOLD_MS = 1000;
 
@@ -69,9 +78,102 @@ const DEFAULT_CONFIG = { transition: HOME_TRANSITION, loop: HOME_LOOP };
 export default function BackgroundVideo({ layout = 'home', playing = true, replayKey = 0 }) {
     const transitionRef = useRef(null);
     const loopRef = useRef(null);
+    const transitionSourceIndexRef = useRef(0);
+    const loopSourceIndexRef = useRef(0);
     const [showLoop, setShowLoop] = useState(false);
+    const [shouldConserveData, setShouldConserveData] = useState(false);
 
     const config = LAYOUT_CONFIG[layout] ?? DEFAULT_CONFIG;
+    const preloadMode = shouldConserveData ? 'metadata' : 'auto';
+    const shouldEagerlyPrepareLoop = !shouldConserveData;
+    const shouldHideBackground = layout === 'location';
+
+    useEffect(() => {
+        if (!shouldHideBackground) return;
+
+        setShowLoop(false);
+        setBackgroundTransitionState(layout, false);
+        window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+    }, [layout, shouldHideBackground]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return undefined;
+
+        const mobileMedia = window.matchMedia('(max-width: 767px), (pointer: coarse)');
+        const reducedMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+        const updatePreference = () => {
+            setShouldConserveData(mobileMedia.matches || reducedMotionMedia.matches);
+        };
+
+        updatePreference();
+        mobileMedia.addEventListener('change', updatePreference);
+        reducedMotionMedia.addEventListener('change', updatePreference);
+
+        return () => {
+            mobileMedia.removeEventListener('change', updatePreference);
+            reducedMotionMedia.removeEventListener('change', updatePreference);
+        };
+    }, []);
+
+    const getSourceCandidates = useCallback((source) => {
+        if (!source) return [];
+
+        const sources = [];
+        if (shouldConserveData && MOBILE_VIDEO_FALLBACKS[source]) {
+            sources.push(MOBILE_VIDEO_FALLBACKS[source]);
+        }
+
+        sources.push(source);
+
+        return [...new Set(sources)];
+    }, [shouldConserveData]);
+
+    const transitionSources = useMemo(
+        () => getSourceCandidates(config.transition),
+        [config.transition, getSourceCandidates],
+    );
+
+    const loopSources = useMemo(
+        () => getSourceCandidates(config.loop),
+        [config.loop, getSourceCandidates],
+    );
+
+    const loadVideoCandidate = useCallback((video, sources, index, options = {}) => {
+        const { shouldLoop = false, preload = 'auto' } = options;
+        const source = sources[index];
+
+        if (!video || !source) {
+            return false;
+        }
+
+        video.pause();
+        video.src = source;
+        video.loop = shouldLoop;
+        video.preload = preload;
+        video.load();
+
+        return true;
+    }, []);
+
+    const loadTransitionCandidate = useCallback((index = 0) => {
+        const transitionVideo = transitionRef.current;
+        transitionSourceIndexRef.current = index;
+
+        return loadVideoCandidate(transitionVideo, transitionSources, index, {
+            preload: preloadMode,
+        });
+    }, [loadVideoCandidate, preloadMode, transitionSources]);
+
+    const loadLoopCandidate = useCallback((index = 0) => {
+        const loopVideo = loopRef.current;
+        loopSourceIndexRef.current = index;
+
+        return loadVideoCandidate(loopVideo, loopSources, index, {
+            shouldLoop: true,
+            preload: preloadMode,
+        });
+    }, [loadVideoCandidate, loopSources, preloadMode]);
 
     useEffect(() => {
         const transitionVideo = transitionRef.current;
@@ -86,12 +188,8 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         const prepareLoopVideo = () => {
             if (cancelled) return;
 
-            if (config.loop) {
-                loopVideo.pause();
-                loopVideo.src = config.loop;
-                loopVideo.loop = true;
-                loopVideo.preload = 'auto';
-                loopVideo.load();
+            if (loopSources.length > 0) {
+                loadLoopCandidate(0);
             } else {
                 loopVideo.pause();
                 loopVideo.removeAttribute('src');
@@ -111,28 +209,47 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 transitionVideo.play().catch(() => { });
             }
 
-            firstLoopPrepareFrame = requestAnimationFrame(() => {
-                firstLoopPrepareFrame = null;
-                secondLoopPrepareFrame = requestAnimationFrame(() => {
-                    secondLoopPrepareFrame = null;
-                    prepareLoopVideo();
+            if (shouldEagerlyPrepareLoop) {
+                firstLoopPrepareFrame = requestAnimationFrame(() => {
+                    firstLoopPrepareFrame = null;
+                    secondLoopPrepareFrame = requestAnimationFrame(() => {
+                        secondLoopPrepareFrame = null;
+                        prepareLoopVideo();
+                    });
                 });
-            });
+            }
         };
 
         setBackgroundTransitionState(layout, true);
-        transitionVideo.pause();
-        transitionVideo.src = config.transition;
-        transitionVideo.loop = false;
-        transitionVideo.preload = 'auto';
+        transitionSourceIndexRef.current = 0;
+        loopSourceIndexRef.current = 0;
+        loopVideo.pause();
+        loopVideo.removeAttribute('src');
+        loopVideo.load();
+
+        if (!loadTransitionCandidate(0)) {
+            setBackgroundTransitionState(layout, false);
+            window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+            return undefined;
+        }
 
         const handleTransitionReady = () => {
             transitionVideo.removeEventListener('loadeddata', handleTransitionReady);
             startTransition();
         };
 
+        const handleTransitionError = () => {
+            const nextIndex = transitionSourceIndexRef.current + 1;
+            if (nextIndex < transitionSources.length && loadTransitionCandidate(nextIndex)) {
+                return;
+            }
+
+            setBackgroundTransitionState(layout, false);
+            window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+        };
+
         transitionVideo.addEventListener('loadeddata', handleTransitionReady);
-        transitionVideo.load();
+        transitionVideo.addEventListener('error', handleTransitionError);
 
         if (transitionVideo.readyState >= 2) {
             startTransition();
@@ -147,8 +264,18 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 cancelAnimationFrame(secondLoopPrepareFrame);
             }
             transitionVideo.removeEventListener('loadeddata', handleTransitionReady);
+            transitionVideo.removeEventListener('error', handleTransitionError);
         };
-    }, [config.loop, config.transition, layout, playing, replayKey]);
+    }, [
+        layout,
+        loadLoopCandidate,
+        loadTransitionCandidate,
+        loopSources.length,
+        playing,
+        replayKey,
+        shouldEagerlyPrepareLoop,
+        transitionSources.length,
+    ]);
 
     useEffect(() => {
         const transitionVideo = transitionRef.current;
@@ -170,7 +297,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         const loopVideo = loopRef.current;
         if (!transitionVideo) return;
 
-        if (!loopVideo || !config.loop) {
+        if (!loopVideo || loopSources.length === 0) {
             setBackgroundTransitionState(layout, false);
             window.dispatchEvent(new CustomEvent('bg-transition-ended'));
             return;
@@ -203,25 +330,57 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             });
         };
 
-        loopVideo.currentTime = 0;
-        loopVideo.addEventListener('playing', revealLoop);
+        const startLoopPlayback = () => {
+            loopVideo.currentTime = 0;
+            loopVideo.addEventListener('playing', revealLoop);
 
-        loopVideo.play().then(() => {
+            loopVideo.play().then(() => {
+                if (loopVideo.readyState >= 2) {
+                    revealLoop();
+                }
+            }).catch(() => {
+                if (holdTimer !== null) {
+                    window.clearTimeout(holdTimer);
+                }
+                loopVideo.removeEventListener('playing', revealLoop);
+                setBackgroundTransitionState(layout, false);
+                window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+            });
+        };
+
+        if (!loopVideo.getAttribute('src')) {
+            const handleLoopReady = () => {
+                startLoopPlayback();
+            };
+
+            loopVideo.addEventListener('loadeddata', handleLoopReady, { once: true });
+
+            if (!loadLoopCandidate(0)) {
+                setBackgroundTransitionState(layout, false);
+                window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+                return;
+            }
+
             if (loopVideo.readyState >= 2) {
-                revealLoop();
+                loopVideo.removeEventListener('loadeddata', handleLoopReady);
+                startLoopPlayback();
             }
-        }).catch(() => {
-            if (holdTimer !== null) {
-                window.clearTimeout(holdTimer);
-            }
-            loopVideo.removeEventListener('playing', revealLoop);
-            setBackgroundTransitionState(layout, false);
-            window.dispatchEvent(new CustomEvent('bg-transition-ended'));
-        });
+
+            return;
+        }
+
+        startLoopPlayback();
     };
 
     const handleLoopError = () => {
         const transitionVideo = transitionRef.current;
+        const loopVideo = loopRef.current;
+        const nextIndex = loopSourceIndexRef.current + 1;
+
+        if (loopVideo && nextIndex < loopSources.length && loadLoopCandidate(nextIndex)) {
+            return;
+        }
+
         if (!transitionVideo) return;
 
         transitionVideo.loop = true;
@@ -230,6 +389,10 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         setBackgroundTransitionState(layout, false);
         window.dispatchEvent(new CustomEvent('bg-transition-ended'));
     };
+
+    if (shouldHideBackground) {
+        return null;
+    }
 
     return (
         <div className={styles.mediaRoot} data-layout={layout}>
@@ -245,7 +408,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 muted
                 playsInline
                 autoPlay
-                preload="auto"
+                preload={preloadMode}
                 onEnded={handleTransitionEnded}
             />
             <video
@@ -259,7 +422,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 muted
                 playsInline
                 loop
-                preload="auto"
+                preload={preloadMode}
                 onError={handleLoopError}
             />
         </div>

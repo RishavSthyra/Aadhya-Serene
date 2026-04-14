@@ -373,6 +373,7 @@ export default function FlatDetailPage() {
     const loopVideoSrc = hasFlatSpecificVideo ? flatVideoSrc(fallbackId, 2) : null;
     const reverseVideoSrc = hasFlatSpecificVideo ? flatReverseVideoSrc(fallbackId) : null;
     const bhkValue = Number.parseInt(flat.type, 10);
+    const shouldShowDetailPanels = !hasFlatSpecificVideo || videoPhase === 'loop';
     const interiorPanosHref = buildInteriorPanosHref({
         apartmentId: flat.id,
         flatNumber: flat.flat,
@@ -438,7 +439,13 @@ export default function FlatDetailPage() {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(220,194,124,0.14),transparent_34%),linear-gradient(90deg,rgba(7,9,14,0.8)_0%,rgba(7,9,14,0.34)_42%,rgba(7,9,14,0.68)_100%)]" />
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,14,0.72)_0%,rgba(7,9,14,0.18)_28%,rgba(7,9,14,0.62)_100%)]" />
 
-            <div className={`relative z-10 min-h-screen px-3 pb-24 pt-4 transition-opacity duration-300 sm:px-5 lg:px-6 lg:pb-28 lg:pt-6 2xl:px-8 ${isExitTransitionActive ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
+            <div
+                className={`relative z-10 min-h-screen px-3 pb-24 pt-4 transition-opacity duration-500 sm:px-5 lg:px-6 lg:pb-28 lg:pt-6 2xl:px-8 ${
+                    isExitTransitionActive || !shouldShowDetailPanels
+                        ? 'pointer-events-none opacity-0'
+                        : 'opacity-100'
+                }`}
+            >
                 <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-none flex-col">
                     <div className="fixed inset-x-0 bottom-6 z-20 flex justify-center px-4">
                         <div className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-white/10 bg-[#0d1016]/78 px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.35)] backdrop-blur-[24px]">

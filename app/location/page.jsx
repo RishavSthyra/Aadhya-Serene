@@ -1,4 +1,4 @@
-import { CustomStyleExample } from '@/components/Location/MapComponent';
+import LocationMapShell from '@/components/Location/LocationMapShell';
 
 export const metadata = {
   title: 'Thanisandra Location & Connectivity - Aadhya Serene',
@@ -7,5 +7,5 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <CustomStyleExample />;
+  return <LocationMapShell />;
 }

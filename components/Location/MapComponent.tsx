@@ -98,8 +98,6 @@ const DEFAULT_SELECTED_CATEGORIES: PoiCategory[] = [
 const CATEGORY_ORDER = DEFAULT_SELECTED_CATEGORIES;
 const ROUTE_CACHE_KEY = "veranza-poi-routes-v1";
 const ROUTE_REQUEST_TIMEOUT = 12000;
-const ROUTE_REQUEST_SPACING = 220;
-const MAX_CONCURRENT_ROUTE_REQUESTS = 2;
 const ROUTE_ANIMATION_DURATION = 2600;
 const ROUTE_ANIMATION_WINDOW_SIZE = 30;
 const PROVISIONAL_ROUTE_CACHE: Record<number, RouteData> = Object.fromEntries(
@@ -204,7 +202,7 @@ function buildProvisionalRoute(poi: Poi): RouteData {
 function buildUserFallbackRoute(location: UserLocation): RouteData {
   return {
     id: -1,
-    name: "Your Route to Trifecta Veranza",
+    name: "Your Route to Aadhya Serene",
     coordinates: buildCurvedRouteCoordinates(
       { lng: location.longitude, lat: location.latitude },
       { lng: centerPlace.lng, lat: centerPlace.lat },
@@ -771,14 +769,14 @@ export function CustomStyleExample() {
   const [routes, setRoutes] = useState<RouteData[]>(
     () => Object.values(PROVISIONAL_ROUTE_CACHE),
   );
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isUserRouteLoading, setIsUserRouteLoading] = useState(false);
   const [selectedPoiId, setSelectedPoiId] = useState<number | null>(null);
   const [routePoiId, setRoutePoiId] = useState<number | null>(null);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [userRoute, setUserRoute] = useState<RouteData | null>(null);
-  const [isFilterOpen, setIsFilterOpen] = useState(true);
-  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(true);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   const [selectedCategories, setSelectedCategories] = useState<PoiCategory[]>(
     DEFAULT_SELECTED_CATEGORIES,
@@ -795,110 +793,49 @@ export function CustomStyleExample() {
       duration: 500,
     });
   }, [is3D]);
-  useEffect(() => {
-    let cancelled = false;
-    const timeoutIds: number[] = [];
 
-    async function fetchRouteForPoi(poi: Poi): Promise<RouteData | null> {
-      return fetchRouteBetweenPoints({
+  useEffect(() => {
+    const cache = loadRouteCache();
+    const hydratedRoutes = pois.map((poi) => {
+      const cacheKey = getRouteCacheKey(poi);
+      return cache[cacheKey] ?? PROVISIONAL_ROUTE_CACHE[poi.id];
+    });
+
+    setRoutes(hydratedRoutes);
+  }, []);
+
+  const resolveRouteForPoi = useCallback(async (poi: Poi) => {
+    const cacheKey = getRouteCacheKey(poi);
+    const cache = loadRouteCache();
+    const cachedRoute = cache[cacheKey];
+
+    if (cachedRoute) {
+      setRoutes((prev) => upsertRouteById(prev, cachedRoute));
+      return cachedRoute;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const fetchedRoute = await fetchRouteBetweenPoints({
         from: { lng: centerPlace.lng, lat: centerPlace.lat },
         to: { lng: poi.lng, lat: poi.lat },
         id: poi.id,
         name: poi.name,
         timeout: ROUTE_REQUEST_TIMEOUT,
       });
+
+      if (fetchedRoute) {
+        cache[cacheKey] = fetchedRoute;
+        saveRouteCache(cache);
+        setRoutes((prev) => upsertRouteById(prev, fetchedRoute));
+        return fetchedRoute;
+      }
+
+      return PROVISIONAL_ROUTE_CACHE[poi.id] ?? null;
+    } finally {
+      setIsLoading(false);
     }
-
-    async function runQueue() {
-      setIsLoading(true);
-
-      const cache = loadRouteCache();
-      const initialResults: RouteData[] = [];
-      const uncachedPois: Poi[] = [];
-
-      for (const poi of pois) {
-        const cacheKey = getRouteCacheKey(poi);
-        const cached = cache[cacheKey];
-        if (cached) {
-          initialResults.push(cached);
-          continue;
-        }
-
-        const provisionalRoute = PROVISIONAL_ROUTE_CACHE[poi.id];
-        if (provisionalRoute) {
-          initialResults.push(provisionalRoute);
-        }
-
-        uncachedPois.push(poi);
-      }
-
-      if (!cancelled) {
-        setRoutes(initialResults);
-      }
-
-      if (uncachedPois.length === 0) {
-        if (!cancelled) setIsLoading(false);
-        return;
-      }
-
-      let nextIndex = 0;
-      let activeCount = 0;
-      let startedCount = 0;
-
-      await new Promise<void>((resolve) => {
-        const launchNext = () => {
-          if (cancelled) {
-            resolve();
-            return;
-          }
-
-          if (nextIndex >= uncachedPois.length && activeCount === 0) {
-            resolve();
-            return;
-          }
-
-          while (
-            activeCount < MAX_CONCURRENT_ROUTE_REQUESTS &&
-            nextIndex < uncachedPois.length
-          ) {
-            const poi = uncachedPois[nextIndex++];
-            const startDelay = startedCount * ROUTE_REQUEST_SPACING;
-            startedCount += 1;
-            activeCount += 1;
-
-            const timeoutId = window.setTimeout(async () => {
-              const result = await fetchRouteForPoi(poi);
-
-              if (result && !cancelled) {
-                const cacheKey = getRouteCacheKey(poi);
-                cache[cacheKey] = result;
-                saveRouteCache(cache);
-
-                setRoutes((prev) => upsertRouteById(prev, result));
-              }
-
-              activeCount -= 1;
-              launchNext();
-            }, startDelay);
-
-            timeoutIds.push(timeoutId);
-          }
-        };
-
-        launchNext();
-      });
-
-      if (!cancelled) {
-        setIsLoading(false);
-      }
-    }
-
-    runQueue();
-
-    return () => {
-      cancelled = true;
-      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
-    };
   }, []);
 
   const filteredPois = useMemo(() => {
@@ -981,20 +918,21 @@ export function CustomStyleExample() {
     setSelectedPoiId(null);
   }, []);
 
-  const handleViewRoute = useCallback((poi: Poi) => {
+  const handleViewRoute = useCallback(async (poi: Poi) => {
     userRouteRequestRef.current += 1;
     setUserRoute(null);
     setIsUserRouteLoading(false);
     suppressNextMapClearRef.current = true;
     setSelectedPoiId(poi.id);
     setRoutePoiId(poi.id);
+    await resolveRouteForPoi(poi);
 
     mapRef.current?.flyTo?.({
       center: [poi.lng, poi.lat],
       zoom: 13.8,
       duration: 1200,
     });
-  }, []);
+  }, [resolveRouteForPoi]);
 
   const handleUserLocate = async (coords: UserLocation) => {
     const requestId = userRouteRequestRef.current + 1;
@@ -1035,7 +973,7 @@ export function CustomStyleExample() {
       from: { lng: coords.longitude, lat: coords.latitude },
       to: { lng: centerPlace.lng, lat: centerPlace.lat },
       id: -1,
-      name: "Your Route to Trifecta Veranza",
+      name: "Your Route to Aadhya Serene",
       timeout: ROUTE_REQUEST_TIMEOUT,
     });
 
@@ -1094,7 +1032,7 @@ export function CustomStyleExample() {
   const userRouteColor = "#0f766e";
 
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-slate-100">
+    <div className="relative z-10 h-dvh w-full overflow-hidden bg-slate-100">
       <MapView
         ref={mapRef}
         center={[centerPlace.lng, centerPlace.lat]}
@@ -1284,7 +1222,7 @@ export function CustomStyleExample() {
                   {Math.round(Math.max(userLocation.accuracy ?? 0, 35))} m
                 </p>
                 <p className="text-xs text-slate-600">
-                  Route shown to Trifecta Veranza
+                  Route shown to Aadhya Serene
                 </p>
               </div>
             </MarkerPopup>
@@ -1765,8 +1703,8 @@ export function CustomStyleExample() {
               <Loader2 className="size-5 animate-spin text-cyan-600" />
               <span className="text-sm text-slate-700">
                 {isUserRouteLoading
-                  ? "Tracing your route to Trifecta Veranza..."
-                  : "Loading Trifecta Veranza Map..."}
+                  ? "Tracing your route to Aadhya Serene..."
+                  : "Calculating the selected route..."}
               </span>
             </div>
           </div>

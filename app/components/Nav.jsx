@@ -176,6 +176,7 @@ export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
   const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
+  const isLocationRoute = pathname === "/location";
   const [openMenu, setOpenMenu] = useState(null);
   const [amenitiesCarouselIndex, setAmenitiesCarouselIndex] = useState(0);
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -232,6 +233,37 @@ export default function Nav() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const hrefsToPrefetch = [...new Set([...links.map((link) => link.href), "/contact"])]
+      .filter((href) => href !== pathname);
+
+    const prefetchRoutes = () => {
+      hrefsToPrefetch.forEach((href) => {
+        router.prefetch(href);
+      });
+    };
+
+    let idleId;
+    let timeoutId;
+
+    if ("requestIdleCallback" in window) {
+      idleId = window.requestIdleCallback(prefetchRoutes, { timeout: 1200 });
+    } else {
+      timeoutId = window.setTimeout(prefetchRoutes, 300);
+    }
+
+    return () => {
+      if (idleId) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [pathname, router]);
+
   const handlePrevAmenities = () => {
     setAmenitiesCarouselIndex((current) => Math.max(0, current - 1));
   };
@@ -254,13 +286,13 @@ export default function Nav() {
       pathname === "/" ? "home-inner" : pathname.startsWith("/about") ? "about-container" : null;
     const container = containerId ? document.getElementById(containerId) : null;
 
-    if (container) {
-      container.style.opacity = "0";
-      container.style.transition = "opacity 0.6s ease";
-    } else {
-      document.body.style.opacity = "0";
-      document.body.style.transition = "opacity 0.6s ease";
+    if (!container) {
+      router.push(href);
+      return;
     }
+
+    container.style.opacity = "0";
+    container.style.transition = "opacity 0.6s ease";
 
     window.setTimeout(() => {
       router.push(href);
@@ -295,11 +327,15 @@ export default function Nav() {
           scheduleHideNav();
         }}
       >
-        <div className="relative overflow-hidden border-b border-white/15 bg-[linear-gradient(180deg,rgba(132,149,165,0.48)_0%,rgba(113,128,142,0.3)_100%)] shadow-[0_18px_48px_rgba(0,0,0,0.16)] backdrop-blur-[22px]">
+        <div className={`relative overflow-hidden border-b shadow-[0_18px_48px_rgba(0,0,0,0.16)] backdrop-blur-[22px] ${
+          isLocationRoute
+            ? "border-slate-300/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.78)_0%,rgba(245,247,250,0.6)_100%)]"
+            : "border-white/15 bg-[linear-gradient(180deg,rgba(132,149,165,0.48)_0%,rgba(113,128,142,0.3)_100%)]"
+        }`}>
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.12),transparent_16%,transparent_84%,rgba(255,255,255,0.08))]" />
 
           <div className="relative flex h-[88px] w-full items-center justify-between px-8 xl:px-10">
-            <div className="min-w-[180px] text-lg font-semibold text-white">
+            <div className={`min-w-[180px] text-lg font-semibold ${isLocationRoute ? "text-slate-950" : "text-white"}`}>
               <Link href="/">Aadhya Serene</Link>
             </div>
 
@@ -319,8 +355,12 @@ export default function Nav() {
                         href={href}
                         className={`relative flex items-center gap-1.5 pb-1 text-sm transition ${
                           active || isMenuOpen
-                            ? "text-[#f3d056]"
-                            : "text-white/82 hover:text-white"
+                            ? isLocationRoute
+                              ? "text-slate-950"
+                              : "text-[#f3d056]"
+                            : isLocationRoute
+                              ? "text-slate-700 hover:text-slate-950"
+                              : "text-white/82 hover:text-white"
                         }`}
                       >
                         <span>{label}</span>
@@ -331,7 +371,7 @@ export default function Nav() {
                           }`}
                         />
                         {active || isMenuOpen ? (
-                          <span className="absolute inset-x-0 -bottom-0.5 h-px bg-[#f3d056]" />
+                          <span className={`absolute inset-x-0 -bottom-0.5 h-px ${isLocationRoute ? "bg-slate-950" : "bg-[#f3d056]"}`} />
                         ) : null}
                       </Link>
                     </div>
@@ -347,6 +387,12 @@ export default function Nav() {
                         event.preventDefault();
                         navigateWithTransition("/about", "about");
                       }
+                      if (href === "/location") {
+                        event.preventDefault();
+                        navigateWithTransition("/location", "location", {
+                          eagerLayout: false,
+                        });
+                      }
                       if (href === "/apartments") {
                         event.preventDefault();
                         navigateWithTransition("/apartments", "apartments", {
@@ -357,13 +403,17 @@ export default function Nav() {
                     }}
                     className={`relative pb-1 text-sm transition ${
                       active
-                        ? "text-[#f3d056]"
-                        : "text-white/82 hover:text-white"
+                        ? isLocationRoute
+                          ? "text-slate-950"
+                          : "text-[#f3d056]"
+                        : isLocationRoute
+                          ? "text-slate-700 hover:text-slate-950"
+                          : "text-white/82 hover:text-white"
                     }`}
                   >
                     {label}
                     {active ? (
-                      <span className="absolute inset-x-0 -bottom-0.5 h-px bg-[#f3d056]" />
+                      <span className={`absolute inset-x-0 -bottom-0.5 h-px ${isLocationRoute ? "bg-slate-950" : "bg-[#f3d056]"}`} />
                     ) : null}
                   </Link>
                 );
@@ -545,7 +595,11 @@ export default function Nav() {
         </div>
       </header>
 
-      <div className="fixed bottom-4 left-1/2 z-50 w-[92%] -translate-x-1/2 rounded-2xl border border-white/20 bg-white/10 shadow-xl backdrop-blur-xl md:hidden">
+      <div className={`fixed bottom-4 left-1/2 z-50 w-[92%] -translate-x-1/2 rounded-2xl border shadow-xl backdrop-blur-xl md:hidden ${
+        isLocationRoute
+          ? "border-slate-300/80 bg-white/82"
+          : "border-white/20 bg-white/10"
+      }`}>
         <nav className="flex items-center justify-around py-3">
           {links.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
@@ -555,6 +609,12 @@ export default function Nav() {
                 key={href}
                 href={href}
                 onClick={(event) => {
+                  if (href === "/location") {
+                    event.preventDefault();
+                    navigateWithTransition("/location", "location", {
+                      eagerLayout: false,
+                    });
+                  }
                   if (href === "/apartments") {
                     event.preventDefault();
                     navigateWithTransition("/apartments", "apartments", {
@@ -563,7 +623,13 @@ export default function Nav() {
                   }
                 }}
                 className={`flex flex-col items-center text-[9px] ${
-                  active ? "text-[#f3d056]" : "text-white/80"
+                  active
+                    ? isLocationRoute
+                      ? "text-slate-950"
+                      : "text-[#f3d056]"
+                    : isLocationRoute
+                      ? "text-slate-700"
+                      : "text-white/80"
                 }`}
               >
                 <Icon size={20} />

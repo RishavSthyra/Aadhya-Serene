@@ -2,10 +2,15 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import AadhyaLogo from "@/components/Home/AadhyaLogo";
 import AbhignaLogo from "@/components/Home/AbhignaLogo";
 import styles from "./home.module.css";
+
+const LuxuryPreloader = dynamic(() => import("@/components/Home/LuxuryPreloader"), {
+  ssr: false,
+});
 
 export default function Page() {
   const router = useRouter();
@@ -16,7 +21,7 @@ export default function Page() {
   // Changed the useEffect to show the loader only once when the page mounts
 
   useEffect(() => {
-    const hasSeenLoader = sessionStorage.getItem("homeLoaderShown");
+    const hasSeenLoader = sessionStorage.getItem("luxuryHomeLoaderShown");
 
     if (hasSeenLoader) {
       setShowLoader(false);
@@ -25,8 +30,8 @@ export default function Page() {
 
     const timer = setTimeout(() => {
       setShowLoader(false);
-      sessionStorage.setItem("homeLoaderShown", "true"); // I am adding it to session storage
-    }, 3500);
+      sessionStorage.setItem("luxuryHomeLoaderShown", "true");
+    }, 4500);
 
     return () => {
       clearTimeout(timer);
@@ -94,12 +99,7 @@ export default function Page() {
   return (
     <main className={styles.heroSection}>
       {showLoader && (
-        <div className={styles.awardLoader}>
-          <div className={styles.awardContent}>
-            <h1 className={styles.awardTitle}>Aadhya Serene</h1>
-            <p className={styles.awardSubtitle}>An Award-Winning Project</p>
-          </div>
-        </div>
+        <LuxuryPreloader />
       )}
 
       <section id="home-inner" className={styles.heroInner}>
