@@ -9,7 +9,10 @@ if (!command) {
   process.exit(1);
 }
 
-const distDir = command === 'dev' ? '.next' : '.next-build';
+const isVercelBuild = process.env.VERCEL === '1' || process.env.CI === 'true';
+const distDir = command === 'dev'
+  ? '.next'
+  : (isVercelBuild ? '.next' : '.next-build');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const nextBin = path.resolve(__dirname, '../node_modules/next/dist/bin/next');
