@@ -196,7 +196,6 @@ export default function FlatDetailPage() {
         if (reverseVideo) {
             reverseVideo.pause();
             reverseVideo.currentTime = 0;
-            reverseVideo.load();
         }
     }, [hasFlatSpecificVideo, id, useVideoFallback]);
 
@@ -498,12 +497,16 @@ export default function FlatDetailPage() {
                         style={{ opacity: videoPhase === 'reverse' ? 1 : 0, zIndex: videoPhase === 'reverse' ? 5 : 1 }}
                         muted={muted}
                         playsInline
-                        preload="auto"
+                        preload="metadata"
                         controls={false}
                         disablePictureInPicture
                         controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
                         onEnded={finalizeBackNavigation}
-                        onError={finalizeBackNavigation}
+                        onError={() => {
+                            if (isNavigatingRef.current || videoPhase === 'reverse') {
+                                finalizeBackNavigation();
+                            }
+                        }}
                     />
                 ) : null}
             </div>
