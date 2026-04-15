@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import AadhyaLogo from "@/components/Home/AadhyaLogo";
 import AbhignaLogo from "@/components/Home/AbhignaLogo";
 import styles from "./home.module.css";
@@ -11,15 +10,34 @@ import styles from "./home.module.css";
 const LuxuryPreloader = dynamic(() => import("@/components/Home/LuxuryPreloader"), {
   ssr: false,
 });
+const HomeScrollLottie = dynamic(() => import("@/components/Home/HomeScrollLottie"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const COMPACT_DEVICE_QUERY = "(max-width: 1180px), (pointer: coarse)";
 
 export default function HomePageClient() {
   const router = useRouter();
   const isNavigatingRef = useRef(false);
-  const lastScrollY = useRef(0);
   const [showLoader, setShowLoader] = useState(true);
+  const [isCompactDevice, setIsCompactDevice] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(COMPACT_DEVICE_QUERY);
+    const updateCompactMode = () => setIsCompactDevice(media.matches);
+
+    updateCompactMode();
+    media.addEventListener("change", updateCompactMode);
+
+    return () => {
+      media.removeEventListener("change", updateCompactMode);
+    };
+  }, []);
 
   useEffect(() => {
     const hasSeenLoader = sessionStorage.getItem("luxuryHomeLoaderShown");
+    const loaderDurationMs = isCompactDevice ? 1600 : 3200;
 
     if (hasSeenLoader) {
       setShowLoader(false);
@@ -29,19 +47,20 @@ export default function HomePageClient() {
     const timer = setTimeout(() => {
       setShowLoader(false);
       sessionStorage.setItem("luxuryHomeLoaderShown", "true");
-    }, 4500);
+    }, loaderDurationMs);
 
     return () => {
       clearTimeout(timer);
     };
-  }, []);
+  }, [isCompactDevice]);
 
   const navigateTo = useCallback(
     (path) => {
       if (isNavigatingRef.current) return;
       isNavigatingRef.current = true;
 
-      window.dispatchEvent(new CustomEvent("bg-layout", { detail: "about" }));
+      const targetLayout = path === "/apartments" ? "apartments" : "about";
+      window.dispatchEvent(new CustomEvent("bg-layout", { detail: targetLayout }));
 
       const heroInner = document.getElementById("home-inner");
       if (heroInner) {
@@ -116,7 +135,11 @@ export default function HomePageClient() {
         <h1 className={styles.heroTitle}>Your Haven of Harmony</h1>
 
         <div className={styles.heroButtonContainer}>
-          <Link href="/apartments" className={styles.heroCtaButton}>
+          <button
+            type="button"
+            onClick={() => navigateTo("/apartments")}
+            className={styles.heroCtaButton}
+          >
             <span className={styles.heroCtaIcon}>
               <svg
                 stroke="currentColor"
@@ -131,11 +154,12 @@ export default function HomePageClient() {
               </svg>
             </span>
             <span>Step Inside Aadhya Serene </span>
-          </Link>
+          </button>
 
           <span className={styles.desktopScroll}>Scroll Down</span>
         </div>
       </section>
+<HomeScrollLottie />
     </main>
   );
 }

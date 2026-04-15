@@ -13,16 +13,25 @@ const ABOUT_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-2-av1.mp4';
 const APARTMENTS_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-1-av1.mp4';
 const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
 
-const MOBILE_VIDEO_FALLBACKS = {};
+const MOBILE_VIDEO_FALLBACKS = {
+    [HOME_TRANSITION]: '/assets/background-video/mobile/home-transition.mp4',
+    [HOME_LOOP]: '/assets/background-video/mobile/home-loop.mp4',
+    [ABOUT_TRANSITION]: '/assets/background-video/mobile/about-transition.mp4',
+    [ABOUT_LOOP]: '/assets/background-video/mobile/about-loop.mp4',
+    [APARTMENTS_TRANSITION]: '/assets/background-video/mobile/apartments-transition.mp4',
+    [APARTMENTS_LOOP]: '/assets/background-video/mobile/apartments-loop.mp4',
+};
 
 const BACKGROUND_POSTERS = {
-    home: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/analog-landscape-city-with-buildings%20(1).jpg',
-    about: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/analog-landscape-city-with-buildings%20(1).jpg',
-    apartments: null,
-    walkthrough: null,
-    contact: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/analog-landscape-city-with-buildings%20(1).jpg',
+    home: '/assets/background-video/posters/home.jpg',
+    about: '/assets/background-video/posters/about.jpg',
+    apartments: '/assets/apartments/transition-poster.jpg',
+    walkthrough: '/assets/apartments/transition-poster.jpg',
+    contact: '/assets/background-video/posters/about.jpg',
     amenities: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/umbrella-chair2.jpg',
 };
+
+const COMPACT_DEVICE_QUERY = '(max-width: 1180px), (pointer: coarse)';
 
 const APARTMENTS_LOOP_HOLD_MS = 0;
 
@@ -107,7 +116,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     useEffect(() => {
         if (typeof window === 'undefined') return undefined;
 
-        const mobileMedia = window.matchMedia('(max-width: 767px), (pointer: coarse)');
+        const mobileMedia = window.matchMedia(COMPACT_DEVICE_QUERY);
         const reducedMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
         const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 
@@ -137,14 +146,13 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const getSourceCandidates = useCallback((source) => {
         if (!source) return [];
 
-        const sources = [];
-        sources.push(source);
+        const fallbackSource = MOBILE_VIDEO_FALLBACKS[source];
 
-        if (shouldConserveData && MOBILE_VIDEO_FALLBACKS[source]) {
-            sources.push(MOBILE_VIDEO_FALLBACKS[source]);
+        if (shouldConserveData && fallbackSource) {
+            return [fallbackSource, source];
         }
 
-        return [...new Set(sources)];
+        return [source];
     }, [shouldConserveData]);
 
     const transitionSources = useMemo(

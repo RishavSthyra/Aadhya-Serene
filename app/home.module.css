@@ -126,6 +126,7 @@
     transition: transform 0.25s, box-shadow 0.25s, background-position 0.4s, filter 0.25s;
     position: relative;
     overflow: hidden;
+    cursor: pointer;
 }
 
 .heroCtaButton::before {
@@ -181,19 +182,24 @@
     background: rgba(255, 255, 255, 0.25);
 }
 
-/* Pulsing dot at bottom */
-.heroSection::before {
-    content: '';
+.heroLottieDock {
     position: absolute;
-    bottom: 30px;
     left: 50%;
-    transform: translateX(-50%);
-    width: 6px;
-    height: 6px;
-    background: rgba(198, 164, 105, 0.7);
-    border-radius: 50%;
+    bottom: 18px;
     z-index: 2;
-    animation: pulse 2.5s ease-in-out 1.5s infinite;
+    width: clamp(86px, 8vw, 126px);
+    aspect-ratio: 1;
+    transform: translateX(-50%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 28px;
+    background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04) 54%, rgba(8, 11, 16, 0.16) 100%);
+    box-shadow:
+        0 18px 44px rgba(5, 8, 14, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(18px);
+    pointer-events: none;
+    animation: fadeInUp 1s cubic-bezier(0.22, 1, 0.36, 1) 1.2s both;
 }
 
 /* ── Keyframes ── */
@@ -250,6 +256,12 @@
     .heroLogo1,
     .heroLogo2 {
         height: 40px;
+    }
+
+    .heroLottieDock {
+        bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+        width: 74px;
+        border-radius: 24px;
     }
 }
 

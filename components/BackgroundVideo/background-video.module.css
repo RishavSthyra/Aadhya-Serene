@@ -21,7 +21,7 @@
     position: absolute;
     inset: 0;
     transform: translateZ(0);
-    background: #050608;
+    background: transparent;
 }
 
 .active {
