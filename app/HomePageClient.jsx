@@ -159,7 +159,7 @@ export default function HomePageClient() {
           <span className={styles.desktopScroll}>Scroll Down</span>
         </div>
       </section>
-<HomeScrollLottie />
+      <HomeScrollLottie className={styles.heroLottie} />
     </main>
   );
 }
