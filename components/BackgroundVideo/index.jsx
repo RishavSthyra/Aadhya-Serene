@@ -2,9 +2,11 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { setBackgroundTransitionState } from '@/lib/background-transition';
+import useResponsiveViewport from '@/hooks/useResponsiveViewport';
 import styles from './background-video.module.css';
 
 const S3_BUCKET = 'https://aadhya-serene-assets-v2.s3.amazonaws.com';
+const HOMEPAGE_VIDEO_CDN = `${S3_BUCKET}/videos/homepage`;
 
 const HOME_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/1-1-Av1.mp4';
 const HOME_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/1-2-Vp9.mp4';
@@ -31,21 +33,46 @@ const BACKGROUND_POSTERS = {
     amenities: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/umbrella-chair2.jpg',
 };
 
-const COMPACT_DEVICE_QUERY = '(max-width: 1180px), (pointer: coarse)';
-
 const APARTMENTS_LOOP_HOLD_MS = 0;
 
 const LAYOUT_CONFIG = {
-    home: { transition: HOME_TRANSITION, loop: HOME_LOOP },
-    about: { transition: ABOUT_TRANSITION, loop: ABOUT_LOOP },
+    home: {
+        transition: HOME_TRANSITION,
+        loop: HOME_LOOP,
+        transitionAssetId: '1-1',
+        loopAssetId: '1-2',
+    },
+    about: {
+        transition: ABOUT_TRANSITION,
+        loop: ABOUT_LOOP,
+        transitionAssetId: '2-1',
+        loopAssetId: '2-2',
+    },
     apartments: {
         transition: APARTMENTS_TRANSITION,
         loop: APARTMENTS_LOOP,
+        transitionAssetId: '3-1',
+        loopAssetId: '3-2',
         loopHoldMs: APARTMENTS_LOOP_HOLD_MS,
     },
-    walkthrough: { transition: APARTMENTS_TRANSITION, loop: APARTMENTS_LOOP },
-    location: { transition: ABOUT_TRANSITION, loop: ABOUT_LOOP },
-    contact: { transition: ABOUT_TRANSITION, loop: ABOUT_LOOP },
+    walkthrough: {
+        transition: APARTMENTS_TRANSITION,
+        loop: APARTMENTS_LOOP,
+        transitionAssetId: '3-1',
+        loopAssetId: '3-2',
+    },
+    location: {
+        transition: ABOUT_TRANSITION,
+        loop: ABOUT_LOOP,
+        transitionAssetId: '2-1',
+        loopAssetId: '2-2',
+    },
+    contact: {
+        transition: ABOUT_TRANSITION,
+        loop: ABOUT_LOOP,
+        transitionAssetId: '2-1',
+        loopAssetId: '2-2',
+    },
     amenities: {
         transition: `${S3_BUCKET}/videos/amenities/rooftopLeisureDeck/2160p/rooftopLeisureDeck-h264.mp4`,
         loop: `${S3_BUCKET}/videos/amenities/rooftopLeisureDeck/2160p/rooftopLeisureDeck-h264.mp4`,
@@ -84,9 +111,23 @@ const LAYOUT_CONFIG = {
     },
 };
 
-const DEFAULT_CONFIG = { transition: HOME_TRANSITION, loop: HOME_LOOP };
+const DEFAULT_CONFIG = {
+    transition: HOME_TRANSITION,
+    loop: HOME_LOOP,
+    transitionAssetId: '1-1',
+    loopAssetId: '1-2',
+};
+
+function buildHomepageVideoUrl(assetId, quality = '1080p', codec = 'h264') {
+    return `${HOMEPAGE_VIDEO_CDN}/${assetId}/${quality}/${assetId}-${codec}.mp4`;
+}
+
+function uniqueSources(sources) {
+    return [...new Set(sources.filter(Boolean))];
+}
 
 export default function BackgroundVideo({ layout = 'home', playing = true, replayKey = 0 }) {
+    const { isMobile, isTablet, isSafari, isIOS } = useResponsiveViewport();
     const transitionRef = useRef(null);
     const loopRef = useRef(null);
     const transitionSourceIndexRef = useRef(0);
@@ -116,7 +157,6 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     useEffect(() => {
         if (typeof window === 'undefined') return undefined;
 
-        const mobileMedia = window.matchMedia(COMPACT_DEVICE_QUERY);
         const reducedMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
         const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 
@@ -125,39 +165,48 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 || /(^|slow-)?2g|3g/.test(connection?.effectiveType ?? '');
 
             setShouldConserveData(
-                mobileMedia.matches
+                isMobile
                 || reducedMotionMedia.matches
                 || shouldAvoidHeavyPlayback
             );
         };
 
         updatePreference();
-        mobileMedia.addEventListener('change', updatePreference);
         reducedMotionMedia.addEventListener('change', updatePreference);
         connection?.addEventListener?.('change', updatePreference);
 
         return () => {
-            mobileMedia.removeEventListener('change', updatePreference);
             reducedMotionMedia.removeEventListener('change', updatePreference);
             connection?.removeEventListener?.('change', updatePreference);
         };
-    }, []);
+    }, [isMobile]);
 
-    const getSourceCandidates = useCallback((source) => {
+    const getSourceCandidates = useCallback((source, assetId) => {
         if (!source) return [];
 
         const fallbackSource = MOBILE_VIDEO_FALLBACKS[source];
+        const preferredMp4Source = assetId
+            ? buildHomepageVideoUrl(
+                assetId,
+                isTablet ? '1440p' : isMobile ? '1080p' : '1440p',
+                'h264',
+            )
+            : null;
 
         if (shouldConserveData && fallbackSource) {
-            return [fallbackSource, source];
+            return uniqueSources([fallbackSource, preferredMp4Source, source]);
+        }
+
+        if ((isTablet || isSafari || isIOS) && preferredMp4Source) {
+            return uniqueSources([preferredMp4Source, source]);
         }
 
         return [source];
-    }, [shouldConserveData]);
+    }, [isIOS, isSafari, isTablet, shouldConserveData]);
 
     const transitionSources = useMemo(
-        () => getSourceCandidates(config.transition),
-        [config.transition, getSourceCandidates],
+        () => getSourceCandidates(config.transition, config.transitionAssetId),
+        [config.transition, config.transitionAssetId, getSourceCandidates],
     );
     const transitionSourcesKey = useMemo(
         () => transitionSources.join('|'),
@@ -165,13 +214,30 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     );
 
     const loopSources = useMemo(
-        () => getSourceCandidates(config.loop),
-        [config.loop, getSourceCandidates],
+        () => getSourceCandidates(config.loop, config.loopAssetId),
+        [config.loop, config.loopAssetId, getSourceCandidates],
     );
     const loopSourcesKey = useMemo(
         () => loopSources.join('|'),
         [loopSources],
     );
+
+    const primeVideoElement = useCallback((video) => {
+        if (!video) return;
+
+        video.muted = true;
+        video.defaultMuted = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.controls = false;
+        video.disablePictureInPicture = true;
+        video.setAttribute('muted', '');
+        video.setAttribute('autoplay', '');
+        video.setAttribute('playsinline', '');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.setAttribute('disablepictureinpicture', '');
+        video.setAttribute('controlslist', 'nodownload noplaybackrate noremoteplayback nofullscreen');
+    }, []);
 
     const loadVideoCandidate = useCallback((video, sources, index, options = {}) => {
         const { shouldLoop = false, preload = 'auto' } = options;
@@ -181,6 +247,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             return false;
         }
 
+        primeVideoElement(video);
         video.pause();
         video.src = source;
         video.loop = shouldLoop;
@@ -188,7 +255,12 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         video.load();
 
         return true;
-    }, []);
+    }, [primeVideoElement]);
+
+    useEffect(() => {
+        primeVideoElement(transitionRef.current);
+        primeVideoElement(loopRef.current);
+    }, [primeVideoElement, layout, replayKey]);
 
     const loadTransitionCandidate = useCallback((index = 0) => {
         const transitionVideo = transitionRef.current;
@@ -453,6 +525,9 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 muted
                 playsInline
                 autoPlay
+                controls={false}
+                disablePictureInPicture
+                controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
                 preload={transitionPreloadMode}
                 poster={posterSrc ?? undefined}
                 onEnded={handleTransitionEnded}
@@ -467,7 +542,11 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 }}
                 muted
                 playsInline
+                autoPlay
                 loop
+                controls={false}
+                disablePictureInPicture
+                controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
                 preload={loopPreloadMode}
                 poster={posterSrc ?? undefined}
                 onError={handleLoopError}

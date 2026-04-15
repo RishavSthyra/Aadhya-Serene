@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import useResponsiveViewport from "@/hooks/useResponsiveViewport";
 import {
   Building2,
   ChevronDown,
@@ -96,6 +97,7 @@ function getContainerId(pathname) {
 export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
+  const { isTabletOrBelow } = useResponsiveViewport();
   const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
   const [openMenu, setOpenMenu] = useState(null);
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -162,6 +164,12 @@ export default function Nav() {
       setAmenitiesCarouselIndex(0);
     }
   }, [openMenu]);
+
+  useEffect(() => {
+    if (isTabletOrBelow) {
+      setOpenMenu(null);
+    }
+  }, [isTabletOrBelow]);
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -251,7 +259,7 @@ export default function Nav() {
     <>
       {shouldAutoHideNav ? (
         <div
-          className={`fixed inset-x-0 top-0 z-[490] hidden h-[88px] md:block ${
+          className={`fixed inset-x-0 top-0 z-[490] hidden h-[88px] xl:block ${
             isNavVisible ? "pointer-events-none" : "pointer-events-auto"
           }`}
           onMouseEnter={showNav}
@@ -260,7 +268,7 @@ export default function Nav() {
       ) : null}
 
       <header
-        className={`fixed inset-x-0 top-0 z-[500] hidden will-change-transform transition-[transform,opacity,filter] duration-700 ease-[cubic-bezier(0.19,1,0.22,1)] md:block ${
+        className={`fixed inset-x-0 top-0 z-[500] hidden will-change-transform transition-[transform,opacity,filter] duration-700 ease-[cubic-bezier(0.19,1,0.22,1)] xl:block ${
           shouldAutoHideNav && !isNavVisible
             ? "pointer-events-none -translate-y-[calc(100%+14px)] opacity-0 blur-[1px]"
             : "translate-y-0 opacity-100 blur-0"
@@ -486,8 +494,8 @@ export default function Nav() {
         </div>
       </header>
 
-      <div className="fixed bottom-4 left-1/2 z-50 w-[min(94vw,460px)] -translate-x-1/2 rounded-full border border-black/6 bg-[#f7f3eb]/92 px-2 py-2 shadow-[0_16px_38px_rgba(10,12,18,0.18)] backdrop-blur-2xl md:hidden">
-        <nav className="flex items-center justify-between gap-1">
+      <div className="fixed bottom-[max(12px,env(safe-area-inset-bottom,0px)+8px)] left-1/2 z-[160] w-[min(96vw,720px)] -translate-x-1/2 rounded-full border border-black/6 bg-[#f7f3eb]/92 px-3 py-2.5 shadow-[0_16px_38px_rgba(10,12,18,0.18)] backdrop-blur-2xl xl:hidden md:px-5 md:py-3">
+        <nav className="flex items-center justify-between gap-0.5">
           {NAV_LINKS.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
 
@@ -496,12 +504,12 @@ export default function Nav() {
                 key={href}
                 type="button"
                 onClick={() => handleRouteNavigation(href)}
-                className={`flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full px-2 transition ${
-                  active ? "bg-[#17191f] text-[#f7f3eb]" : "text-[#23262e]"
+                className={`flex min-h-[48px] min-w-0 flex-1 flex-col items-center justify-center gap-1 px-2 text-center transition md:min-h-[56px] md:gap-1.5 ${
+                  active ? "text-[#17191f]" : "text-[#5f636c]"
                 }`}
               >
-                {Icon ? <Icon className="h-4 w-4" /> : null}
-                <span className="truncate text-[8.5px] font-semibold uppercase tracking-[0.12em]">
+                {Icon ? <Icon className="h-4 w-4 md:h-[18px] md:w-[18px]" /> : null}
+                <span className="truncate text-[8px] font-semibold uppercase tracking-[0.12em] md:text-[9px]">
                   {label}
                 </span>
               </button>

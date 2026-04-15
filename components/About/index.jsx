@@ -4,7 +4,8 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Inter } from 'next/font/google';
-import { ArrowUpRight, CheckCircle2, ChevronLeft, ChevronRight, MapPin, Ruler } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, ChevronLeft, MapPin, Ruler, X } from 'lucide-react';
+import useResponsiveViewport from '@/hooks/useResponsiveViewport';
 
 const titleFont = Inter({
   subsets: ['latin'],
@@ -328,8 +329,8 @@ function AboutMainCardContent({ navigateTo }) {
 export default function About() {
   const router = useRouter();
   const isNavigatingRef = useRef(false);
-  const [isCompactLayout, setIsCompactLayout] = React.useState(false);
   const [isMobileAboutOpen, setIsMobileAboutOpen] = React.useState(true);
+  const { isTabletOrBelow } = useResponsiveViewport();
 
   const navigateTo = useCallback(
     (path) => {
@@ -360,17 +361,8 @@ export default function About() {
   );
 
   useEffect(() => {
-    const handleResize = () => {
-      const compact = window.innerWidth < 1024;
-      setIsCompactLayout(compact);
-      setIsMobileAboutOpen((current) => (compact ? current : true));
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    setIsMobileAboutOpen((current) => (isTabletOrBelow ? current : true));
+  }, [isTabletOrBelow]);
 
   useEffect(() => {
     const container = document.getElementById('about-container');
@@ -417,7 +409,7 @@ export default function About() {
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-            className={`w-full max-w-[540px] overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-6 py-7 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] md:px-7 md:py-8 ${isCompactLayout ? 'hidden' : ''}`}
+            className={`w-full max-w-[540px] overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-6 py-7 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] md:px-7 md:py-8 ${isTabletOrBelow ? 'hidden' : ''}`}
           >
             <AboutMainCardContent navigateTo={navigateTo} />
           </motion.div>
@@ -433,7 +425,7 @@ export default function About() {
         </div>
       </section>
 
-      {isCompactLayout ? (
+      {isTabletOrBelow ? (
         <>
           <motion.aside
             initial={false}
@@ -442,7 +434,7 @@ export default function About() {
               opacity: isMobileAboutOpen ? 1 : 0.98,
             }}
             transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed right-3 top-4 bottom-28 z-[30] w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-[30px] border border-white/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-4 py-5 shadow-[0_24px_60px_rgba(6,10,18,0.22),inset_0_1px_0_rgba(255,255,255,0.24)] backdrop-blur-[30px] sm:w-[360px]"
+            className="fixed inset-x-0 top-[max(12px,env(safe-area-inset-top,0px)+8px)] bottom-[max(98px,env(safe-area-inset-bottom,0px)+82px)] z-[30] mx-auto w-[min(620px,calc(100vw-24px))] overflow-hidden rounded-[28px] border border-white/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-4 py-5 shadow-[0_24px_60px_rgba(6,10,18,0.22),inset_0_1px_0_rgba(255,255,255,0.24)] backdrop-blur-[30px] md:w-[min(560px,calc(100vw-32px))] md:px-5"
             style={{
               pointerEvents: isMobileAboutOpen ? 'auto' : 'none',
             }}
@@ -456,9 +448,9 @@ export default function About() {
             type="button"
             onClick={() => setIsMobileAboutOpen((current) => !current)}
             aria-label={isMobileAboutOpen ? 'Hide about panel' : 'Show about panel'}
-            className="fixed right-3 top-5 z-[31] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.26)_0%,rgba(255,255,255,0.12)_100%)] text-white shadow-[0_18px_40px_rgba(6,10,18,0.2)] backdrop-blur-[24px] transition duration-300 hover:bg-white/20"
+            className="fixed right-4 top-[max(14px,env(safe-area-inset-top,0px)+10px)] z-[31] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.26)_0%,rgba(255,255,255,0.12)_100%)] text-white shadow-[0_18px_40px_rgba(6,10,18,0.2)] backdrop-blur-[24px] transition duration-300 hover:bg-white/20"
           >
-            {isMobileAboutOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            {isMobileAboutOpen ? <X className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
         </>
       ) : null}

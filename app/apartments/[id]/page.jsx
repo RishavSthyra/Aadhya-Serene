@@ -30,6 +30,7 @@ import {
     flatReverseVideoSrc,
     flatVideoSrc,
     getFlatById,
+    supportsFlatRenderVideoPlayback,
     WALKTHROUGH_VIDEO,
 } from '../../../lib/flats';
 import {
@@ -102,6 +103,23 @@ function RoomCard({ room }) {
     );
 }
 
+function primeInlineVideoElement(videoElement) {
+    if (!videoElement) return;
+
+    videoElement.muted = true;
+    videoElement.defaultMuted = true;
+    videoElement.playsInline = true;
+    videoElement.autoplay = true;
+    videoElement.controls = false;
+    videoElement.disablePictureInPicture = true;
+    videoElement.setAttribute('muted', '');
+    videoElement.setAttribute('autoplay', '');
+    videoElement.setAttribute('playsinline', '');
+    videoElement.setAttribute('webkit-playsinline', 'true');
+    videoElement.setAttribute('disablepictureinpicture', '');
+    videoElement.setAttribute('controlslist', 'nodownload noplaybackrate noremoteplayback nofullscreen');
+}
+
 export default function FlatDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -117,7 +135,7 @@ export default function FlatDetailPage() {
 
     const [muted, setMuted] = useState(true);
     const [floorPlanError, setFloorPlanError] = useState(false);
-    const [useVideoFallback, setUseVideoFallback] = useState(false);
+    const [useVideoFallback, setUseVideoFallback] = useState(() => !supportsFlatRenderVideoPlayback());
     const [videoPhase, setVideoPhase] = useState('intro');
     const [isExitTransitionActive, setIsExitTransitionActive] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -142,7 +160,7 @@ export default function FlatDetailPage() {
 
     useEffect(() => {
         clearReverseFallbackTimeout();
-        setUseVideoFallback(false);
+        setUseVideoFallback(!supportsFlatRenderVideoPlayback());
         setVideoPhase('intro');
         setIsExitTransitionActive(false);
         isNavigatingRef.current = false;
@@ -152,6 +170,10 @@ export default function FlatDetailPage() {
         const introVideo = introVideoRef.current;
         const loopVideo = loopVideoRef.current;
         const reverseVideo = reverseVideoRef.current;
+
+        primeInlineVideoElement(introVideo);
+        primeInlineVideoElement(loopVideo);
+        primeInlineVideoElement(reverseVideo);
 
         setVideoPhase('intro');
 
@@ -413,6 +435,9 @@ export default function FlatDetailPage() {
                     playsInline
                     preload="auto"
                     autoPlay
+                    controls={false}
+                    disablePictureInPicture
+                    controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
                     loop={!hasFlatSpecificVideo}
                     onEnded={handleIntroEnded}
                     onError={() => {
@@ -433,6 +458,9 @@ export default function FlatDetailPage() {
                         playsInline
                         preload="auto"
                         loop
+                        controls={false}
+                        disablePictureInPicture
+                        controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
                         onError={() => {
                             setVideoPhase('intro');
                             setUseVideoFallback(true);
@@ -449,6 +477,9 @@ export default function FlatDetailPage() {
                         muted={muted}
                         playsInline
                         preload="auto"
+                        controls={false}
+                        disablePictureInPicture
+                        controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
                         onEnded={finalizeBackNavigation}
                         onError={finalizeBackNavigation}
                     />

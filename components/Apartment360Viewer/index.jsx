@@ -18,6 +18,9 @@ const MOBILE_PRELOAD_CONCURRENCY = 3;
 const MOBILE_MAX_CACHE_SIZE = 24;
 const MOBILE_DPR_CAP = 1.25;
 const DESKTOP_DPR_CAP = 2;
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 2.25;
+const DRAG_START_THRESHOLD = 8;
 
 function getFrameUrl(frameNumber) {
     return `${ROT360_CDN_BASE}/frame_${String(frameNumber).padStart(4, '0')}.avif`;
@@ -55,6 +58,17 @@ function getPreloadSequence(centerFrame, radius) {
     return orderedFrames;
 }
 
+function clampZoom(value) {
+    return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
+}
+
+function getPointerDistance(points) {
+    if (points.length < 2) return 0;
+
+    const [firstPoint, secondPoint] = points;
+    return Math.hypot(secondPoint.x - firstPoint.x, secondPoint.y - firstPoint.y);
+}
+
 export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filteredFlatIds, onReadyChange }) {
     const [currentFrame, setCurrentFrame] = useState(1);
     const [displayFrame, setDisplayFrame] = useState(1);
@@ -62,6 +76,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     const [isSettled, setIsSettled] = useState(true);
     const [isDraggingState, setIsDraggingState] = useState(false);
     const [isConstrainedDevice, setIsConstrainedDevice] = useState(false);
+    const [zoom, setZoom] = useState(MIN_ZOOM);
 
     const frameMotion = useMotionValue(1);
     const smoothFrame = useSpring(frameMotion, {
@@ -91,6 +106,9 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     const drawRafRef = useRef(null);
     const lastDrawnFrameRef = useRef(null);
     const hasAnnouncedReadyRef = useRef(false);
+    const activePointersRef = useRef(new Map());
+    const lastPinchDistanceRef = useRef(null);
+    const startY = useRef(0);
     const preloadRadius = isConstrainedDevice ? MOBILE_PRELOAD_RADIUS : PRELOAD_RADIUS;
     const preloadConcurrency = isConstrainedDevice ? MOBILE_PRELOAD_CONCURRENCY : PRELOAD_CONCURRENCY;
     const maxCacheSize = isConstrainedDevice ? MOBILE_MAX_CACHE_SIZE : MAX_CACHE_SIZE;
@@ -422,22 +440,70 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     }, []);
 
     const handlePointerDown = (e) => {
-        isDragging.current = true;
-        setIsDraggingState(true);
+        activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (activePointersRef.current.size === 2) {
+            lastPinchDistanceRef.current = getPointerDistance([...activePointersRef.current.values()]);
+            isDragging.current = false;
+            setIsDraggingState(false);
+            return;
+        }
+
+        if (activePointersRef.current.size > 1) {
+            return;
+        }
+
+        isDragging.current = false;
         didDragRef.current = false;
-        setIsSettled(false);
         startX.current = e.clientX;
+        startY.current = e.clientY;
         lastFrame.current = smoothFrame.get();
         frameMotion.stop();
     };
 
     const handlePointerMove = (e) => {
-        if (!isDragging.current) return;
+        if (!activePointersRef.current.has(e.pointerId)) return;
+
+        activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (activePointersRef.current.size === 2) {
+            const nextDistance = getPointerDistance([...activePointersRef.current.values()]);
+
+            if (lastPinchDistanceRef.current) {
+                const zoomRatio = nextDistance / lastPinchDistanceRef.current;
+                setZoom((currentZoom) => clampZoom(currentZoom * zoomRatio));
+            }
+
+            lastPinchDistanceRef.current = nextDistance;
+
+            if (isDragging.current) {
+                isDragging.current = false;
+                setIsDraggingState(false);
+            }
+
+            return;
+        }
+
         const deltaX = e.clientX - startX.current;
-        if (Math.abs(deltaX) > 6) {
+        const deltaY = e.clientY - startY.current;
+
+        if (
+            !isDragging.current
+            && Math.abs(deltaX) >= Math.abs(deltaY)
+            && Math.abs(deltaX) > DRAG_START_THRESHOLD
+        ) {
+            isDragging.current = true;
+            setIsDraggingState(true);
+            setIsSettled(false);
+        }
+
+        if (!isDragging.current) return;
+
+        if (Math.abs(deltaX) > DRAG_START_THRESHOLD) {
             didDragRef.current = true;
         }
-        frameMotion.set(lastFrame.current - deltaX * DRAG_SENSITIVITY);
+
+        frameMotion.set(lastFrame.current - deltaX * (DRAG_SENSITIVITY / zoom));
     };
 
     const settleToClosestHotspot = useCallback((sourceFrame) => {
@@ -504,7 +570,13 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
         frameMotion.set(targetFrameRef.current);
     }, [ensureFrameLoaded, frameMotion, preloadAroundFrame]);
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (e) => {
+        activePointersRef.current.delete(e.pointerId);
+
+        if (activePointersRef.current.size < 2) {
+            lastPinchDistanceRef.current = null;
+        }
+
         if (!isDragging.current) return;
         isDragging.current = false;
         setIsDraggingState(false);
@@ -591,6 +663,11 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
         };
     }, [redrawBestAvailableFrame]);
 
+    const handleWheel = useCallback((event) => {
+        event.preventDefault();
+        setZoom((currentZoom) => clampZoom(currentZoom - event.deltaY * 0.0015));
+    }, []);
+
     return (
         <div
             className={styles.viewerContainer}
@@ -598,8 +675,34 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onWheel={handleWheel}
         >
-            <canvas ref={canvasRef} className={styles.backgroundCanvas} />
+            <div
+                className={styles.viewportStage}
+                style={{
+                    transform: `scale(${zoom})`,
+                }}
+            >
+                <canvas ref={canvasRef} className={styles.backgroundCanvas} />
+
+                <div
+                    className={styles.canvasOverlay}
+                    style={{
+                        opacity: 1,
+                        pointerEvents: isSettled && !isDraggingState ? 'auto' : 'none'
+                    }}
+                >
+                    <BuildingModel
+                        currentFrame={snappedFrame}
+                        filteredFlatIds={filteredFlatIds}
+                        onFlatClick={onFlatClick}
+                        onFlatHoverStart={onFlatHoverStart}
+                        shouldAllowFlatClick={shouldAllowFlatClick}
+                        meshInteractionEnabled={isSettled && !isDraggingState}
+                    />
+                </div>
+            </div>
 
             <div
                 className={styles.hotspotControls}
@@ -628,23 +731,6 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
                         <path d="m9.4 17.6 5.6-5.6-5.6-5.6L10.8 5l7 7-7 7z" />
                     </svg>
                 </button>
-            </div>
-
-            <div
-                className={styles.canvasOverlay}
-                style={{
-                    opacity: 1,
-                    pointerEvents: isSettled ? 'auto' : 'none'
-                }}
-            >
-                <BuildingModel
-                    currentFrame={snappedFrame}
-                    filteredFlatIds={filteredFlatIds}
-                    onFlatClick={onFlatClick}
-                    onFlatHoverStart={onFlatHoverStart}
-                    shouldAllowFlatClick={shouldAllowFlatClick}
-                    meshInteractionEnabled={isSettled && !isDraggingState}
-                />
             </div>
 
         </div>

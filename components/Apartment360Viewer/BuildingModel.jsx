@@ -512,7 +512,7 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
             setHoveredFlat(null);
         };
 
-        const handleCanvasClick = (event) => {
+        const activateFlatFromEvent = (event) => {
             if (!meshInteractionEnabled) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -541,9 +541,26 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
             if (flatId) onFlatClick?.(flatId);
         };
 
+        const handleCanvasClick = (event) => {
+            if (event.pointerType && event.pointerType !== 'mouse') {
+                return;
+            }
+
+            activateFlatFromEvent(event);
+        };
+
+        const handleCanvasPointerUp = (event) => {
+            if (event.pointerType !== 'touch' && event.pointerType !== 'pen') {
+                return;
+            }
+
+            activateFlatFromEvent(event);
+        };
+
         canvasElement.addEventListener('pointermove', updateHoveredFlat);
         canvasElement.addEventListener('pointerleave', clearHover);
         canvasElement.addEventListener('pointercancel', clearHover);
+        canvasElement.addEventListener('pointerup', handleCanvasPointerUp);
         canvasElement.addEventListener('click', handleCanvasClick);
         window.addEventListener('blur', clearHover);
 
@@ -551,6 +568,7 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
             canvasElement.removeEventListener('pointermove', updateHoveredFlat);
             canvasElement.removeEventListener('pointerleave', clearHover);
             canvasElement.removeEventListener('pointercancel', clearHover);
+            canvasElement.removeEventListener('pointerup', handleCanvasPointerUp);
             canvasElement.removeEventListener('click', handleCanvasClick);
             window.removeEventListener('blur', clearHover);
         };

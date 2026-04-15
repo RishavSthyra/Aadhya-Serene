@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import AadhyaLogo from "@/components/Home/AadhyaLogo";
 import AbhignaLogo from "@/components/Home/AbhignaLogo";
+import useResponsiveViewport from "@/hooks/useResponsiveViewport";
 import styles from "./home.module.css";
 
 const LuxuryPreloader = dynamic(() => import("@/components/Home/LuxuryPreloader"), {
@@ -15,29 +16,15 @@ const HomeScrollLottie = dynamic(() => import("@/components/Home/HomeScrollLotti
   loading: () => null,
 });
 
-const COMPACT_DEVICE_QUERY = "(max-width: 1180px), (pointer: coarse)";
-
 export default function HomePageClient() {
   const router = useRouter();
   const isNavigatingRef = useRef(false);
   const [showLoader, setShowLoader] = useState(true);
-  const [isCompactDevice, setIsCompactDevice] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia(COMPACT_DEVICE_QUERY);
-    const updateCompactMode = () => setIsCompactDevice(media.matches);
-
-    updateCompactMode();
-    media.addEventListener("change", updateCompactMode);
-
-    return () => {
-      media.removeEventListener("change", updateCompactMode);
-    };
-  }, []);
+  const { isTabletOrBelow } = useResponsiveViewport();
 
   useEffect(() => {
     const hasSeenLoader = sessionStorage.getItem("luxuryHomeLoaderShown");
-    const loaderDurationMs = isCompactDevice ? 1600 : 3200;
+    const loaderDurationMs = isTabletOrBelow ? 1600 : 3200;
 
     if (hasSeenLoader) {
       setShowLoader(false);
@@ -52,7 +39,7 @@ export default function HomePageClient() {
     return () => {
       clearTimeout(timer);
     };
-  }, [isCompactDevice]);
+  }, [isTabletOrBelow]);
 
   const navigateTo = useCallback(
     (path) => {
@@ -159,7 +146,7 @@ export default function HomePageClient() {
           <span className={styles.desktopScroll}>Scroll Down</span>
         </div>
       </section>
-      <HomeScrollLottie className={styles.heroLottie} />
+      {!isTabletOrBelow ? <HomeScrollLottie className={styles.heroLottie} /> : null}
     </main>
   );
 }

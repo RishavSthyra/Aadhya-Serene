@@ -13,7 +13,7 @@
     position: fixed;
     top: 48px;
     left: 20px;
-    z-index: 50;
+    z-index: 145;
     width: 44px;
     height: 44px;
     border-radius: 12px;
@@ -75,7 +75,7 @@
     border: 1px solid rgba(255, 255, 255, 0.11);
     border-radius: 20px;
     pointer-events: auto;
-    z-index: 10;
+    z-index: 125;
     box-shadow:
         0 24px 48px rgba(0, 0, 0, 0.5),
         inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -291,13 +291,13 @@
     display: none;
     position: fixed;
     inset: 0;
-    z-index: 40;
+    z-index: 120;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1279px) {
     .mobileBackdrop {
         display: block;
         opacity: 0;
@@ -312,7 +312,7 @@
 }
 
 /* === Responsive === */
-@media (max-width: 768px) {
+@media (max-width: 1279px) {
     .hamburgerBtn {
         display: flex;
     }

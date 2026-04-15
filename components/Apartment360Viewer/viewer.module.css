@@ -23,6 +23,13 @@
     touch-action: none;
 }
 
+.viewportStage {
+    position: absolute;
+    inset: 0;
+    transform-origin: center center;
+    will-change: transform;
+}
+
 .canvasOverlay {
     position: absolute;
     top: 0;
@@ -111,8 +118,8 @@
 
     .hotspotControls {
         position: absolute;
-        top: auto;
-        bottom: 14px;
+        top: 14px;
+        bottom: auto;
         padding: 5px;
         gap: 6px;
     }
@@ -130,7 +137,7 @@
 
 @media (max-width: 767px) {
     .hotspotControls {
-        bottom: 10px;
+        top: 10px;
     }
 
     .hotspotButton {

@@ -14,12 +14,10 @@ import ApartmentList from "./ApartmentList";
 import { preloadInteriorStartPano } from "../../lib/interior-panos";
 import { preloadFlatEntryVideo } from "../../lib/flats";
 import { isBackgroundTransitionActive } from "../../lib/background-transition";
+import useResponsiveViewport from "../../hooks/useResponsiveViewport";
 
 const DESKTOP_PANEL_WIDTH = 392;
-const COMPACT_BREAKPOINT = 1280;
-const COMPACT_PEEK_HEIGHT = 92;
-const COMPACT_MEDIA_HEIGHT = "min(56.25vw, 48dvh)";
-const COMPACT_MEDIA_WIDTH = "min(100vw, 85.333333dvh)";
+const COMPACT_PEEK_HEIGHT = 82;
 
 const Apartment360Viewer = dynamic(() => import("../Apartment360Viewer"), {
   ssr: false,
@@ -41,9 +39,9 @@ export default function Apartments() {
 
   const router = useRouter();
   const pathname = usePathname();
+  const { isMobile, isTablet, isTabletOrBelow } = useResponsiveViewport();
 
   const [isPanelOpen, setIsPanelOpen] = useState(true);
-  const [isCompactLayout, setIsCompactLayout] = useState(false);
   const [activeTab, setActiveTab] = useState("filters");
   const [isVideoPlaying, setIsVideoPlaying] = useState(() => isBackgroundTransitionActive("apartments"));
   const [viewerVersion, setViewerVersion] = useState(0);
@@ -51,6 +49,13 @@ export default function Apartments() {
   const [isViewerReady, setIsViewerReady] = useState(false);
   const prefetchedFlatRoutesRef = useRef(new Set());
   const hasHandledInitialPathRef = useRef(false);
+  const isCompactLayout = isTabletOrBelow;
+  const compactBottomOffset = "calc(86px + env(safe-area-inset-bottom, 0px))";
+  const compactMediaHeight = isTablet
+    ? "min(46dvh, 430px)"
+    : isMobile
+      ? "min(38dvh, 320px)"
+      : "min(42dvh, 380px)";
 
   const resetApartmentsExperience = useCallback((remountViewer = false) => {
     document.body.style.opacity = "1";
@@ -100,18 +105,8 @@ export default function Apartments() {
   }, [pathname, resetApartmentsExperience]);
 
   useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      const nextCompact = width < COMPACT_BREAKPOINT;
-
-      setIsCompactLayout(nextCompact);
-      setIsPanelOpen((current) => (nextCompact ? current : true));
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+    setIsPanelOpen((current) => (isCompactLayout ? current : true));
+  }, [isCompactLayout]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -162,7 +157,7 @@ export default function Apartments() {
   );
 
   const renderListContent = (
-    <div className={`space-y-2 ${isCompactLayout ? "px-4 pb-28 pt-3" : "mt-2 px-3 pb-5"}`}>
+    <div className={`space-y-2 ${isCompactLayout ? "px-0 pb-20 pt-0" : "mt-2 px-3 pb-5"}`}>
       {loading ? (
         <div className="rounded-[28px] border border-white/18 bg-[linear-gradient(145deg,rgba(248,251,255,0.18),rgba(199,224,255,0.08)_52%,rgba(255,255,255,0.08))] px-6 py-8 text-center text-xs text-white/68 backdrop-blur-[18px]">
           Loading...
@@ -174,6 +169,7 @@ export default function Apartments() {
       ) : (
         <ApartmentList
           apartments={data}
+          compactMode={isCompactLayout}
           onSelect={(apartment) => handleFlatClick(apartment.id)}
         />
       )}
@@ -236,7 +232,7 @@ export default function Apartments() {
           onClick={() => setIsPanelOpen(false)}
           className="fixed inset-0 z-[109] bg-[radial-gradient(circle_at_top,rgba(173,207,255,0.22),rgba(6,10,18,0.38))] backdrop-blur-[4px] xl:hidden"
           style={{
-            top: COMPACT_MEDIA_HEIGHT,
+            top: compactMediaHeight,
           }}
         />
       ) : null}
@@ -244,7 +240,8 @@ export default function Apartments() {
       <div
         className="fixed inset-x-0 bottom-0 z-[120] xl:hidden"
         style={{
-          top: COMPACT_MEDIA_HEIGHT,
+          top: compactMediaHeight,
+          bottom: compactBottomOffset,
           opacity: isVideoPlaying ? 0 : 1,
           pointerEvents: isVideoPlaying ? "none" : "auto",
           height: "auto",
@@ -254,17 +251,17 @@ export default function Apartments() {
           transition: "transform 360ms cubic-bezier(0.22,1,0.36,1), opacity 280ms ease",
         }}
       >
-        <aside className="relative mx-2 flex h-full flex-col overflow-hidden rounded-t-[32px] border border-b-0 border-white/14 bg-[linear-gradient(165deg,rgba(95,107,127,0.48)_0%,rgba(58,67,83,0.56)_46%,rgba(28,34,45,0.76)_100%)] shadow-[0_-20px_80px_rgba(8,12,18,0.34)] backdrop-blur-[28px]">
-          <div className="px-4 pt-3">
-            <div className="mx-auto h-1.5 w-14 rounded-full bg-white/16" />
+        <aside className="relative flex h-full flex-col overflow-hidden rounded-none border border-b-0 border-x-0 border-white/10 bg-[linear-gradient(165deg,rgba(95,107,127,0.48)_0%,rgba(58,67,83,0.56)_46%,rgba(28,34,45,0.76)_100%)] shadow-[0_-20px_80px_rgba(8,12,18,0.34)] backdrop-blur-[28px]">
+          <div className="px-4 pt-2">
+            <div className="mx-auto h-1.5 w-14 rounded-full bg-white/12" />
           </div>
 
-          <div className="relative flex items-center justify-between gap-3 border-b border-white/12 px-4 pb-3 pt-4">
+          <div className="relative flex items-center justify-between gap-3 border-b border-white/10 px-4 pb-2.5 pt-3">
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/82">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/78">
                 Residence Atelier
               </p>
-              <p className="mt-1 text-sm text-white/70">
+              <p className="mt-1 text-[12px] text-white/62 md:text-[13px]">
                 {data.length} matches from {allData?.length ?? data.length} homes
               </p>
             </div>
@@ -273,14 +270,14 @@ export default function Apartments() {
               <button
                 type="button"
                 onClick={resetFilters}
-                className="rounded-full border border-white/12 bg-white/[0.05] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/68 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-white/64 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
               >
                 Reset
               </button>
               <button
                 type="button"
                 onClick={() => setIsPanelOpen((current) => !current)}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-white/[0.05] text-white/68 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white/64 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
                 aria-label={isPanelOpen ? "Collapse apartments panel" : "Expand apartments panel"}
               >
                 {isPanelOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
@@ -288,15 +285,15 @@ export default function Apartments() {
             </div>
           </div>
 
-          <div className="relative border-b border-white/12 px-4 py-3">
-            <div className="grid grid-cols-2 gap-2 rounded-full bg-black/10 p-1">
+          <div className="relative border-b border-white/10 px-3 py-2.5">
+            <div className="grid grid-cols-2 gap-1.5 rounded-[18px] bg-black/10 p-1">
               <button
                 type="button"
                 onClick={() => {
                   setActiveTab("filters");
                   setIsPanelOpen(true);
                 }}
-                className={`rounded-full px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition ${
+                className={`rounded-[14px] px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] transition md:text-[10px] ${
                   activeTab === "filters"
                     ? "bg-white/14 text-white shadow-[0_8px_20px_rgba(0,0,0,0.18)]"
                     : "text-white/54"
@@ -310,7 +307,7 @@ export default function Apartments() {
                   setActiveTab("list");
                   setIsPanelOpen(true);
                 }}
-                className={`rounded-full px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition ${
+                className={`rounded-[14px] px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] transition md:text-[10px] ${
                   activeTab === "list"
                     ? "bg-white/14 text-white shadow-[0_8px_20px_rgba(0,0,0,0.18)]"
                     : "text-white/54"
@@ -339,6 +336,7 @@ export default function Apartments() {
                 resultCount={data.length}
                 totalCount={allData?.length ?? data.length}
                 showCloseButton={false}
+                compactMode
               />
             ) : (
               renderListContent
@@ -360,12 +358,12 @@ export default function Apartments() {
         className="absolute z-0"
         style={{
           top: 0,
-          right: isCompactLayout ? "auto" : 0,
+          right: isCompactLayout ? 0 : 0,
           bottom: isCompactLayout ? "auto" : 0,
-          left: isCompactLayout ? "50%" : 0,
-          width: isCompactLayout ? COMPACT_MEDIA_WIDTH : "auto",
-          height: isCompactLayout ? COMPACT_MEDIA_HEIGHT : "auto",
-          transform: isCompactLayout ? "translateX(-50%)" : "none",
+          left: 0,
+          width: isCompactLayout ? "100vw" : "auto",
+          height: isCompactLayout ? compactMediaHeight : "auto",
+          transform: "none",
           overflow: "hidden",
           backgroundColor: "#050608",
           opacity: shouldRevealViewer ? 1 : 0,

@@ -1,4 +1,4 @@
-const CDN_PANOS_BASE_URL = "https://cdn.sthyra.com/AADHYA%20SERENE/panos/";
+const CDN_PANOS_BASE_URL = "https://cdn.sthyra.com/AADHYA%20SERENE/interior-panos-aadhya-serene/";
 
 function buildUpstreamUrl(pathSegments: string[]) {
   const encodedPath = pathSegments.map((segment) => encodeURIComponent(segment)).join("/");
