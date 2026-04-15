@@ -24,7 +24,7 @@ const BACKGROUND_POSTERS = {
     amenities: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/umbrella-chair2.jpg',
 };
 
-const APARTMENTS_LOOP_HOLD_MS = 1000;
+const APARTMENTS_LOOP_HOLD_MS = 0;
 
 const LAYOUT_CONFIG = {
     home: { transition: HOME_TRANSITION, loop: HOME_LOOP },
@@ -151,10 +151,18 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         () => getSourceCandidates(config.transition),
         [config.transition, getSourceCandidates],
     );
+    const transitionSourcesKey = useMemo(
+        () => transitionSources.join('|'),
+        [transitionSources],
+    );
 
     const loopSources = useMemo(
         () => getSourceCandidates(config.loop),
         [config.loop, getSourceCandidates],
+    );
+    const loopSourcesKey = useMemo(
+        () => loopSources.join('|'),
+        [loopSources],
     );
 
     const loadVideoCandidate = useCallback((video, sources, index, options = {}) => {
@@ -224,6 +232,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             window.dispatchEvent(new CustomEvent('bg-transition-started'));
 
             if (playing) {
+                transitionVideo.currentTime = 0;
                 transitionVideo.play().catch(() => { });
             }
 
@@ -285,16 +294,12 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             transitionVideo.removeEventListener('error', handleTransitionError);
         };
     }, [
+        config.loopHoldMs,
         layout,
-        loadLoopCandidate,
-        loadTransitionCandidate,
-        loopSources.length,
+        loopSourcesKey,
         playing,
         replayKey,
-        shouldEagerlyPrepareLoop,
-        transitionReadyEvent,
-        transitionReadyStateThreshold,
-        transitionSources.length,
+        transitionSourcesKey,
     ]);
 
     useEffect(() => {

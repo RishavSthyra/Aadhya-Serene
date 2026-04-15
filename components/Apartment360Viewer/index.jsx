@@ -60,6 +60,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     const [displayFrame, setDisplayFrame] = useState(1);
     const [snappedFrame, setSnappedFrame] = useState(1);
     const [isSettled, setIsSettled] = useState(true);
+    const [isDraggingState, setIsDraggingState] = useState(false);
     const [isConstrainedDevice, setIsConstrainedDevice] = useState(false);
 
     const frameMotion = useMotionValue(1);
@@ -422,6 +423,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
 
     const handlePointerDown = (e) => {
         isDragging.current = true;
+        setIsDraggingState(true);
         didDragRef.current = false;
         setIsSettled(false);
         startX.current = e.clientX;
@@ -505,6 +507,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     const handlePointerUp = () => {
         if (!isDragging.current) return;
         isDragging.current = false;
+        setIsDraggingState(false);
         if (didDragRef.current) {
             suppressFlatClickUntilRef.current = Date.now() + 550;
         }
@@ -640,6 +643,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
                     onFlatClick={onFlatClick}
                     onFlatHoverStart={onFlatHoverStart}
                     shouldAllowFlatClick={shouldAllowFlatClick}
+                    meshInteractionEnabled={isSettled && !isDraggingState}
                 />
             </div>
 

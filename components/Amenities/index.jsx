@@ -4,37 +4,30 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '../../app/amenities/amenities.module.css';
 
-// React Icons
-import { GiHut, GiKidSlide, GiShuttlecock } from 'react-icons/gi';
-import { FaTableTennis, FaBasketballBall, FaPlay, FaPause } from 'react-icons/fa';
-import { LuPartyPopper } from 'react-icons/lu';
+// Use locally stored 1080p amenity images (downloaded and downscaled via ffmpeg from S3 videos)
+// Served as static assets — no Next.js image optimization
+const AMENITY_POSTERS = {
+    rooftopLeisureDeck: '/assets/amenities/rooftopLeisureDeck.jpg',
+    childrensPlayArea: '/assets/amenities/childrensPlayArea.jpg',
+    swimmingPool: '/assets/amenities/swimmingPool.jpg',
+    gymnasium: '/assets/amenities/gymnasium.jpg',
+    indoorGames: '/assets/amenities/indoorGames.jpg',
+    clubhouse: '/assets/amenities/clubhouse.jpg',
+    basketball: '/assets/amenities/basketball.jpg',
+    badminton: '/assets/amenities/badminton.jpg',
+};
 
-// Custom SVG Icons from Original Source
-const SwimmingPoolIcon = () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '1em', height: '1em' }}>
-        <path d="M11,13 C11.5,13.5 13.1299859,12.8876287 14.2620192,12.5 C15.7222222,12 17.5,12.5 17,12 C15.3609614,10.3609614 15,10 15,10 C15,10 10.5,12.5 11,13 Z M2,20 C4,20 5,19 7,19 C9,19 10,20 12,20 C14,20 15,19 17,19 C19,19 20,20 22,20 M2,16 C4,16 5,15 7,15 C9,15 10,16 12,16 C14,16 15,15 17,15 C19,15 20,16 22,16 M17.5,4 L12.2222222,7 L15.5,10.5 L12,12 M19.2222222,10 C19.774507,10 20.2222222,9.55228475 20.2222222,9 C20.2222222,8.44771525 19.774507,8 19.2222222,8 C18.6699375,8 18.2222222,8.44771525 18.2222222,9 C18.2222222,9.55228475 18.6699375,10 19.2222222,10 Z" />
-    </svg>
-);
-
-const GymIcon = () => (
-    <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '1em', height: '1em' }}>
-        <path d="M20.2739 9.86883L16.8325 4.95392L18.4708 3.80676L21.9122 8.72167L20.2739 9.86883Z" />
-        <path d="M18.3901 12.4086L16.6694 9.95121L8.47783 15.687L10.1985 18.1444L8.56023 19.2916L3.97162 12.7383L5.60992 11.5912L7.33068 14.0487L15.5222 8.31291L13.8015 5.8554L15.4398 4.70825L20.0284 11.2615L18.3901 12.4086Z" />
-        <path d="M20.7651 7.08331L22.4034 5.93616L21.2562 4.29785L19.6179 5.445L20.7651 7.08331Z" />
-        <path d="M7.16753 19.046L3.72607 14.131L2.08777 15.2782L5.52923 20.1931L7.16753 19.046Z" />
-        <path d="M4.38208 18.5549L2.74377 19.702L1.59662 18.0637L3.23492 16.9166L4.38208 18.5549Z" />
-    </svg>
-);
+const AMENITY_FALLBACK = '/assets/amenities/rooftopLeisureDeck.jpg';
 
 const AMENITIES_LIST = [
-    { name: "rooftop leisure deck", icon: GiHut, url: "rooftopLeisureDeck" },
-    { name: "children’s play area", icon: GiKidSlide, url: "childrensPlayArea" },
-    { name: "swimming pool", icon: SwimmingPoolIcon, url: "swimmingPool" },
-    { name: "gymnasium", icon: GymIcon, url: "gymnasium" },
-    { name: "indoor games lounge", icon: FaTableTennis, url: "indoorGames" },
-    { name: "clubhouse", icon: LuPartyPopper, url: "clubhouse" },
-    { name: "outdoor basketball court", icon: FaBasketballBall, url: "basketball" },
-    { name: "outdoor badminton court", icon: GiShuttlecock, url: "badminton" }
+    { name: "rooftop leisure deck", url: "rooftopLeisureDeck" },
+    { name: "children's play area", url: "childrensPlayArea" },
+    { name: "swimming pool", url: "swimmingPool" },
+    { name: "gymnasium", url: "gymnasium" },
+    { name: "indoor games lounge", url: "indoorGames" },
+    { name: "clubhouse", url: "clubhouse" },
+    { name: "outdoor basketball court", url: "basketball" },
+    { name: "outdoor badminton court", url: "badminton" },
 ];
 
 export default function Amenities({ initialAmenity = null }) {
@@ -43,27 +36,11 @@ export default function Amenities({ initialAmenity = null }) {
     const isValidRequestedAmenity = AMENITIES_LIST.some((item) => item.url === initialAmenity);
     const selectedAmenityFromUrl = isValidRequestedAmenity ? initialAmenity : defaultAmenity;
     const [activeAmenity, setActiveAmenity] = useState(selectedAmenityFromUrl);
-    const [isVideoPlaying, setIsVideoPlaying] = useState(true);
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-    // When mounted, default to no active amenity, but listen for video triggers
     useEffect(() => {
-        // Eagerly restore body opacity if navigated from elsewhere
         document.body.style.opacity = '1';
         document.body.style.transition = '';
-    }, []);
-
-    // Effect to observe background video state via events from GlobalBackground
-    useEffect(() => {
-        const handleStart = () => setIsVideoPlaying(true);
-        const handleEnd = () => setIsVideoPlaying(false);
-
-        window.addEventListener('bg-transition-started', handleStart);
-        window.addEventListener('bg-transition-ended', handleEnd);
-
-        return () => {
-            window.removeEventListener('bg-transition-started', handleStart);
-            window.removeEventListener('bg-transition-ended', handleEnd);
-        };
     }, []);
 
     useEffect(() => {
@@ -81,13 +58,40 @@ export default function Amenities({ initialAmenity = null }) {
             router.replace(`/amenities?amenity=${amenityUrl}`);
             window.dispatchEvent(new CustomEvent('bg-layout', { detail: `amenities-${amenityUrl}` }));
         }
+        setIsMobileOpen(false);
     };
+
+    const toggleMobile = () => setIsMobileOpen((prev) => !prev);
+
+    const sidebarClass = `${styles.sidebar} ${isMobileOpen ? styles.mobileOpen : styles.mobileClosed}`;
 
     return (
         <main className={styles.container}>
-            <section className={styles.sidebar}>
+            {/* Mobile backdrop — click to close */}
+            <div
+                className={`${styles.mobileBackdrop} ${isMobileOpen ? styles.visible : ''}`}
+                onClick={() => setIsMobileOpen(false)}
+                aria-hidden="true"
+            />
+
+            {/* Hamburger button for mobile/tablet */}
+            <button
+                className={`${styles.hamburgerBtn} ${isMobileOpen ? styles.open : ''}`}
+                onClick={toggleMobile}
+                aria-label="Toggle amenities sidebar"
+                type="button"
+            >
+                <span className={styles.hamburgerLine} />
+                <span className={styles.hamburgerLine} />
+                <span className={styles.hamburgerLine} />
+            </button>
+
+            <section className={sidebarClass} role="complementary" aria-label="Amenities sidebar">
                 <header className={styles.header}>
-                    <h1>AMENITIES</h1>
+                    <div className={styles.headerTop}>
+                        <h1>AMENITIES</h1>
+                        <span className={styles.headerBadge}>8 Spaces</span>
+                    </div>
                     <h2>We Give More</h2>
                     <p>
                         Embrace nature with landscaped gardens and walking trails.
@@ -98,8 +102,8 @@ export default function Amenities({ initialAmenity = null }) {
                 <div className={styles.cardOverflowContainer}>
                     <ul className={styles.cardContainer} aria-label="Amenity list">
                         {AMENITIES_LIST.map((item) => {
-                            const Icon = item.icon;
                             const isActive = activeAmenity === item.url;
+                            const posterSrc = AMENITY_POSTERS[item.url] || AMENITY_FALLBACK;
 
                             return (
                                 <li
@@ -115,28 +119,40 @@ export default function Amenities({ initialAmenity = null }) {
                                         }
                                     }}
                                     aria-pressed={isActive}
+                                    aria-label={item.name}
                                 >
                                     <div className={styles.cardButton}>
-                                        <span className={styles.amenityIconContainer} aria-hidden="true">
-                                            <Icon />
-                                        </span>
-                                        <span className={styles.amenityName}>
-                                            {item.name}
-                                        </span>
-                                        <span className={`${styles.amenityPlayLabel} ${isActive ? styles.activeButton : styles.inactiveButton}`}>
-                                            {isActive ? (
-                                                <>
-                                                    {/* In the original, the icon toggled based on paused state of the entire cinematic. For simplicity, we show actively playing or pause depending on if it's selected. */}
-                                                    <FaPlay className={styles.playPauseIcon} aria-hidden="true" />
-                                                    <span className={styles.playPauseText}>Playing</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FaPlay className={styles.playPauseIcon} aria-hidden="true" />
-                                                    <span className={styles.playPauseText}>Play</span>
-                                                </>
-                                            )}
-                                        </span>
+                                        <div className={styles.amenityImageContainer}>
+                                            <img
+                                                src={posterSrc}
+                                                alt={item.name}
+                                                className={styles.amenityImage}
+                                                loading="lazy"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = AMENITY_FALLBACK;
+                                                }}
+                                            />
+                                        </div>
+                                        <div className={styles.cardInfoRow}>
+                                            <span className={styles.amenityName}>
+                                                {item.name}
+                                            </span>
+                                            <span className={`${styles.amenityPlayLabel} ${isActive ? styles.activeButton : styles.inactiveButton}`}>
+                                                <svg
+                                                    className={styles.playPauseIcon}
+                                                    viewBox="0 0 10 10"
+                                                    fill="currentColor"
+                                                    aria-hidden="true"
+                                                >
+                                                    {isActive ? (
+                                                        <path d="M2 1.5h2.5v7H2z" />
+                                                    ) : (
+                                                        <path d="M2 1.5l6 3.5-6 3.5z" />
+                                                    )}
+                                                </svg>
+                                                {isActive ? 'Playing' : 'Play'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </li>
                             );

@@ -137,7 +137,7 @@ function getMeshWorldCenter(mesh) {
     return center;
 }
 
-function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHoverStart, onFlatClick, shouldAllowFlatClick }) {
+function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHoverStart, onFlatClick, shouldAllowFlatClick, meshInteractionEnabled }) {
     const { scene: sourceScene } = useGLTF('/assets/building.glb');
     const scene = useMemo(() => sourceScene.clone(true), [sourceScene]);
     const { size, gl, camera } = useThree();
@@ -376,13 +376,13 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
 
     const isFlatHoverable = useCallback((flatId) => {
         if (!flatId) return false;
-        return pointVisibleIds.has(flatId);
-    }, [pointVisibleIds]);
+        return meshInteractionEnabled && pointVisibleIds.has(flatId);
+    }, [meshInteractionEnabled, pointVisibleIds]);
 
     const shouldShowFlatFromFilter = useCallback((flatId) => {
-        if (!flatId || filteredFlatIds == null) return false;
+        if (!flatId || filteredFlatIds == null || !meshInteractionEnabled) return false;
         return pointVisibleIds.has(flatId) && filteredFlatIds.has(flatId);
-    }, [filteredFlatIds, pointVisibleIds]);
+    }, [filteredFlatIds, meshInteractionEnabled, pointVisibleIds]);
 
     const applyHover = useCallback((flatId) => {
         if (!flatId || !flatRefs.current[flatId]) return;
@@ -474,13 +474,24 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
         if (hoveredIdRef.current && !isFlatHoverable(hoveredIdRef.current)) {
             setHoveredFlat(null);
         }
-    }, [isFlatHoverable, setHoveredFlat, shouldShowFlatFromFilter]);
+    }, [isFlatHoverable, meshInteractionEnabled, setHoveredFlat, shouldShowFlatFromFilter]);
+
+    useEffect(() => {
+        if (!meshInteractionEnabled && hoveredIdRef.current) {
+            setHoveredFlat(null);
+        }
+    }, [meshInteractionEnabled, setHoveredFlat]);
 
     useEffect(() => {
         const canvasElement = gl?.domElement;
         if (!canvasElement) return;
 
         const updateHoveredFlat = (event) => {
+            if (!meshInteractionEnabled) {
+                setHoveredFlat(null);
+                return;
+            }
+
             const rect = canvasElement.getBoundingClientRect();
             pointerRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             pointerRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -502,6 +513,12 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
         };
 
         const handleCanvasClick = (event) => {
+            if (!meshInteractionEnabled) {
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+            }
+
             if (shouldAllowFlatClick && !shouldAllowFlatClick()) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -537,7 +554,7 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
             canvasElement.removeEventListener('click', handleCanvasClick);
             window.removeEventListener('blur', clearHover);
         };
-    }, [camera, gl, isFlatHoverable, onFlatClick, setHoveredFlat, shouldAllowFlatClick]);
+    }, [camera, gl, isFlatHoverable, meshInteractionEnabled, onFlatClick, setHoveredFlat, shouldAllowFlatClick]);
 
     let position = new THREE.Vector3();
     let quaternion = new THREE.Quaternion();
@@ -620,7 +637,7 @@ function FlatTooltip({ flatId, x, y }) {
     );
 }
 
-export default function BuildingModel({ currentFrame, filteredFlatIds, onFlatClick, onFlatHoverStart, shouldAllowFlatClick }) {
+export default function BuildingModel({ currentFrame, filteredFlatIds, onFlatClick, onFlatHoverStart, shouldAllowFlatClick, meshInteractionEnabled = true }) {
     const [tooltip, setTooltip] = useState({ flatId: null, x: 0, y: 0 });
 
     const handleFlatHover = useCallback((flatId, x, y) => {
@@ -641,6 +658,7 @@ export default function BuildingModel({ currentFrame, filteredFlatIds, onFlatCli
                     onFlatHoverStart={onFlatHoverStart}
                     onFlatClick={onFlatClick}
                     shouldAllowFlatClick={shouldAllowFlatClick}
+                    meshInteractionEnabled={meshInteractionEnabled}
                 />
             </Canvas>
             <FlatTooltip {...tooltip} />

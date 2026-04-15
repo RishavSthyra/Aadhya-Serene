@@ -15,6 +15,7 @@ export default function GlobalBackground() {
     const [playing, setPlaying] = useState(true);
     const [replayKey, setReplayKey] = useState(0);
     const prevPathname = useRef(pathname);
+    const eagerApartmentsTransitionRef = useRef(false);
 
     useEffect(() => {
         // Sync layout with current route unless eager transition fired
@@ -31,8 +32,15 @@ export default function GlobalBackground() {
         const shouldSkipApartmentsReplay = isEnteringApartmentsPage
             ? consumeSkipNextApartmentsReplay()
             : false;
+        const shouldSuppressReplayFromEagerTransition = isEnteringApartmentsPage
+            && eagerApartmentsTransitionRef.current;
 
-        if (isEnteringApartmentsPage && newLayout === layout && !shouldSkipApartmentsReplay) {
+        if (
+            isEnteringApartmentsPage
+            && newLayout === layout
+            && !shouldSkipApartmentsReplay
+            && !shouldSuppressReplayFromEagerTransition
+        ) {
             setBackgroundTransitionState('apartments', true);
             setReplayKey((current) => current + 1);
         }
@@ -40,6 +48,10 @@ export default function GlobalBackground() {
         if (isEnteringApartmentsPage && shouldSkipApartmentsReplay) {
             setBackgroundTransitionState('apartments', false);
             window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+        }
+
+        if (isEnteringApartmentsPage) {
+            eagerApartmentsTransitionRef.current = false;
         }
 
         // We just navigated to a new route, but the layout didn't fundamentally change
@@ -63,6 +75,7 @@ export default function GlobalBackground() {
 
     useEffect(() => {
         const handleLayout = (e) => {
+            eagerApartmentsTransitionRef.current = e.detail === 'apartments';
             setBackgroundTransitionState(e.detail, true);
             setLayout(e.detail);
         };
