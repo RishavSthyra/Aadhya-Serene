@@ -132,6 +132,7 @@ export default function FlatDetailPage() {
     const sidebarPanelRef = useRef(null);
     const isNavigatingRef = useRef(false);
     const reverseFallbackTimeoutRef = useRef(null);
+    const hasActiveTouchGestureRef = useRef(false);
 
     const [muted, setMuted] = useState(true);
     const [floorPlanError, setFloorPlanError] = useState(false);
@@ -164,6 +165,7 @@ export default function FlatDetailPage() {
         setVideoPhase('intro');
         setIsExitTransitionActive(false);
         isNavigatingRef.current = false;
+        hasActiveTouchGestureRef.current = false;
     }, [clearReverseFallbackTimeout, id]);
 
     useEffect(() => {
@@ -241,18 +243,20 @@ export default function FlatDetailPage() {
         loopVideo.currentTime = 0;
         loopVideo.addEventListener('playing', revealWhenReady);
 
-        loopVideo.play().catch(() => {
-            loopVideo.removeEventListener('playing', revealWhenReady);
-            const introVideo = introVideoRef.current;
-            if (!introVideo) return;
+        loopVideo.play()
+            .then(() => {
+                if (loopVideo.readyState >= 2) {
+                    revealLoopVideo();
+                }
+            })
+            .catch(() => {
+                loopVideo.removeEventListener('playing', revealWhenReady);
+                const introVideo = introVideoRef.current;
+                if (!introVideo) return;
 
-            introVideo.loop = true;
-            introVideo.play().catch(() => {});
-        });
-
-        if (loopVideo.readyState >= 2) {
-            revealLoopVideo();
-        }
+                introVideo.loop = true;
+                introVideo.play().catch(() => {});
+            });
     }, [hasFlatSpecificVideo, revealLoopVideo]);
 
     const navigateBack = useCallback(() => {
@@ -333,6 +337,7 @@ export default function FlatDetailPage() {
 
         const handleWheel = (event) => {
             if (isNavigatingRef.current) return;
+            if (!shouldAllowGestureBack) return;
             if (isInsideInteractivePanel(event.target)) return;
             if (event.deltaY < -30) navigateBack();
         };
@@ -341,12 +346,22 @@ export default function FlatDetailPage() {
         let touchStartedInsidePanel = false;
 
         const handleTouchStart = (event) => {
+            if (isNavigatingRef.current || !shouldAllowGestureBack) {
+                hasActiveTouchGestureRef.current = false;
+                return;
+            }
+
+            hasActiveTouchGestureRef.current = true;
             touchStartY = event.touches[0].clientY;
             touchStartedInsidePanel = isInsideInteractivePanel(event.target);
         };
 
         const handleTouchEnd = (event) => {
             if (isNavigatingRef.current) return;
+            if (!shouldAllowGestureBack) return;
+            if (!hasActiveTouchGestureRef.current) return;
+
+            hasActiveTouchGestureRef.current = false;
             if (touchStartedInsidePanel) return;
             const deltaY = touchStartY - event.changedTouches[0].clientY;
 
@@ -355,16 +370,22 @@ export default function FlatDetailPage() {
             }
         };
 
+        const handleTouchCancel = () => {
+            hasActiveTouchGestureRef.current = false;
+        };
+
         window.addEventListener('wheel', handleWheel, { passive: true });
         window.addEventListener('touchstart', handleTouchStart, { passive: true });
         window.addEventListener('touchend', handleTouchEnd, { passive: true });
+        window.addEventListener('touchcancel', handleTouchCancel, { passive: true });
 
         return () => {
             window.removeEventListener('wheel', handleWheel);
             window.removeEventListener('touchstart', handleTouchStart);
             window.removeEventListener('touchend', handleTouchEnd);
+            window.removeEventListener('touchcancel', handleTouchCancel);
         };
-    }, [navigateBack]);
+    }, [navigateBack, shouldAllowGestureBack]);
 
     const toggleMute = useCallback(() => {
         setMuted((currentMuted) => !currentMuted);
@@ -412,6 +433,7 @@ export default function FlatDetailPage() {
     const reverseVideoSrc = hasFlatSpecificVideo ? flatReverseVideoSrc(fallbackId) : null;
     const bhkValue = Number.parseInt(flat.type, 10);
     const shouldShowDetailPanels = !hasFlatSpecificVideo || videoPhase === 'loop';
+    const shouldAllowGestureBack = !hasFlatSpecificVideo || videoPhase === 'loop';
     const interiorPanosHref = buildInteriorPanosHref({
         apartmentId: flat.id,
         flatNumber: flat.flat,
