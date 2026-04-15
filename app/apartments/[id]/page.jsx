@@ -145,6 +145,7 @@ export default function FlatDetailPage() {
     const fallbackId = flat ? flatVideoFallbackId(id) : null;
     const hasVideo = !!fallbackId;
     const hasFlatSpecificVideo = hasVideo && !useVideoFallback;
+    const shouldAllowGestureBack = !hasFlatSpecificVideo || videoPhase === 'loop';
 
     const clearReverseFallbackTimeout = useCallback(() => {
         if (!reverseFallbackTimeoutRef.current) return;
@@ -433,7 +434,6 @@ export default function FlatDetailPage() {
     const reverseVideoSrc = hasFlatSpecificVideo ? flatReverseVideoSrc(fallbackId) : null;
     const bhkValue = Number.parseInt(flat.type, 10);
     const shouldShowDetailPanels = !hasFlatSpecificVideo || videoPhase === 'loop';
-    const shouldAllowGestureBack = !hasFlatSpecificVideo || videoPhase === 'loop';
     const interiorPanosHref = buildInteriorPanosHref({
         apartmentId: flat.id,
         flatNumber: flat.flat,
