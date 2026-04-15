@@ -290,17 +290,69 @@
 .loaderCanvasWrap {
     position: relative;
     z-index: 1;
-    width: min(98vw, 1180px);
-    height: min(58vh, 560px);
-    filter: drop-shadow(0 0 28px rgba(216, 181, 106, 0.18));
+    width: min(100vw, 1560px);
+    height: min(76vh, 760px);
+    filter: drop-shadow(0 0 44px rgba(216, 181, 106, 0.22));
     animation: loaderCanvasEnter 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.loaderWordmarkFrame {
+    position: absolute;
+    left: 50%;
+    top: 48%;
+    z-index: 2;
+    width: min(90vw, 1500px);
+    padding: clamp(28px, 4vw, 44px) clamp(24px, 4.5vw, 64px);
+    transform: translate(-50%, -50%);
+    border: 1px solid rgba(239, 216, 167, 0.24);
+    border-radius: 28px;
+    background:
+        linear-gradient(180deg, rgba(12, 12, 16, 0.42), rgba(12, 12, 16, 0.16)),
+        radial-gradient(circle at top, rgba(223, 190, 128, 0.09), transparent 56%);
+    box-shadow:
+        0 32px 90px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    text-align: center;
+    animation: loaderInterfaceEnter 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+}
+
+.loaderWordmarkAccent {
+    margin: 0 0 18px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: rgba(245, 224, 171, 0.82);
+}
+
+.loaderWordmark {
+    margin: 0;
+    font-family: 'Brush Script MT', 'Segoe Script', 'Snell Roundhand', cursive;
+    font-size: clamp(4.6rem, 10vw, 9.8rem);
+    font-weight: 400;
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    color: #f5e3b6;
+    text-shadow:
+        0 0 24px rgba(219, 189, 126, 0.24),
+        0 18px 60px rgba(0, 0, 0, 0.38);
+}
+
+.loaderWordmarkSubcopy {
+    margin: 20px 0 0;
+    font-size: clamp(12px, 1.2vw, 16px);
+    font-weight: 500;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgba(255, 244, 221, 0.56);
 }
 
 .loaderInterface {
     position: absolute;
     left: 50%;
     bottom: clamp(56px, 9vh, 96px);
-    z-index: 2;
+    z-index: 3;
     width: min(420px, calc(100vw - 56px));
     transform: translateX(-50%);
     animation: loaderInterfaceEnter 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
@@ -379,7 +431,31 @@
 @media (max-width: 700px) {
     .loaderCanvasWrap {
         width: 100vw;
-        height: 420px;
+        height: 62vh;
+    }
+
+    .loaderWordmarkFrame {
+        width: calc(100vw - 28px);
+        top: 46%;
+        border-radius: 22px;
+        padding: 24px 18px 22px;
+    }
+
+    .loaderWordmarkAccent {
+        margin-bottom: 14px;
+        font-size: 10px;
+        letter-spacing: 0.24em;
+    }
+
+    .loaderWordmark {
+        font-size: clamp(3.2rem, 15vw, 5.4rem);
+        line-height: 0.98;
+    }
+
+    .loaderWordmarkSubcopy {
+        margin-top: 14px;
+        font-size: 10px;
+        letter-spacing: 0.18em;
     }
 
     .loaderEyebrow {

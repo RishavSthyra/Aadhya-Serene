@@ -29,3 +29,4 @@ export const AUTOROTATE_OPTIONS = {
 
 export const IDLE_TIME = 3000;
 
+

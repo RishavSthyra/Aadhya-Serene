@@ -1,448 +1,406 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { Inter } from 'next/font/google';
+import { ArrowUpRight, CheckCircle2, MapPin, Ruler } from 'lucide-react';
 
-const ASSET_BUCKET = 'https://aadhya-serene-assets-v2.s3.amazonaws.com';
+const titleFont = Inter({
+  subsets: ['latin'],
+  weight: ['200', '300'],
+  display: 'swap',
+});
 
-const PROJECT_METRICS = [
-    { value: '1.2', label: 'Acre enclave' },
-    { value: 'G + 6', label: 'Signature floors' },
-    { value: '2 & 3', label: 'BHK residences' },
-    { value: '136', label: 'Curated homes' },
-    { value: '10+', label: 'Lifestyle amenities' },
-    { value: '1-3', label: 'Private balconies' },
+const TITLE_LINES = ['Quiet luxury for a', 'calmer way to live.'];
+const FEATURE_PILLS = [
+  'Thoughtfully Planned Residences',
+  'Contemporary Architecture',
+  'Landscaped Open Surroundings',
 ];
 
-const PROJECT_BADGES = [
-    { src: `${ASSET_BUCKET}/images/badges/exclusive.png`, alt: 'Exclusive Terrace', label: 'Exclusive Terrace' },
-    { src: `${ASSET_BUCKET}/images/badges/bbmp.png`, alt: 'BBMP', label: 'BBMP Approved' },
-    { src: `${ASSET_BUCKET}/images/badges/rera.png`, alt: 'RERA', label: 'RERA Registered' },
+const PROJECT_STATS = [
+  {
+    label: 'Acre Enclave',
+    end: 1.2,
+    decimals: 1,
+    format: (value) => value.toFixed(1),
+  },
+  {
+    label: 'Signature Floors',
+    end: 6,
+    format: (value) => `G+${Math.round(value)}`,
+  },
+  {
+    label: 'BHK Residences',
+    end: 3,
+    format: (value) => `${Math.max(2, Math.round(value))} & 3`,
+  },
+  {
+    label: 'Curated Homes',
+    end: 136,
+    format: (value) => `${Math.round(value)}`,
+  },
+  {
+    label: 'Lifestyle Amenities',
+    end: 10,
+    format: (value) => `${Math.round(value)}+`,
+  },
+  {
+    label: 'Private Balconies',
+    end: 3,
+    format: (value) => `1-${Math.max(1, Math.round(value))}`,
+  },
 ];
 
-const DESIGN_HIGHLIGHTS = [
-    'Thoughtfully planned residences',
-    'Contemporary architecture',
-    'Landscaped open surroundings',
+const DETAIL_ROWS = [
+  {
+    icon: MapPin,
+    title: 'Thanisandra, Bengaluru',
+    description: 'An address connected to the best of North Bengaluru.',
+  },
+  {
+    icon: Ruler,
+    title: '1001 sqft - 1498 sqft',
+    description: 'Well-proportioned 2 and 3 BHK residences.',
+  },
+  {
+    icon: CheckCircle2,
+    title: 'RERA registered',
+    description: 'PRM / KA / RERA / 1251 / 446 / PR / 190614 / 002604',
+  },
 ];
 
-const INFO_ITEMS = [
-    {
-        icon: 'location',
-        title: 'Thanisandra, Bengaluru',
-        detail: 'An address connected to the best of North Bengaluru.',
-        href: 'https://maps.app.goo.gl/RDCEzLdhqbDhoMWR8',
+const titleContainer = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.075,
+      delayChildren: 0.38,
     },
-    {
-        icon: 'size',
-        title: '1001 sqft - 1498 sqft',
-        detail: 'Well-proportioned 2 and 3 BHK residences.',
+  },
+};
+
+const titleCharacter = {
+  hidden: {
+    y: '110%',
+    opacity: 0,
+  },
+  show: {
+    y: '0%',
+    opacity: 1,
+    transition: {
+      duration: 1.4,
+      ease: [0.16, 1, 0.3, 1],
     },
-    {
-        icon: 'rera',
-        title: 'RERA registered',
-        detail: 'PRM / KA / RERA / 1251 / 446 / PR / 190614 / 002604',
+  },
+};
+
+const paragraphContainer = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.016,
+      delayChildren: 0.86,
     },
-];
+  },
+};
 
-function LocationIcon() {
-    return (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-            <circle cx="12" cy="10" r="3" />
-        </svg>
-    );
-}
+const paragraphCharacter = {
+  hidden: {
+    y: '105%',
+    opacity: 0,
+  },
+  show: {
+    y: '0%',
+    opacity: 1,
+    transition: {
+      duration: 0.95,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+};
 
-function SizeIcon() {
-    return (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="7" height="7" />
-            <rect x="14" y="3" width="7" height="7" />
-            <rect x="3" y="14" width="7" height="7" />
-            <rect x="14" y="14" width="7" height="7" />
-        </svg>
-    );
-}
-
-function ReraIcon() {
-    return (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-            <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-    );
-}
-
-function ChevronRight() {
-    return (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M13.1 12L8 6.9 9.4 5.5 16 12l-6.6 6.5L8 17.1z" />
-            <path d="M7.1 12L2 6.9 3.4 5.5 10 12l-6.6 6.5L2 17.1z" opacity=".5" />
-        </svg>
-    );
-}
-
-function PanelChevron({ open }) {
-    return (
-        <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={`transition-transform duration-300 ${open ? 'rotate-0' : 'rotate-180'}`}
-            aria-hidden="true"
+function AnimatedLine({
+  text,
+  className = '',
+  containerVariants = titleContainer,
+  characterVariants = titleCharacter,
+}) {
+  return (
+    <motion.span
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className={`block ${className}`}
+      aria-label={text}
+    >
+      {Array.from(text).map((character, index) => (
+        <span
+          key={`${character}-${index}`}
+          className="inline-block overflow-hidden align-top"
         >
-            <path d="m9 18 6-6-6-6" />
-        </svg>
-    );
-}
-
-function InfoIcon({ type }) {
-    const baseClass = 'flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.04] text-[#dfbf82] shadow-[inset_0_0_0_1px_rgba(223,191,130,0.15)]';
-
-    if (type === 'location') {
-        return (
-            <span className={baseClass}>
-                <LocationIcon />
-            </span>
-        );
-    }
-
-    if (type === 'size') {
-        return (
-            <span className={baseClass}>
-                <SizeIcon />
-            </span>
-        );
-    }
-
-    return (
-        <span className={baseClass}>
-            <ReraIcon />
+          <motion.span
+            variants={characterVariants}
+            className="inline-block will-change-transform"
+          >
+            {character === ' ' ? '\u00A0' : character}
+          </motion.span>
         </span>
-    );
+      ))}
+    </motion.span>
+  );
 }
 
-function InfoRow({ item }) {
-    const content = (
-        <>
-            <InfoIcon type={item.icon} />
-            <span className="flex min-w-0 flex-col gap-1">
-                <strong className="text-[13px] font-medium tracking-[0.03em] text-[#f3ebdf]">
-                    {item.title}
-                </strong>
-                <small className="text-[11.5px] leading-[1.7] tracking-[0.02em] text-white/58">
-                    {item.detail}
-                </small>
-            </span>
-        </>
-    );
+function CountUpStat({ end, label, format, decimals = 0, delay = 0 }) {
+  const [value, setValue] = React.useState(0);
 
-    if (item.href) {
-        return (
-            <a
-                href={item.href}
-                target="_blank"
-                rel="noreferrer"
-                className="grid grid-cols-[36px_minmax(0,1fr)] items-start gap-4 py-4 text-left transition-transform duration-200 hover:translate-x-0.5"
-            >
-                {content}
-            </a>
-        );
-    }
+  useEffect(() => {
+    let frameId;
+    let timeoutId;
+    const duration = 1500;
 
-    return (
-        <div className="grid grid-cols-[36px_minmax(0,1fr)] items-start gap-4 py-4">
-            {content}
-        </div>
-    );
-}
+    const startAnimation = () => {
+      const startTime = performance.now();
 
-function OverviewPanelContent({ compact = false }) {
-    return (
-        <>
-            <div className={compact ? 'space-y-4' : 'space-y-5'}>
-                <h1 className={`max-w-full font-normal leading-[0.94] tracking-[-0.06em] text-[#f4ede2] [font-family:Georgia,Times_New_Roman,serif] ${compact ? 'text-[clamp(1.8rem,8vw,2.5rem)]' : 'text-[clamp(2rem,3.3vw,3.75rem)]'}`}>
-                    Quiet luxury for a calmer way to live.
-                </h1>
+      const tick = (now) => {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const nextValue = end * eased;
 
-                <p className={`max-w-full font-light text-white/72 ${compact ? 'text-[0.93rem] leading-[1.74]' : 'text-[clamp(0.94rem,0.95vw,1rem)] leading-[1.82]'}`}>
-                    Aadhya Serene is crafted for those who value clean architecture,
-                    generous light, and a more composed living experience in North
-                    Bengaluru. Every detail is shaped to feel elevated, elegant, and
-                    effortlessly comfortable.
-                </p>
-            </div>
+        setValue(progress >= 1 ? end : nextValue);
 
-            <div className={`flex flex-wrap ${compact ? 'gap-2.5' : 'gap-3'}`}>
-                {DESIGN_HIGHLIGHTS.map((item) => (
-                    <span
-                        key={item}
-                        className={`inline-flex items-center rounded-full bg-white/[0.04] text-[#eee1c7] shadow-[inset_0_0_0_1px_rgba(222,198,147,0.12)] ${compact ? 'min-h-8 px-3 text-[9px] tracking-[0.12em]' : 'min-h-9 px-4 text-[10px] tracking-[0.13em]'} uppercase`}
-                    >
-                        {item}
-                    </span>
-                ))}
-            </div>
+        if (progress < 1) {
+          frameId = window.requestAnimationFrame(tick);
+        }
+      };
 
-            <div className="divide-y divide-white/8">
-                {INFO_ITEMS.map((item) => (
-                    <InfoRow key={item.title} item={item} />
-                ))}
-            </div>
-        </>
-    );
-}
+      frameId = window.requestAnimationFrame(tick);
+    };
 
-function ProjectBriefContent({ failedBadges, onBadgeError, compact = false, onExplore }) {
-    return (
-        <>
-            <div className={compact ? 'space-y-2' : 'space-y-2'}>
-                <p className="m-0 text-[11px] font-semibold uppercase tracking-[0.26em] text-[#d8bc83]">
-                    Project Brief
-                </p>
-                <p className={`m-0 text-white/68 ${compact ? 'max-w-full text-[12.5px] leading-[1.7]' : 'max-w-[24ch] text-[13px] leading-[1.75]'}`}>
-                    Essential details with a quieter, more luxurious finish.
-                </p>
-            </div>
+    timeoutId = window.setTimeout(startAnimation, delay);
 
-            <div className={`grid grid-cols-2 ${compact ? 'gap-2' : 'gap-2.5'}`}>
-                {PROJECT_METRICS.map((metric) => (
-                    <div
-                        key={metric.label}
-                        className={`flex flex-col justify-between rounded-[18px] bg-white/[0.04] shadow-[inset_0_0_0_1px_rgba(222,198,147,0.08)] transition-transform duration-200 hover:-translate-y-0.5 ${compact ? 'min-h-[82px] px-3.5 py-3' : 'min-h-[90px] px-4 py-3.5'}`}
-                    >
-                        <span className={`leading-none tracking-[-0.05em] text-[#f4ead8] [font-family:Georgia,Times_New_Roman,serif] ${compact ? 'text-[1.35rem]' : 'text-[clamp(1.45rem,2vw,2rem)]'}`}>
-                            {metric.value}
-                        </span>
-                        <span className={`font-semibold uppercase leading-[1.45] text-white/52 ${compact ? 'text-[9px] tracking-[0.14em]' : 'text-[10px] tracking-[0.16em]'}`}>
-                            {metric.label}
-                        </span>
-                    </div>
-                ))}
-            </div>
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
+  }, [delay, end]);
 
-            <div className={`grid grid-cols-3 ${compact ? 'gap-2 pt-1' : 'gap-3 px-1 pt-1'}`}>
-                {PROJECT_BADGES.map((badge, index) => {
-                    const hasFailed = failedBadges[index];
+  const renderedValue = format ? format(value) : value.toFixed(decimals);
 
-                    return (
-                        <div
-                            key={badge.alt}
-                            className="flex min-w-0 flex-col items-center gap-2 rounded-[16px] bg-white/[0.03] px-2 py-3 text-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
-                        >
-                            {hasFailed ? (
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.06] px-2 text-[8px] font-semibold uppercase tracking-[0.12em] text-[#f0dfb6]">
-                                    {badge.alt}
-                                </div>
-                            ) : (
-                                <img
-                                    src={badge.src}
-                                    alt={badge.alt}
-                                    width={48}
-                                    height={48}
-                                    loading="lazy"
-                                    decoding="async"
-                                    onError={() => onBadgeError(index)}
-                                    className="h-12 w-12 object-contain [filter:saturate(1)_brightness(1.02)_drop-shadow(0_8px_18px_rgba(0,0,0,0.22))]"
-                                />
-                            )}
-                            <span className="text-[9px] font-semibold uppercase leading-[1.45] tracking-[0.12em] text-white/66">
-                                {badge.label}
-                            </span>
-                        </div>
-                    );
-                })}
-            </div>
-
-            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#dec693]/45 to-transparent" />
-
-            <button
-                type="button"
-                onClick={onExplore}
-                className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[#dbc08a] to-[#b69456] px-5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#111214] shadow-[0_12px_28px_rgba(180,140,67,0.24),inset_0_1px_0_rgba(255,255,255,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:brightness-[1.03]"
-            >
-                <span>Explore Apartments</span>
-                <ChevronRight />
-            </button>
-
-            <p className={`m-0 text-center text-white/42 ${compact ? 'text-[9px] leading-[1.6]' : 'text-[10px] leading-[1.7]'}`}>
-                The images and walkthroughs shown are artistic representations and
-                may vary from the final delivered experience.
-            </p>
-        </>
-    );
+  return (
+    <article className="h-full rounded-[22px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.1)_100%)] px-4 py-4 shadow-[0_20px_40px_rgba(6,10,18,0.16),inset_0_1px_0_rgba(255,255,255,0.22)] backdrop-blur-[24px] md:px-4 md:py-4">
+      <div className="text-[1.85rem] font-light leading-none tracking-[-0.05em] text-[#f7f8fb] md:text-[1.95rem]">
+        {renderedValue}
+      </div>
+      <p className="mt-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/62 md:text-[9.5px]">
+        {label}
+      </p>
+    </article>
+  );
 }
 
 export default function About() {
-    const router = useRouter();
-    const isNavigatingRef = useRef(false);
-    const [mobilePanel, setMobilePanel] = useState('overview');
-    const [isMobileCardOpen, setIsMobileCardOpen] = useState(true);
-    const [failedBadges, setFailedBadges] = useState({});
+  const router = useRouter();
+  const isNavigatingRef = useRef(false);
 
-    const navigateTo = useCallback((path) => {
-        if (isNavigatingRef.current) return;
-        isNavigatingRef.current = true;
+  const navigateTo = useCallback(
+    (path) => {
+      if (isNavigatingRef.current) return;
+      isNavigatingRef.current = true;
 
-        if (path === '/') {
-            window.dispatchEvent(new CustomEvent('bg-layout', { detail: 'home' }));
-        }
+      if (path === '/') {
+        window.dispatchEvent(new CustomEvent('bg-layout', { detail: 'home' }));
+      } else if (path === '/apartments') {
+        window.dispatchEvent(
+          new CustomEvent('bg-layout', { detail: 'apartments' }),
+        );
+      }
 
-        const container = document.getElementById('about-container');
+      const container = document.getElementById('about-container');
 
-        if (container) {
-            container.style.opacity = '0';
-            container.style.transition = 'opacity 0.6s ease';
-        } else {
-            document.body.style.opacity = '0';
-            document.body.style.transition = 'opacity 0.6s ease';
-        }
+      if (container) {
+        container.style.opacity = '0';
+        container.style.transition = 'opacity 0.6s ease';
+      } else {
+        document.body.style.opacity = '0';
+        document.body.style.transition = 'opacity 0.6s ease';
+      }
 
-        setTimeout(() => router.push(path), 600);
-    }, [router]);
+      window.setTimeout(() => router.push(path), 600);
+    },
+    [router],
+  );
 
-    useEffect(() => {
-        const container = document.getElementById('about-container');
+  useEffect(() => {
+    const container = document.getElementById('about-container');
 
-        if (container) {
-            container.style.opacity = '1';
-            container.style.transition = '';
-        }
+    if (container) {
+      container.style.opacity = '1';
+      container.style.transition = '';
+    }
 
-        document.body.style.opacity = '1';
-        document.body.style.transition = '';
-        isNavigatingRef.current = false;
+    document.body.style.opacity = '1';
+    document.body.style.transition = '';
+    isNavigatingRef.current = false;
 
-        const canWheelNavigate = window.matchMedia('(pointer: fine)').matches;
+    const canWheelNavigate = window.matchMedia('(pointer: fine)').matches;
 
-        const onWheel = (e) => {
-            if (isNavigatingRef.current) return;
-            if (e.deltaY > 30) navigateTo('/apartments');
-            if (e.deltaY < -30) navigateTo('/');
-        };
+    const onWheel = (event) => {
+      if (isNavigatingRef.current) return;
 
-        if (canWheelNavigate) {
-            window.addEventListener('wheel', onWheel, { passive: true });
-        }
+      if (event.deltaY > 36) navigateTo('/apartments');
+      if (event.deltaY < -36) navigateTo('/');
+    };
 
-        return () => {
-            if (canWheelNavigate) {
-                window.removeEventListener('wheel', onWheel);
-            }
-        };
-    }, [navigateTo]);
+    if (canWheelNavigate) {
+      window.addEventListener('wheel', onWheel, { passive: true });
+    }
 
-    const handleBadgeError = useCallback((index) => {
-        setFailedBadges((current) => {
-            if (current[index]) return current;
-            return { ...current, [index]: true };
-        });
-    }, []);
+    return () => {
+      if (canWheelNavigate) {
+        window.removeEventListener('wheel', onWheel);
+      }
+    };
+  }, [navigateTo]);
 
-    return (
-        <main
-            id="about-container"
-            className="fixed inset-0 z-10 px-4 pb-24 pt-20 md:px-6 md:pb-7 md:pt-24 lg:px-8 xl:px-10"
-        >
-            <div className="pointer-events-none h-full overflow-y-auto overscroll-contain md:hidden">
-                <button
-                    type="button"
-                    onClick={() => setIsMobileCardOpen((current) => !current)}
-                    className={`pointer-events-auto fixed right-2 top-1/2 z-[22] flex h-14 w-12 -translate-y-1/2 items-center justify-center rounded-full border shadow-[0_14px_34px_rgba(0,0,0,0.26)] backdrop-blur-xl transition-colors duration-300 ${isMobileCardOpen ? 'border-white/35 bg-[#e1c07d] text-[#161616]' : 'border-white/18 bg-[#121316]/92 text-[#f0dfb6]'}`}
-                    aria-label={isMobileCardOpen ? 'Hide about panel' : 'Show about panel'}
+  return (
+    <main id="about-container" className="fixed inset-0 z-10 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(6,8,12,0.04)_0%,rgba(6,8,12,0.08)_42%,rgba(6,8,12,0.72)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_82%,rgba(218,189,133,0.16),transparent_30%),radial-gradient(circle_at_70%_78%,rgba(255,255,255,0.07),transparent_24%)]" />
+
+      <section className="relative z-[1] flex min-h-full items-end px-4 pb-24 pt-28 md:px-8 md:pb-14 lg:px-12 lg:pb-16 xl:px-16">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42vh] bg-[linear-gradient(180deg,transparent_0%,rgba(7,8,12,0.1)_16%,rgba(7,8,12,0.94)_100%)]" />
+
+        <div className="relative z-[1] flex w-full flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
+          <motion.div
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full max-w-[540px] overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-6 py-7 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] md:px-7 md:py-8"
+          >
+            <div className="flex items-center gap-4">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/72">
+                About Aadhya Serene
+              </span>
+              <span className="h-px flex-1 bg-white/18" />
+            </div>
+
+            <div className="mt-5 space-y-1">
+              {TITLE_LINES.map((line) => (
+                <AnimatedLine
+                  key={line}
+                  text={line}
+                  className={`${titleFont.className} text-[clamp(1.72rem,3.2vw,3.45rem)] font-light leading-[1.03] tracking-[-0.04em] text-[#f7f7fa] [text-shadow:0_12px_34px_rgba(0,0,0,0.18)] md:whitespace-nowrap`}
+                />
+              ))}
+            </div>
+
+            <motion.p className="mt-5 max-w-[405px] text-[13.5px] leading-[1.82] text-white/80 md:text-[14px]">
+              <AnimatedLine
+                text="Aadhya Serene is crafted for those who value clean architecture, generous light, and a more composed living experience in North Bengaluru. Every detail is shaped to feel elevated, elegant, and effortlessly comfortable."
+                containerVariants={paragraphContainer}
+                characterVariants={paragraphCharacter}
+                className="max-w-[405px]"
+              />
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.78, delay: 0.98, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-6 flex flex-wrap gap-2.5"
+            >
+              {FEATURE_PILLS.map((pill) => (
+                <span
+                  key={pill}
+                  className="inline-flex min-h-[38px] items-center rounded-full border border-white/18 bg-white/8 px-4 text-[10px] font-medium uppercase tracking-[0.14em] text-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-[18px]"
                 >
-                    <PanelChevron open={isMobileCardOpen} />
-                </button>
+                  {pill}
+                </span>
+              ))}
+            </motion.div>
 
-                <div className="flex min-h-full items-end justify-end overflow-x-hidden pb-2 pr-1">
-                    <section
-                        className="pointer-events-auto relative w-full max-w-[430px] overflow-visible transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                        style={{
-                            transform: isMobileCardOpen
-                                ? 'translateX(0)'
-                                : 'translateX(calc(100% + 2rem))',
-                        }}
-                    >
-                        <div className="relative overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,rgba(17,17,19,0.88)_0%,rgba(10,10,12,0.8)_100%)] shadow-[0_28px_84px_rgba(0,0,0,0.44),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-[22px]">
-                            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(214,184,126,0.13),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(123,92,52,0.14),transparent_28%)]" />
-
-                            <div className="relative z-[1] flex flex-col gap-5 p-5">
-                                <div className="flex items-center gap-3">
-                                    <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#d8bc83]">
-                                        About Aadhya Serene
-                                    </p>
-                                    <span className="h-px flex-1 bg-gradient-to-r from-[#d8bc83]/35 to-transparent" />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2 rounded-[18px] bg-black/15 p-1 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                                    {['overview', 'details'].map((panel) => {
-                                        const active = mobilePanel === panel;
-
-                                        return (
-                                            <button
-                                                key={panel}
-                                                type="button"
-                                                onClick={() => setMobilePanel(panel)}
-                                                className={`min-h-10 rounded-[14px] px-4 text-[10px] font-semibold uppercase tracking-[0.16em] transition ${active ? 'bg-[#dbc08a] text-[#151515] shadow-[0_10px_24px_rgba(180,140,67,0.2)]' : 'text-white/70'}`}
-                                            >
-                                                {panel === 'overview' ? 'Overview' : 'Project Brief'}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                <div className="flex flex-col gap-5">
-                                    {mobilePanel === 'overview' ? (
-                                        <OverviewPanelContent compact />
-                                    ) : (
-                                        <ProjectBriefContent
-                                            compact
-                                            failedBadges={failedBadges}
-                                            onBadgeError={handleBadgeError}
-                                            onExplore={() => navigateTo('/apartments')}
-                                        />
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.82, delay: 1.1, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-7 space-y-0"
+            >
+              {DETAIL_ROWS.map(({ icon: Icon, title, description }, index) => (
+                <div
+                  key={title}
+                  className={`flex items-start gap-4 py-5 ${
+                    index !== DETAIL_ROWS.length - 1 ? 'border-b border-white/12' : ''
+                  }`}
+                >
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/18 bg-white/8 text-white/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-[18px]">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="m-0 text-[1.05rem] font-medium tracking-[-0.02em] text-[#f4f5f8]">
+                      {title}
+                    </h3>
+                    <p className="mt-2 text-[13px] leading-[1.75] text-white/62">
+                      {description}
+                    </p>
+                  </div>
                 </div>
+              ))}
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 22 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.84, delay: 1.18, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-6"
+            >
+              <button
+                type="button"
+                onClick={() => navigateTo('/apartments')}
+                className="inline-flex min-h-[48px] items-center gap-2 rounded-full border border-white/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(241,244,248,0.84)_100%)] px-6 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#101114] shadow-[0_12px_30px_rgba(0,0,0,0.16)] transition duration-300 hover:-translate-y-0.5"
+              >
+                Explore Apartments
+                <ArrowUpRight className="h-4 w-4" />
+              </button>
+            </motion.div>
+          </motion.div>
+
+          <motion.aside
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.92, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full max-w-[350px] self-start overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-5 py-6 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] lg:ml-auto lg:self-end md:px-6 md:py-7"
+          >
+            <div className="flex items-center gap-4">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/72">
+                Project Brief
+              </span>
+              <span className="h-px flex-1 bg-white/18" />
             </div>
 
-            <div className="pointer-events-none hidden h-full items-end gap-5 md:grid lg:justify-between lg:[grid-template-columns:minmax(470px,560px)_360px]">
-                <section className="pointer-events-auto relative overflow-hidden rounded-[34px] bg-[linear-gradient(180deg,rgba(17,17,19,0.84)_0%,rgba(11,11,13,0.74)_100%)] shadow-[0_32px_90px_rgba(0,0,0,0.46),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-[22px]">
-                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(214,184,126,0.13),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(123,92,52,0.14),transparent_28%)]" />
+            <p className="mt-4 max-w-[28ch] text-[14px] leading-[1.8] text-white/72">
+              Essential details with a quieter, more luxurious finish and a more
+              composed residential rhythm.
+            </p>
 
-                    <div className="relative z-[1] flex h-full flex-col gap-7 p-6 md:p-7 xl:p-8">
-                        <div className="flex items-center gap-4">
-                            <p className="m-0 text-[11px] font-semibold uppercase tracking-[0.26em] text-[#d8bc83]">
-                                About Aadhya Serene
-                            </p>
-                            <span className="h-px flex-1 bg-gradient-to-r from-[#d8bc83]/35 to-transparent" />
-                        </div>
-
-                        <OverviewPanelContent />
-                    </div>
-                </section>
-
-                <section className="pointer-events-auto relative overflow-hidden rounded-[30px] bg-[linear-gradient(180deg,rgba(16,16,18,0.86)_0%,rgba(10,10,12,0.76)_100%)] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-[22px] md:p-7">
-                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(214,184,126,0.14),transparent_34%)]" />
-
-                    <div className="relative z-[1] flex flex-col gap-5">
-                        <ProjectBriefContent
-                            failedBadges={failedBadges}
-                            onBadgeError={handleBadgeError}
-                            onExplore={() => navigateTo('/apartments')}
-                        />
-                    </div>
-                </section>
+            <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5">
+              {PROJECT_STATS.map((stat, index) => (
+                <CountUpStat
+                  key={stat.label}
+                  end={stat.end}
+                  label={stat.label}
+                  format={stat.format}
+                  decimals={stat.decimals}
+                  delay={860 + index * 110}
+                />
+              ))}
             </div>
-        </main>
-    );
+          </motion.aside>
+        </div>
+      </section>
+    </main>
+  );
 }

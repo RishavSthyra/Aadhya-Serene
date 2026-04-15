@@ -3,33 +3,29 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
+  Building2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  FileText,
   Info,
-  Building2,
-  Sparkles,
-  PlayCircle,
   MapPin,
   Phone,
-  FileText,
+  PlayCircle,
+  Sparkles,
 } from "lucide-react";
 
-const MEGA_MENU_IMAGES = [
-  {
-    src: "https://cdn.sthyra.com/AADHYA%20SERENE/images/analog-landscape-city-with-buildings%20(1).jpg",
-    title: "Our Vision",
-  },
-  {
-    src: "https://cdn.sthyra.com/AADHYA%20SERENE/images/3d-rendering-loft-luxury-living-room-with-shelf-near-dining-table%20(1).jpg",
-    title: "Luxury Interiors",
-  },
-  {
-    src: "https://cdn.sthyra.com/AADHYA%20SERENE/images/rooftop-sunset-city-view%20(1).jpg",
-    title: "Skyline Evenings",
-  },
+const AMENITIES_VISIBLE_COUNT = 5;
+const AMENITIES_CAROUSEL_GAP_PX = 10;
+
+const NAV_LINKS = [
+  { href: "/about", label: "About", icon: Info },
+  { href: "/apartments", label: "Apartments", icon: Building2 },
+  { href: "/amenities", label: "Amenities", icon: Sparkles, menuKey: "amenities" },
+  { href: "/walkthrough", label: "Walkthrough", icon: PlayCircle },
+  { href: "/location", label: "Location", icon: MapPin },
 ];
 
 const AMENITIES_DROPDOWN_ITEMS = [
@@ -37,7 +33,6 @@ const AMENITIES_DROPDOWN_ITEMS = [
     label: "Rooftop Leisure Deck",
     url: "rooftopLeisureDeck",
     sublabel: "Aadhya Serene",
-    description: "Sky lounge and open-air leisure space.",
     image:
       "https://cdn.sthyra.com/AADHYA%20SERENE/images/rooftop-sunset-city-view%20(1).jpg",
   },
@@ -45,7 +40,6 @@ const AMENITIES_DROPDOWN_ITEMS = [
     label: "Children's Play Area",
     url: "childrensPlayArea",
     sublabel: "Aadhya Serene",
-    description: "Safe, playful, and family-friendly zone.",
     image:
       "https://cdn.sthyra.com/AADHYA%20SERENE/images/ground-red-outdoor-child-complex-colorful%20(1).jpg",
   },
@@ -53,7 +47,6 @@ const AMENITIES_DROPDOWN_ITEMS = [
     label: "Swimming Pool",
     url: "swimmingPool",
     sublabel: "Aadhya Serene",
-    description: "Resort-style relaxation and daily refresh.",
     image:
       "https://cdn.sthyra.com/AADHYA%20SERENE/images/umbrella-chair2.jpg",
   },
@@ -61,7 +54,6 @@ const AMENITIES_DROPDOWN_ITEMS = [
     label: "Gymnasium",
     url: "gymnasium",
     sublabel: "Aadhya Serene",
-    description: "Fitness-focused everyday wellness space.",
     image:
       "https://cdn.sthyra.com/AADHYA%20SERENE/images/3d-rendering-modern-loft-gym-fitness%20(1).jpg",
   },
@@ -69,7 +61,6 @@ const AMENITIES_DROPDOWN_ITEMS = [
     label: "Indoor Games Lounge",
     url: "indoorGames",
     sublabel: "Aadhya Serene",
-    description: "Recreation and social indoor activities.",
     image:
       "https://cdn.sthyra.com/AADHYA%20SERENE/images/close-up-foosball-table-play-football-game-empty-office-table-used-soccer-game-after-work-space-celebrate-party-with-drinks-entertainment-workplace-have-fun%20(1).jpg",
   },
@@ -77,7 +68,6 @@ const AMENITIES_DROPDOWN_ITEMS = [
     label: "Clubhouse",
     url: "clubhouse",
     sublabel: "Aadhya Serene",
-    description: "A central social and celebration hub.",
     image:
       "https://cdn.sthyra.com/AADHYA%20SERENE/images/rooftop-sunset-city-view%20(1).jpg",
   },
@@ -85,7 +75,6 @@ const AMENITIES_DROPDOWN_ITEMS = [
     label: "Outdoor Basketball Court",
     url: "basketball",
     sublabel: "Aadhya Serene",
-    description: "Active outdoor sports and play.",
     image:
       "https://cdn.sthyra.com/AADHYA%20SERENE/images/basketball-player-attempting-distance-throw%20(1).jpg",
   },
@@ -93,104 +82,39 @@ const AMENITIES_DROPDOWN_ITEMS = [
     label: "Outdoor Badminton Court",
     url: "badminton",
     sublabel: "Aadhya Serene",
-    description: "Open-air court for quick matches.",
     image:
       "https://cdn.sthyra.com/AADHYA%20SERENE/images/side-view-people-playing-badminton%20(1).jpg",
   },
 ];
 
-const AMENITIES_VISIBLE_COUNT = 5;
-const AMENITIES_CAROUSEL_GAP_PX = 12;
-
-const links = [
-  { href: "/about", label: "ABOUT", icon: Info, hasMegaMenu: true, menuKey: "about" },
-  { href: "/apartments", label: "APARTMENTS", icon: Building2 },
-  { href: "/amenities", label: "AMENITIES", icon: Sparkles, hasMegaMenu: true, menuKey: "amenities" },
-  { href: "/walkthrough", label: "WALKTHROUGH", icon: PlayCircle },
-  { href: "/location", label: "LOCATION", icon: MapPin },
-];
-
-const actionButtons = [
-  {
-    label: "Contact Us",
-    icon: Phone,
-    className:
-      "bg-gradient-to-r from-[#f6d86b] via-[#ffe89c] to-[#f0c954] text-[#111214] shadow-[0_10px_24px_rgba(240,201,84,0.24)]",
-  },
-  {
-    label: "Brochure",
-    icon: FileText,
-    className:
-      "bg-white/[0.08] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.24)] backdrop-blur-xl",
-  },
-];
-
-const megaMenuVariants = {
-  hidden: {
-    opacity: 0,
-    y: -18,
-    clipPath: "inset(0% 0% 16% 0% round 28px)",
-    filter: "blur(10px)",
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    clipPath: "inset(0% 0% 0% 0% round 28px)",
-    filter: "blur(0px)",
-    transition: {
-      duration: 0.42,
-      ease: [0.16, 1, 0.3, 1],
-      staggerChildren: 0.05,
-      delayChildren: 0.05,
-    },
-  },
-  exit: {
-    opacity: 0,
-    y: -12,
-    clipPath: "inset(0% 0% 12% 0% round 28px)",
-    filter: "blur(8px)",
-    transition: {
-      duration: 0.24,
-      ease: [0.4, 0, 0.2, 1],
-    },
-  },
-};
-
-const megaItemVariants = {
-  hidden: { opacity: 0, y: 16, filter: "blur(6px)" },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.38, ease: [0.16, 1, 0.3, 1] },
-  },
-  exit: {
-    opacity: 0,
-    y: 10,
-    filter: "blur(4px)",
-    transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] },
-  },
-};
+function getContainerId(pathname) {
+  if (pathname === "/") return "home-inner";
+  if (pathname.startsWith("/about")) return "about-container";
+  return null;
+}
 
 export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
   const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
-  const isLocationRoute = pathname === "/location";
   const [openMenu, setOpenMenu] = useState(null);
-  const [amenitiesCarouselIndex, setAmenitiesCarouselIndex] = useState(0);
   const [isNavVisible, setIsNavVisible] = useState(true);
+  const [amenitiesCarouselIndex, setAmenitiesCarouselIndex] = useState(0);
   const hideTimeoutRef = useRef(null);
+
   const shouldAutoHideNav =
     pathname === "/location" ||
     pathname === "/amenities" ||
     pathname.startsWith("/apartments") ||
     isInteriorPanosRoute;
+
   const maxAmenitiesStartIndex = Math.max(
     0,
-    AMENITIES_DROPDOWN_ITEMS.length - AMENITIES_VISIBLE_COUNT
+    AMENITIES_DROPDOWN_ITEMS.length - AMENITIES_VISIBLE_COUNT,
   );
-  const amenitiesCardBasis = `calc((100% - ${(AMENITIES_VISIBLE_COUNT - 1) * AMENITIES_CAROUSEL_GAP_PX}px) / ${AMENITIES_VISIBLE_COUNT})`;
+  const amenitiesCardBasis = `calc((100% - ${
+    (AMENITIES_VISIBLE_COUNT - 1) * AMENITIES_CAROUSEL_GAP_PX
+  }px) / ${AMENITIES_VISIBLE_COUNT})`;
   const amenitiesTrackOffset = `calc(-${amenitiesCarouselIndex} * ((${amenitiesCardBasis}) + ${AMENITIES_CAROUSEL_GAP_PX}px))`;
 
   const clearHideTimeout = () => {
@@ -212,7 +136,7 @@ export default function Nav() {
     hideTimeoutRef.current = window.setTimeout(() => {
       setOpenMenu(null);
       setIsNavVisible(false);
-    }, 2000);
+    }, 1800);
   };
 
   useEffect(() => {
@@ -234,57 +158,48 @@ export default function Nav() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return undefined;
+    if (openMenu !== "amenities") {
+      setAmenitiesCarouselIndex(0);
+    }
+  }, [openMenu]);
 
-    const hrefsToPrefetch = [...new Set([...links.map((link) => link.href), "/contact"])]
-      .filter((href) => href !== pathname);
-
-    const prefetchRoutes = () => {
-      hrefsToPrefetch.forEach((href) => {
-        router.prefetch(href);
-      });
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!(event.target instanceof Element)) return;
+      if (event.target.closest("[data-nav-shell]")) return;
+      setOpenMenu(null);
     };
 
-    let idleId;
-    let timeoutId;
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setOpenMenu(null);
+      }
+    };
 
-    if ("requestIdleCallback" in window) {
-      idleId = window.requestIdleCallback(prefetchRoutes, { timeout: 1200 });
-    } else {
-      timeoutId = window.setTimeout(prefetchRoutes, 300);
-    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
 
     return () => {
-      if (idleId) {
-        window.cancelIdleCallback(idleId);
-      }
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
     };
-  }, [pathname, router]);
-
-  const handlePrevAmenities = () => {
-    setAmenitiesCarouselIndex((current) => Math.max(0, current - 1));
-  };
-
-  const handleNextAmenities = () => {
-    setAmenitiesCarouselIndex((current) =>
-      Math.min(maxAmenitiesStartIndex, current + 1)
-    );
-  };
+  }, []);
 
   const navigateWithTransition = (href, layoutKey, options = {}) => {
-    if (pathname === href) return;
+    if (pathname === href) {
+      setOpenMenu(null);
+      return;
+    }
 
     const { eagerLayout = true } = options;
     if (layoutKey && eagerLayout) {
       window.dispatchEvent(new CustomEvent("bg-layout", { detail: layoutKey }));
     }
 
-    const containerId =
-      pathname === "/" ? "home-inner" : pathname.startsWith("/about") ? "about-container" : null;
+    const containerId = getContainerId(pathname);
     const container = containerId ? document.getElementById(containerId) : null;
+
+    setOpenMenu(null);
 
     if (!container) {
       router.push(href);
@@ -299,6 +214,35 @@ export default function Nav() {
     }, 600);
   };
 
+  const handleRouteNavigation = (href) => {
+    if (href === "/about") {
+      navigateWithTransition("/about", "about");
+      return;
+    }
+
+    if (href === "/apartments") {
+      navigateWithTransition("/apartments", "apartments");
+      return;
+    }
+
+    if (href === "/location") {
+      navigateWithTransition("/location", "location", { eagerLayout: false });
+      return;
+    }
+
+    router.push(href);
+  };
+
+  const handlePrevAmenities = () => {
+    setAmenitiesCarouselIndex((current) => Math.max(0, current - 1));
+  };
+
+  const handleNextAmenities = () => {
+    setAmenitiesCarouselIndex((current) =>
+      Math.min(maxAmenitiesStartIndex, current + 1),
+    );
+  };
+
   if (isInteriorPanosRoute) {
     return null;
   }
@@ -307,7 +251,7 @@ export default function Nav() {
     <>
       {shouldAutoHideNav ? (
         <div
-          className={`fixed inset-x-0 top-0 z-[490] hidden h-[116px] md:block ${
+          className={`fixed inset-x-0 top-0 z-[490] hidden h-[88px] md:block ${
             isNavVisible ? "pointer-events-none" : "pointer-events-auto"
           }`}
           onMouseEnter={showNav}
@@ -318,7 +262,7 @@ export default function Nav() {
       <header
         className={`fixed inset-x-0 top-0 z-[500] hidden will-change-transform transition-[transform,opacity,filter] duration-700 ease-[cubic-bezier(0.19,1,0.22,1)] md:block ${
           shouldAutoHideNav && !isNavVisible
-            ? "pointer-events-none -translate-y-[calc(100%+12px)] opacity-0 blur-[1px]"
+            ? "pointer-events-none -translate-y-[calc(100%+14px)] opacity-0 blur-[1px]"
             : "translate-y-0 opacity-100 blur-0"
         }`}
         onMouseEnter={showNav}
@@ -327,196 +271,151 @@ export default function Nav() {
           scheduleHideNav();
         }}
       >
-        <div className={`relative overflow-hidden border-b shadow-[0_18px_48px_rgba(0,0,0,0.16)] backdrop-blur-[22px] ${
-          isLocationRoute
-            ? "border-slate-300/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.78)_0%,rgba(245,247,250,0.6)_100%)]"
-            : "border-white/15 bg-[linear-gradient(180deg,rgba(132,149,165,0.48)_0%,rgba(113,128,142,0.3)_100%)]"
-        }`}>
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.12),transparent_16%,transparent_84%,rgba(255,255,255,0.08))]" />
+        <div className="mx-auto w-full max-w-[1820px] px-4 pt-4 xl:px-8 xl:pt-5">
+          <div
+            data-nav-shell
+            className="mx-auto rounded-full border border-white/42 bg-[linear-gradient(180deg,rgba(249,245,236,0.76)_0%,rgba(242,236,226,0.62)_100%)] px-4 py-3 text-[#17191f] shadow-[0_18px_42px_rgba(10,12,18,0.12),inset_0_1px_0_rgba(255,255,255,0.56)] backdrop-blur-[28px] supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(249,245,236,0.64)_0%,rgba(242,236,226,0.48)_100%)] md:px-6 xl:px-8"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <Link
+                href="/"
+                className="min-w-[160px] text-left text-[#121319] no-underline"
+              >
+                <span className="font-display block text-[1.28rem] font-semibold leading-none tracking-[-0.04em]">
+                  Aadhya Serene
+                </span>
+                {/* <span className="mt-0.5 block text-[8.5px] font-semibold uppercase tracking-[0.24em] text-[#6d727d]">
+                  Signature Residence
+                </span> */}
+              </Link>
 
-          <div className="relative flex h-[88px] w-full items-center justify-between px-8 xl:px-10">
-            <div className={`min-w-[180px] text-lg font-semibold ${isLocationRoute ? "text-slate-950" : "text-white"}`}>
-              <Link href="/">Aadhya Serene</Link>
-            </div>
+              <nav className="hidden items-center gap-1 lg:flex">
+                {NAV_LINKS.map(({ href, label, menuKey }) => {
+                  const active = pathname === href;
+                  const isMenuOpen = openMenu === menuKey;
 
-            <nav className="flex items-center gap-7 text-[13px]">
-              {links.map(({ href, label, hasMegaMenu, menuKey }) => {
-                const active = pathname === href;
-                const isMenuOpen = openMenu === menuKey;
-
-                if (hasMegaMenu) {
                   return (
-                    <div
+                    <button
                       key={href}
-                      className="relative"
-                      onMouseEnter={() => setOpenMenu(menuKey)}
+                      type="button"
+                      onMouseEnter={() => {
+                        if (menuKey) {
+                          setOpenMenu(menuKey);
+                        } else {
+                          setOpenMenu(null);
+                        }
+                      }}
+                      onFocus={() => {
+                        if (menuKey) {
+                          setOpenMenu(menuKey);
+                        } else {
+                          setOpenMenu(null);
+                        }
+                      }}
+                      onClick={() => {
+                        if (menuKey) {
+                          setOpenMenu((current) =>
+                            current === menuKey ? null : menuKey,
+                          );
+                          return;
+                        }
+
+                        handleRouteNavigation(href);
+                      }}
+                      className={`inline-flex min-h-[42px] items-center gap-1.5 rounded-full px-4 transition ${
+                        active || isMenuOpen
+                          ? "bg-[#17191f] text-[#f7f3eb] shadow-[0_10px_18px_rgba(10,12,18,0.16)]"
+                          : "text-[#343740] hover:bg-black/[0.045]"
+                      }`}
                     >
-                      <Link
-                        href={href}
-                        className={`relative flex items-center gap-1.5 pb-1 text-sm transition ${
-                          active || isMenuOpen
-                            ? isLocationRoute
-                              ? "text-slate-950"
-                              : "text-[#f3d056]"
-                            : isLocationRoute
-                              ? "text-slate-700 hover:text-slate-950"
-                              : "text-white/82 hover:text-white"
-                        }`}
-                      >
-                        <span>{label}</span>
+                      <span className="text-[12px] font-medium uppercase tracking-[0.12em]">
+                        {label}
+                      </span>
+                      {menuKey ? (
                         <ChevronDown
-                          size={14}
-                          className={`transition-transform duration-200 ${
+                          className={`h-3 w-3 transition-transform ${
                             isMenuOpen ? "rotate-180" : ""
                           }`}
                         />
-                        {active || isMenuOpen ? (
-                          <span className={`absolute inset-x-0 -bottom-0.5 h-px ${isLocationRoute ? "bg-slate-950" : "bg-[#f3d056]"}`} />
-                        ) : null}
-                      </Link>
-                    </div>
+                      ) : null}
+                    </button>
                   );
-                }
+                })}
+              </nav>
 
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={(event) => {
-                      if (href === "/about" && pathname === "/") {
-                        event.preventDefault();
-                        navigateWithTransition("/about", "about");
-                      }
-                      if (href === "/location") {
-                        event.preventDefault();
-                        navigateWithTransition("/location", "location", {
-                          eagerLayout: false,
-                        });
-                      }
-                      if (href === "/apartments") {
-                        event.preventDefault();
-                        navigateWithTransition("/apartments", "apartments", {
-                          eagerLayout: false,
-                        });
-                      }
-
-                    }}
-                    className={`relative pb-1 text-sm transition ${
-                      active
-                        ? isLocationRoute
-                          ? "text-slate-950"
-                          : "text-[#f3d056]"
-                        : isLocationRoute
-                          ? "text-slate-700 hover:text-slate-950"
-                          : "text-white/82 hover:text-white"
-                    }`}
-                  >
-                    {label}
-                    {active ? (
-                      <span className={`absolute inset-x-0 -bottom-0.5 h-px ${isLocationRoute ? "bg-slate-950" : "bg-[#f3d056]"}`} />
-                    ) : null}
-                  </Link>
-                );
-              })}
-            </nav>
-
-            <div className="flex min-w-[220px] items-center justify-end gap-3">
-              {actionButtons.map(({ label, icon: Icon, className }) => (
+              <div className="hidden min-w-[210px] items-center justify-end gap-2 md:flex">
                 <button
-                  key={label}
-                  className={`flex min-h-[42px] items-center gap-2 rounded-full px-5 text-sm font-medium transition duration-200 hover:-translate-y-0.5 ${className}`}
+                  type="button"
+                  onClick={() => router.push("/contact")}
+                  className="inline-flex min-h-[42px] items-center gap-1.5 rounded-full bg-[#17191f] px-4 text-[#f7f3eb] shadow-[0_10px_18px_rgba(10,12,18,0.16)] transition hover:-translate-y-0.5"
                 >
-                  <Icon size={15} />
-                  {label}
+                  <Phone className="h-3 w-3" />
+                  <span className="text-[12px] font-medium uppercase tracking-[0.12em]">
+                    Contact Us
+                  </span>
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => router.push("/contact")}
+                  className="inline-flex min-h-[42px] items-center gap-1.5 rounded-full border border-black/7 bg-white/74 px-4 text-[#20232b] transition hover:bg-white"
+                >
+                  <FileText className="h-3 w-3" />
+                  <span className="text-[12px] font-medium uppercase tracking-[0.12em]">
+                    Brochure
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
 
-          <AnimatePresence mode="wait" initial={false}>
-            {openMenu === "about" ? (
-              <motion.div
-                key="about-mega-menu"
-                variants={megaMenuVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="relative border-t border-white/12 px-8 pb-8 pt-6 xl:px-10 xl:pb-9 xl:pt-7"
-                onMouseEnter={() => setOpenMenu("about")}
-              >
-                <div className="relative grid grid-cols-[280px_minmax(0,1fr)] items-start gap-6 xl:grid-cols-[400px_minmax(0,1fr)] xl:gap-7">
-                  <motion.div
-                    variants={megaItemVariants}
-                    className="pr-4"
-                  >
-                    <h3 className="m-0 text-[3rem] font-normal leading-[0.98] tracking-[-0.05em] text-[#f4efe4] [font-family:Georgia,Times_New_Roman,serif]">
-                      About Us
-                    </h3>
-                    <p className="mt-6 max-w-full text-[15px] leading-[2.05] text-white/82">
-                      Placeholder copy for the About section. We can add the
-                      brand story, philosophy, legacy, project vision, or a more
-                      refined introduction once you finalize the content.
-                    </p>
-                  </motion.div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    {MEGA_MENU_IMAGES.map((image) => (
-                      <motion.div
-                        key={image.title}
-                        variants={megaItemVariants}
-                        className="group overflow-hidden rounded-[18px] bg-black/20"
-                      >
-                        <div className="relative h-[455px] overflow-hidden">
-                          <img
-                            src={image.src}
-                            alt={image.title}
-                            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                          />
-                          <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,transparent_0%,rgba(15,15,16,1)_100%)] px-6 pb-5 pt-16">
-                            <p className="m-0 text-[1.1rem] font-normal text-white [font-family:Georgia,Times_New_Roman,serif]">
-                              {image.title}
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            ) : openMenu === "amenities" ? (
-              <motion.div
-                key="amenities-mega-menu"
-                variants={megaMenuVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="relative border-t border-white/12 px-8 pb-8 pt-6 xl:px-10 xl:pb-9 xl:pt-7"
-                onMouseEnter={() => setOpenMenu("amenities")}
-              >
-                <div className="relative grid grid-cols-[250px_minmax(0,1fr)] items-start gap-8 xl:grid-cols-[370px_minmax(0,1fr)] xl:gap-9">
-                  <motion.div
-                    variants={megaItemVariants}
-                    className="pt-1"
-                  >
-                    <h3 className="m-0 text-[3rem] font-normal leading-[0.98] tracking-[-0.05em] text-[#f4efe4] [font-family:Georgia,Times_New_Roman,serif]">
+          <motion.div
+            data-nav-shell
+            initial={false}
+            animate={
+              openMenu === "amenities"
+                ? {
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                    filter: "blur(0px)",
+                  }
+                : {
+                    opacity: 0,
+                    y: -12,
+                    scale: 0.992,
+                    filter: "blur(3px)",
+                  }
+            }
+            transition={{
+              duration: 0.3,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className={`mx-auto mt-3 w-full rounded-[30px] border border-white/38 bg-[linear-gradient(180deg,rgba(255,255,255,0.34)_0%,rgba(255,255,255,0.22)_100%)] p-5 shadow-[0_22px_58px_rgba(9,12,20,0.18),inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-[34px] ${
+              openMenu === "amenities" ? "pointer-events-auto" : "pointer-events-none"
+            }`}
+            style={{ transformOrigin: "top center" }}
+          >
+                <div className="grid grid-cols-[260px_minmax(0,1fr)] gap-6">
+                  <div className="pt-1">
+                    <h3 className="font-display m-0 text-[2.2rem] font-semibold leading-[0.92] tracking-[-0.05em] text-[#17191f]">
                       Amenities
                     </h3>
-                    <p className="mt-6 max-w-full text-[15px] leading-[2.05] text-white/82">
-                      Discover the signature spaces at Aadhya Serene, from
-                      rooftop leisure and poolside relaxation to indoor games,
-                      fitness, and outdoor recreation.
+                    <p className="mt-4 max-w-[24ch] text-[14px] leading-[1.85] text-[#2a2e37]/72">
+                      Discover the signature spaces at Aadhya Serene, from rooftop
+                      leisure and poolside relaxation to fitness and recreation.
                     </p>
-                    <Link
-                      href="/amenities"
-                      className="mt-7 inline-flex min-h-[42px] items-center rounded-full border border-white/30 px-5 text-sm font-medium text-white transition duration-200 hover:bg-white/10"
+                    <button
+                      type="button"
+                      onClick={() => router.push("/amenities")}
+                      className="mt-6 inline-flex min-h-[40px] items-center rounded-full border border-white/45 bg-white/36 px-5 text-[12px] font-medium uppercase tracking-[0.12em] text-[#17191f] backdrop-blur-xl transition hover:bg-white/52"
                     >
                       View All
-                    </Link>
-                  </motion.div>
+                    </button>
+                  </div>
 
-                  <motion.div variants={megaItemVariants} className="space-y-4">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <p className="m-0 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/48">
+                      <p className="m-0 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#2a2e37]/48">
                         Signature Spaces
                       </p>
 
@@ -524,117 +423,88 @@ export default function Nav() {
                         <button
                           type="button"
                           onClick={handlePrevAmenities}
-                          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-white/[0.05] text-white/80 transition duration-200 hover:bg-white/[0.1] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                          aria-label="Previous amenities"
+                          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/30 text-[#17191f]/78 transition hover:bg-white/45 disabled:opacity-35"
                           disabled={amenitiesCarouselIndex === 0}
+                          aria-label="Previous amenities"
                         >
-                          <ChevronLeft size={16} />
+                          <ChevronLeft className="h-4 w-4" />
                         </button>
                         <button
                           type="button"
                           onClick={handleNextAmenities}
-                          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-white/[0.05] text-white/80 transition duration-200 hover:bg-white/[0.1] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                          aria-label="Next amenities"
+                          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/30 text-[#17191f]/78 transition hover:bg-white/45 disabled:opacity-35"
                           disabled={amenitiesCarouselIndex === maxAmenitiesStartIndex}
+                          aria-label="Next amenities"
                         >
-                          <ChevronRight size={16} />
+                          <ChevronRight className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
 
-                    <div className="relative min-h-[302px] overflow-hidden">
-                      <div className="overflow-hidden">
-                        <motion.div
-                          animate={{ x: amenitiesTrackOffset }}
-                          transition={{ duration: 0.48, ease: [0.16, 1, 0.3, 1] }}
-                          className="flex gap-3"
-                        >
-                          {AMENITIES_DROPDOWN_ITEMS.map((item) => (
-                            <Link
-                              key={item.label}
-                              href={{
-                                pathname: "/amenities",
-                                query: { amenity: item.url },
-                              }}
-                              style={{ flex: `0 0 ${amenitiesCardBasis}` }}
-                              className="block overflow-hidden rounded-[12px] bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.02)_100%)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[inset_0_0_0_1px_rgba(243,208,86,0.22)]"
-                              onClick={() => {
-                                setOpenMenu(null);
-                                scheduleHideNav();
-                              }}
-                            >
-                              <div className="relative h-[300px] overflow-hidden">
-                                <img
-                                  src={item.image}
-                                  alt={item.label}
-                                  className="h-full w-full object-cover transition duration-500 hover:scale-[1.02]"
-                                />
-                                 <div className="px-4 absolute bottom-0 bg-white/5 backdrop-blur-sm w-full pb-4 pt-3">
-                                <p className="m-0 text-[9px] font-semibold uppercase tracking-[0.15em] text-white/55">
+                    <div className="overflow-hidden rounded-[22px]">
+                      <motion.div
+                        animate={{ x: amenitiesTrackOffset }}
+                        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                        className="flex gap-[10px] will-change-transform"
+                      >
+                        {AMENITIES_DROPDOWN_ITEMS.map((item) => (
+                          <Link
+                            key={item.label}
+                            href={{
+                              pathname: "/amenities",
+                              query: { amenity: item.url },
+                            }}
+                            style={{ flex: `0 0 ${amenitiesCardBasis}` }}
+                            className="group block overflow-hidden rounded-[18px] border border-white/18 bg-black/18 transition duration-300 hover:-translate-y-0.5 hover:bg-black/24"
+                            onClick={() => {
+                              setOpenMenu(null);
+                              scheduleHideNav();
+                            }}
+                          >
+                            <div className="relative h-[274px] overflow-hidden">
+                              <img
+                                src={item.image}
+                                alt={item.label}
+                                className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                              />
+                              <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,transparent_0%,rgba(12,14,18,0.92)_100%)] px-3.5 pb-3.5 pt-14">
+                                <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/58">
                                   {item.sublabel}
                                 </p>
-                                <p className="mt-2 text-[1.02rem] font-normal leading-[1.15] text-white [font-family:Georgia,Times_New_Roman,serif]">
+                                <p className="font-display mt-2 text-[1.22rem] font-semibold leading-[1.08] tracking-[-0.03em] text-white">
                                   {item.label}
                                 </p>
-                                {/* <p className="mt-2 text-[11px] leading-[1.55] text-white/62">
-                                  {item.description}
-                                </p> */}
-                               </div>
                               </div>
-                             
-                            </Link>
-                          ))}
-                        </motion.div>
-                      </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </motion.div>
                     </div>
-                  </motion.div>
+                  </div>
                 </div>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
+          </motion.div>
         </div>
       </header>
 
-      <div className={`fixed bottom-4 left-1/2 z-50 w-[92%] -translate-x-1/2 rounded-2xl border shadow-xl backdrop-blur-xl md:hidden ${
-        isLocationRoute
-          ? "border-slate-300/80 bg-white/82"
-          : "border-white/20 bg-white/10"
-      }`}>
-        <nav className="flex items-center justify-around py-3">
-          {links.map(({ href, label, icon: Icon }) => {
+      <div className="fixed bottom-4 left-1/2 z-50 w-[min(94vw,460px)] -translate-x-1/2 rounded-full border border-black/6 bg-[#f7f3eb]/92 px-2 py-2 shadow-[0_16px_38px_rgba(10,12,18,0.18)] backdrop-blur-2xl md:hidden">
+        <nav className="flex items-center justify-between gap-1">
+          {NAV_LINKS.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
 
             return (
-              <Link
+              <button
                 key={href}
-                href={href}
-                onClick={(event) => {
-                  if (href === "/location") {
-                    event.preventDefault();
-                    navigateWithTransition("/location", "location", {
-                      eagerLayout: false,
-                    });
-                  }
-                  if (href === "/apartments") {
-                    event.preventDefault();
-                    navigateWithTransition("/apartments", "apartments", {
-                      eagerLayout: false,
-                    });
-                  }
-                }}
-                className={`flex flex-col items-center text-[9px] ${
-                  active
-                    ? isLocationRoute
-                      ? "text-slate-950"
-                      : "text-[#f3d056]"
-                    : isLocationRoute
-                      ? "text-slate-700"
-                      : "text-white/80"
+                type="button"
+                onClick={() => handleRouteNavigation(href)}
+                className={`flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full px-2 transition ${
+                  active ? "bg-[#17191f] text-[#f7f3eb]" : "text-[#23262e]"
                 }`}
               >
-                <Icon size={20} />
-                {label}
-              </Link>
+                {Icon ? <Icon className="h-4 w-4" /> : null}
+                <span className="truncate text-[8.5px] font-semibold uppercase tracking-[0.12em]">
+                  {label}
+                </span>
+              </button>
             );
           })}
         </nav>

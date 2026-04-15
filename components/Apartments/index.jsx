@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronDown,
@@ -10,7 +11,6 @@ import {
 import { useApartmentsData } from "../../hooks/useApartmentsData";
 import Filters from "./Filters";
 import ApartmentList from "./ApartmentList";
-import Apartment360Viewer from "../Apartment360Viewer";
 import { preloadInteriorStartPano } from "../../lib/interior-panos";
 import { preloadFlatEntryVideo } from "../../lib/flats";
 import { isBackgroundTransitionActive } from "../../lib/background-transition";
@@ -20,6 +20,11 @@ const COMPACT_BREAKPOINT = 1280;
 const COMPACT_PEEK_HEIGHT = 92;
 const COMPACT_MEDIA_HEIGHT = "min(56.25vw, 48dvh)";
 const COMPACT_MEDIA_WIDTH = "min(100vw, 85.333333dvh)";
+
+const Apartment360Viewer = dynamic(() => import("../Apartment360Viewer"), {
+  ssr: false,
+  loading: () => null,
+});
 
 export default function Apartments() {
   const {
@@ -42,12 +47,16 @@ export default function Apartments() {
   const [activeTab, setActiveTab] = useState("filters");
   const [isVideoPlaying, setIsVideoPlaying] = useState(() => isBackgroundTransitionActive("apartments"));
   const [viewerVersion, setViewerVersion] = useState(0);
+  const [shouldMountViewer, setShouldMountViewer] = useState(false);
+  const [isViewerReady, setIsViewerReady] = useState(false);
   const prefetchedFlatRoutesRef = useRef(new Set());
 
   const resetApartmentsExperience = useCallback((remountViewer = false) => {
     document.body.style.opacity = "1";
     document.body.style.transition = "";
     setIsVideoPlaying(isBackgroundTransitionActive("apartments"));
+    setIsViewerReady(false);
+    setShouldMountViewer(false);
 
     if (remountViewer) {
       setViewerVersion((current) => current + 1);
@@ -57,21 +66,22 @@ export default function Apartments() {
   useEffect(() => {
     const handleStart = () => setIsVideoPlaying(true);
     const handleEnd = () => setIsVideoPlaying(false);
-    const handlePageShow = () => resetApartmentsExperience(true);
-    const handleWindowFocus = () => resetApartmentsExperience(true);
+    const handlePageShow = (event) => {
+      if (event.persisted) {
+        resetApartmentsExperience(true);
+      }
+    };
 
     resetApartmentsExperience(true);
 
     window.addEventListener("bg-transition-started", handleStart);
     window.addEventListener("bg-transition-ended", handleEnd);
     window.addEventListener("pageshow", handlePageShow);
-    window.addEventListener("focus", handleWindowFocus);
 
     return () => {
       window.removeEventListener("bg-transition-started", handleStart);
       window.removeEventListener("bg-transition-ended", handleEnd);
       window.removeEventListener("pageshow", handlePageShow);
-      window.removeEventListener("focus", handleWindowFocus);
     };
   }, [resetApartmentsExperience]);
 
@@ -94,6 +104,26 @@ export default function Apartments() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    if (shouldMountViewer) {
+      return undefined;
+    }
+
+    const rafId = window.requestAnimationFrame(() => {
+      setShouldMountViewer(true);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [shouldMountViewer, viewerVersion]);
+
+  const shouldRevealViewer = shouldMountViewer && isViewerReady && !isVideoPlaying;
 
   const filteredFlatIds = useMemo(() => {
     if (!allData || data.length === allData.length) return null;
@@ -314,7 +344,7 @@ export default function Apartments() {
     <div
       className="fixed inset-0 overflow-hidden"
       style={{
-        backgroundColor: isVideoPlaying ? "transparent" : "#050608",
+        backgroundColor: shouldRevealViewer ? "#050608" : "transparent",
       }}
     >
       <div
@@ -329,17 +359,26 @@ export default function Apartments() {
           transform: isCompactLayout ? "translateX(-50%)" : "none",
           overflow: "hidden",
           backgroundColor: "#050608",
-          opacity: isVideoPlaying ? 0 : 1,
-          transition: "opacity 0.28s ease",
-          pointerEvents: isVideoPlaying ? "none" : "auto",
+          opacity: shouldRevealViewer ? 1 : 0,
+          transition: "opacity 0.38s ease",
+          pointerEvents: shouldRevealViewer ? "auto" : "none",
+          backgroundImage: "linear-gradient(180deg, rgba(5,6,8,0.18), rgba(5,6,8,0.52))",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "cover",
         }}
       >
-        <Apartment360Viewer
-          key={viewerVersion}
-          onFlatClick={handleFlatClick}
-          onFlatHoverStart={handleFlatHoverStart}
-          filteredFlatIds={filteredFlatIds}
-        />
+        {shouldMountViewer ? (
+          <Apartment360Viewer
+            key={viewerVersion}
+            onFlatClick={handleFlatClick}
+            onFlatHoverStart={handleFlatHoverStart}
+            filteredFlatIds={filteredFlatIds}
+            onReadyChange={setIsViewerReady}
+          />
+        ) : (
+          <div className="h-full w-full bg-transparent" />
+        )}
       </div>
 
       <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(7,9,14,0.12)_0%,rgba(7,9,14,0.03)_32%,rgba(7,9,14,0.2)_100%)]" />

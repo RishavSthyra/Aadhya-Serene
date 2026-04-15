@@ -5,8 +5,10 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import styles from '../../app/home.module.css';
 
-const DESKTOP_PARTICLES = 1500;
-const MOBILE_PARTICLES = 850;
+const DESKTOP_PARTICLES = 2200;
+const MOBILE_PARTICLES = 1200;
+const DESKTOP_AMBIENT_PARTICLES = 220;
+const MOBILE_AMBIENT_PARTICLES = 120;
 const GOLD = new THREE.Color('#d8b56a');
 
 function easeOutCubic(value) {
@@ -134,6 +136,55 @@ function ParticleLetters({ reducedMotion }) {
   );
 }
 
+function AmbientParticles({ reducedMotion }) {
+  const pointsRef = useRef(null);
+  const particleCount = typeof window !== 'undefined' && window.innerWidth < 700
+    ? MOBILE_AMBIENT_PARTICLES
+    : DESKTOP_AMBIENT_PARTICLES;
+
+  const geometry = useMemo(() => {
+    const positions = new Float32Array(particleCount * 3);
+
+    for (let index = 0; index < particleCount; index += 1) {
+      const offset = index * 3;
+      positions[offset] = (Math.random() - 0.5) * 18;
+      positions[offset + 1] = (Math.random() - 0.5) * 8;
+      positions[offset + 2] = (Math.random() - 0.5) * 5 - 1.5;
+    }
+
+    const nextGeometry = new THREE.BufferGeometry();
+    nextGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    return nextGeometry;
+  }, [particleCount]);
+
+  useFrame(({ clock }) => {
+    if (!pointsRef.current) return;
+
+    const elapsed = clock.getElapsedTime();
+    pointsRef.current.rotation.y = elapsed * 0.035;
+    pointsRef.current.rotation.x = Math.sin(elapsed * 0.12) * 0.035;
+    pointsRef.current.position.y = reducedMotion ? 0 : Math.sin(elapsed * 0.4) * 0.08;
+  });
+
+  useEffect(() => {
+    return () => geometry.dispose();
+  }, [geometry]);
+
+  return (
+    <points ref={pointsRef} geometry={geometry}>
+      <pointsMaterial
+        color="#fff3cf"
+        size={0.04}
+        sizeAttenuation
+        transparent
+        opacity={0.3}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
 export default function LuxuryPreloader() {
   const [progress, setProgress] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -172,8 +223,17 @@ export default function LuxuryPreloader() {
           dpr={[1, 1.5]}
           gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
         >
+          <AmbientParticles reducedMotion={reducedMotion} />
           <ParticleLetters reducedMotion={reducedMotion} />
         </Canvas>
+      </div>
+
+      <div className={styles.loaderWordmarkFrame} aria-hidden="true">
+        <p className={styles.loaderWordmarkAccent}>Signature Arrival</p>
+        <h1 className={styles.loaderWordmark}>Aadhya Serene</h1>
+        <p className={styles.loaderWordmarkSubcopy}>
+          Crafted calm. Elevated living. North Bengaluru.
+        </p>
       </div>
 
       <div className={styles.loaderInterface}>

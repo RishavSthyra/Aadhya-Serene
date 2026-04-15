@@ -13,13 +13,15 @@ const ABOUT_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-2-av1.mp4';
 const APARTMENTS_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-1-av1.mp4';
 const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
 
-const MOBILE_VIDEO_FALLBACKS = {
-    [HOME_TRANSITION]: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/1-1-h264.mp4',
-    [HOME_LOOP]: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/1-2-h264.mp4',
-    [ABOUT_TRANSITION]: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-1-h264.mp4',
-    [ABOUT_LOOP]: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-2-h264.mp4',
-    [APARTMENTS_TRANSITION]: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-1-h264.mp4',
-    [APARTMENTS_LOOP]: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-h264.mp4',
+const MOBILE_VIDEO_FALLBACKS = {};
+
+const BACKGROUND_POSTERS = {
+    home: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/analog-landscape-city-with-buildings%20(1).jpg',
+    about: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/analog-landscape-city-with-buildings%20(1).jpg',
+    apartments: null,
+    walkthrough: null,
+    contact: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/analog-landscape-city-with-buildings%20(1).jpg',
+    amenities: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/umbrella-chair2.jpg',
 };
 
 const APARTMENTS_LOOP_HOLD_MS = 1000;
@@ -84,9 +86,15 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const [shouldConserveData, setShouldConserveData] = useState(false);
 
     const config = LAYOUT_CONFIG[layout] ?? DEFAULT_CONFIG;
-    const preloadMode = shouldConserveData ? 'metadata' : 'auto';
+    const transitionPreloadMode = 'auto';
+    const loopPreloadMode = shouldConserveData ? 'metadata' : 'auto';
     const shouldEagerlyPrepareLoop = !shouldConserveData;
     const shouldHideBackground = layout === 'location';
+    const posterSrc = BACKGROUND_POSTERS[layout] ?? BACKGROUND_POSTERS.home;
+    const transitionReadyEvent = shouldConserveData ? 'loadedmetadata' : 'loadeddata';
+    const transitionReadyStateThreshold = shouldConserveData ? 1 : 2;
+    const loopReadyEvent = shouldConserveData ? 'loadedmetadata' : 'loadeddata';
+    const loopReadyStateThreshold = shouldConserveData ? 1 : 2;
 
     useEffect(() => {
         if (!shouldHideBackground) return;
@@ -101,18 +109,28 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
         const mobileMedia = window.matchMedia('(max-width: 767px), (pointer: coarse)');
         const reducedMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 
         const updatePreference = () => {
-            setShouldConserveData(mobileMedia.matches || reducedMotionMedia.matches);
+            const shouldAvoidHeavyPlayback = connection?.saveData
+                || /(^|slow-)?2g|3g/.test(connection?.effectiveType ?? '');
+
+            setShouldConserveData(
+                mobileMedia.matches
+                || reducedMotionMedia.matches
+                || shouldAvoidHeavyPlayback
+            );
         };
 
         updatePreference();
         mobileMedia.addEventListener('change', updatePreference);
         reducedMotionMedia.addEventListener('change', updatePreference);
+        connection?.addEventListener?.('change', updatePreference);
 
         return () => {
             mobileMedia.removeEventListener('change', updatePreference);
             reducedMotionMedia.removeEventListener('change', updatePreference);
+            connection?.removeEventListener?.('change', updatePreference);
         };
     }, []);
 
@@ -120,11 +138,11 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         if (!source) return [];
 
         const sources = [];
+        sources.push(source);
+
         if (shouldConserveData && MOBILE_VIDEO_FALLBACKS[source]) {
             sources.push(MOBILE_VIDEO_FALLBACKS[source]);
         }
-
-        sources.push(source);
 
         return [...new Set(sources)];
     }, [shouldConserveData]);
@@ -161,9 +179,9 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         transitionSourceIndexRef.current = index;
 
         return loadVideoCandidate(transitionVideo, transitionSources, index, {
-            preload: preloadMode,
+            preload: transitionPreloadMode,
         });
-    }, [loadVideoCandidate, preloadMode, transitionSources]);
+    }, [loadVideoCandidate, transitionPreloadMode, transitionSources]);
 
     const loadLoopCandidate = useCallback((index = 0) => {
         const loopVideo = loopRef.current;
@@ -171,9 +189,9 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
         return loadVideoCandidate(loopVideo, loopSources, index, {
             shouldLoop: true,
-            preload: preloadMode,
+            preload: loopPreloadMode,
         });
-    }, [loadVideoCandidate, loopSources, preloadMode]);
+    }, [loadVideoCandidate, loopPreloadMode, loopSources]);
 
     useEffect(() => {
         const transitionVideo = transitionRef.current;
@@ -234,7 +252,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         }
 
         const handleTransitionReady = () => {
-            transitionVideo.removeEventListener('loadeddata', handleTransitionReady);
+            transitionVideo.removeEventListener(transitionReadyEvent, handleTransitionReady);
             startTransition();
         };
 
@@ -248,10 +266,10 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             window.dispatchEvent(new CustomEvent('bg-transition-ended'));
         };
 
-        transitionVideo.addEventListener('loadeddata', handleTransitionReady);
+        transitionVideo.addEventListener(transitionReadyEvent, handleTransitionReady);
         transitionVideo.addEventListener('error', handleTransitionError);
 
-        if (transitionVideo.readyState >= 2) {
+        if (transitionVideo.readyState >= transitionReadyStateThreshold) {
             startTransition();
         }
 
@@ -263,7 +281,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             if (secondLoopPrepareFrame !== null) {
                 cancelAnimationFrame(secondLoopPrepareFrame);
             }
-            transitionVideo.removeEventListener('loadeddata', handleTransitionReady);
+            transitionVideo.removeEventListener(transitionReadyEvent, handleTransitionReady);
             transitionVideo.removeEventListener('error', handleTransitionError);
         };
     }, [
@@ -274,6 +292,8 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         playing,
         replayKey,
         shouldEagerlyPrepareLoop,
+        transitionReadyEvent,
+        transitionReadyStateThreshold,
         transitionSources.length,
     ]);
 
@@ -353,7 +373,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 startLoopPlayback();
             };
 
-            loopVideo.addEventListener('loadeddata', handleLoopReady, { once: true });
+            loopVideo.addEventListener(loopReadyEvent, handleLoopReady, { once: true });
 
             if (!loadLoopCandidate(0)) {
                 setBackgroundTransitionState(layout, false);
@@ -361,8 +381,8 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 return;
             }
 
-            if (loopVideo.readyState >= 2) {
-                loopVideo.removeEventListener('loadeddata', handleLoopReady);
+            if (loopVideo.readyState >= loopReadyStateThreshold) {
+                loopVideo.removeEventListener(loopReadyEvent, handleLoopReady);
                 startLoopPlayback();
             }
 
@@ -395,7 +415,19 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     }
 
     return (
-        <div className={styles.mediaRoot} data-layout={layout}>
+        <div
+            className={styles.mediaRoot}
+            data-layout={layout}
+            style={{
+                backgroundColor: '#050608',
+                backgroundImage: posterSrc
+                    ? `linear-gradient(180deg, rgba(7,9,14,0.16), rgba(7,9,14,0.44)), url(${posterSrc})`
+                    : 'linear-gradient(180deg, rgba(7,9,14,0.22), rgba(7,9,14,0.58))',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: 'cover',
+            }}
+        >
             <video
                 id="bg-video-transition"
                 ref={transitionRef}
@@ -408,7 +440,8 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 muted
                 playsInline
                 autoPlay
-                preload={preloadMode}
+                preload={transitionPreloadMode}
+                poster={posterSrc ?? undefined}
                 onEnded={handleTransitionEnded}
             />
             <video
@@ -422,7 +455,8 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 muted
                 playsInline
                 loop
-                preload={preloadMode}
+                preload={loopPreloadMode}
+                poster={posterSrc ?? undefined}
                 onError={handleLoopError}
             />
         </div>

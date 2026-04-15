@@ -7,12 +7,17 @@ import styles from './viewer.module.css';
 
 const TOTAL_FRAMES = 360;
 const SNAP_POINTS = [1, 90, 180, 270, 360];
-const ROT360_CDN_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360';
+const ROT360_CDN_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_compressed';
 const DRAG_FRAME_STEP = 1;
 const PRELOAD_RADIUS = 14;
 const PRELOAD_CONCURRENCY = 8;
 const MAX_CACHE_SIZE = 72;
 const DRAG_SENSITIVITY = 0.36;
+const MOBILE_PRELOAD_RADIUS = 6;
+const MOBILE_PRELOAD_CONCURRENCY = 3;
+const MOBILE_MAX_CACHE_SIZE = 24;
+const MOBILE_DPR_CAP = 1.25;
+const DESKTOP_DPR_CAP = 2;
 
 function getFrameUrl(frameNumber) {
     return `${ROT360_CDN_BASE}/frame_${String(frameNumber).padStart(4, '0')}.avif`;
@@ -50,11 +55,12 @@ function getPreloadSequence(centerFrame, radius) {
     return orderedFrames;
 }
 
-export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filteredFlatIds }) {
+export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filteredFlatIds, onReadyChange }) {
     const [currentFrame, setCurrentFrame] = useState(1);
     const [displayFrame, setDisplayFrame] = useState(1);
     const [snappedFrame, setSnappedFrame] = useState(1);
     const [isSettled, setIsSettled] = useState(true);
+    const [isConstrainedDevice, setIsConstrainedDevice] = useState(false);
 
     const frameMotion = useMotionValue(1);
     const smoothFrame = useSpring(frameMotion, {
@@ -82,6 +88,42 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     const pendingFrameRef = useRef(1);
     const publishRafRef = useRef(null);
     const drawRafRef = useRef(null);
+    const lastDrawnFrameRef = useRef(null);
+    const hasAnnouncedReadyRef = useRef(false);
+    const preloadRadius = isConstrainedDevice ? MOBILE_PRELOAD_RADIUS : PRELOAD_RADIUS;
+    const preloadConcurrency = isConstrainedDevice ? MOBILE_PRELOAD_CONCURRENCY : PRELOAD_CONCURRENCY;
+    const maxCacheSize = isConstrainedDevice ? MOBILE_MAX_CACHE_SIZE : MAX_CACHE_SIZE;
+    const devicePixelRatioCap = isConstrainedDevice ? MOBILE_DPR_CAP : DESKTOP_DPR_CAP;
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return undefined;
+        }
+
+        const compactMedia = window.matchMedia('(max-width: 1024px), (pointer: coarse)');
+        const reducedMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+
+        const updateProfile = () => {
+            const hasSlowConnection = connection?.saveData
+                || /(^|slow-)?2g|3g/.test(connection?.effectiveType ?? '');
+
+            setIsConstrainedDevice(
+                compactMedia.matches || reducedMotionMedia.matches || hasSlowConnection
+            );
+        };
+
+        updateProfile();
+        compactMedia.addEventListener('change', updateProfile);
+        reducedMotionMedia.addEventListener('change', updateProfile);
+        connection?.addEventListener?.('change', updateProfile);
+
+        return () => {
+            compactMedia.removeEventListener('change', updateProfile);
+            reducedMotionMedia.removeEventListener('change', updateProfile);
+            connection?.removeEventListener?.('change', updateProfile);
+        };
+    }, []);
 
     const syncCanvasSize = useCallback(() => {
         const canvas = canvasRef.current;
@@ -94,7 +136,9 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
             return null;
         }
 
-        const dpr = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = typeof window === 'undefined'
+            ? 1
+            : Math.min(window.devicePixelRatio || 1, devicePixelRatioCap);
         const targetWidth = Math.round(bounds.width * dpr);
         const targetHeight = Math.round(bounds.height * dpr);
 
@@ -104,7 +148,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
         }
 
         return { bounds, dpr };
-    }, []);
+    }, [devicePixelRatioCap]);
 
     const drawFrame = useCallback((frameNumber) => {
         if (typeof window === 'undefined') {
@@ -158,18 +202,34 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
             context.imageSmoothingEnabled = true;
             context.imageSmoothingQuality = canvasRatio > imageRatio ? 'high' : 'medium';
             context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+            lastDrawnFrameRef.current = frameNumber;
+
+            if (!hasAnnouncedReadyRef.current) {
+                hasAnnouncedReadyRef.current = true;
+                onReadyChange?.(true);
+            }
         });
-    }, [syncCanvasSize]);
+    }, [onReadyChange, syncCanvasSize]);
+
+    const redrawBestAvailableFrame = useCallback(() => {
+        const fallbackFrame = imageCacheRef.current.get(displayFrame)?.complete
+            ? displayFrame
+            : lastDrawnFrameRef.current;
+
+        if (fallbackFrame) {
+            drawFrame(fallbackFrame);
+        }
+    }, [displayFrame, drawFrame]);
 
     const trimCache = useCallback(() => {
         const pinnedFrames = new Set([
             displayFrame,
             latestRequestedFrameRef.current,
-            ...getPreloadSequence(latestRequestedFrameRef.current, PRELOAD_RADIUS),
+            ...getPreloadSequence(latestRequestedFrameRef.current, preloadRadius),
         ]);
 
         for (const frameNumber of imageCacheRef.current.keys()) {
-            if (imageCacheRef.current.size <= MAX_CACHE_SIZE) {
+            if (imageCacheRef.current.size <= maxCacheSize) {
                 break;
             }
 
@@ -180,7 +240,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
             imageCacheRef.current.delete(frameNumber);
             loadedFramesRef.current.delete(frameNumber);
         }
-    }, [displayFrame]);
+    }, [displayFrame, maxCacheSize, preloadRadius]);
 
     const markFrameAsDisplayed = useCallback((frameNumber) => {
         if (!mountedRef.current) {
@@ -197,7 +257,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
             return;
         }
 
-        while (activeLoadsRef.current < PRELOAD_CONCURRENCY && queuedFramesRef.current.length > 0) {
+        while (activeLoadsRef.current < preloadConcurrency && queuedFramesRef.current.length > 0) {
             const nextFrame = queuedFramesRef.current.shift();
 
             if (
@@ -243,7 +303,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
 
             loadingPromisesRef.current.set(nextFrame, promise);
         }
-    }, [drawFrame, markFrameAsDisplayed, trimCache]);
+    }, [drawFrame, markFrameAsDisplayed, preloadConcurrency, trimCache]);
 
     const enqueueFrames = useCallback((frameNumbers) => {
         const normalizedFrames = frameNumbers.map((frameNumber) => normalizeFrame(frameNumber));
@@ -272,8 +332,8 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     }, [enqueueFrames]);
 
     const preloadAroundFrame = useCallback((frameNumber) => {
-        enqueueFrames(getPreloadSequence(frameNumber, PRELOAD_RADIUS));
-    }, [enqueueFrames]);
+        enqueueFrames(getPreloadSequence(frameNumber, preloadRadius));
+    }, [enqueueFrames, preloadRadius]);
 
     const publishFrame = useCallback((frameNumber) => {
         pendingFrameRef.current = frameNumber;
@@ -291,12 +351,30 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     }, []);
 
     useEffect(() => {
+        trimCache();
+    }, [maxCacheSize, preloadRadius, trimCache]);
+
+    useEffect(() => {
+        const snapFrameSet = new Set();
+
+        SNAP_POINTS.slice(0, -1).forEach((frame) => {
+            getPreloadSequence(frame, Math.min(2, preloadRadius)).forEach((value) => {
+                snapFrameSet.add(value);
+            });
+        });
+
+        enqueueFrames([...snapFrameSet]);
+    }, [enqueueFrames, preloadRadius]);
+
+    useEffect(() => {
         mountedRef.current = true;
 
         return () => {
             mountedRef.current = false;
+            hasAnnouncedReadyRef.current = false;
+            onReadyChange?.(false);
         };
-    }, []);
+    }, [onReadyChange]);
 
     useEffect(() => {
         return smoothFrame.on('change', (latest) => {
@@ -418,10 +496,11 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
 
         isDragging.current = false;
         setIsSettled(false);
+        ensureFrameLoaded(nextPoint);
         preloadAroundFrame(nextPoint);
         targetFrameRef.current = rawFrame + diff;
         frameMotion.set(targetFrameRef.current);
-    }, [frameMotion, preloadAroundFrame]);
+    }, [ensureFrameLoaded, frameMotion, preloadAroundFrame]);
 
     const handlePointerUp = () => {
         if (!isDragging.current) return;
@@ -453,6 +532,10 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     useEffect(() => {
         const cachedImage = imageCacheRef.current.get(displayFrame);
         if (!cachedImage?.complete) {
+            const lastDrawnFrame = lastDrawnFrameRef.current;
+            if (lastDrawnFrame && lastDrawnFrame !== displayFrame) {
+                drawFrame(lastDrawnFrame);
+            }
             return;
         }
 
@@ -464,23 +547,46 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
             return undefined;
         }
 
-        const redraw = () => drawFrame(displayFrame);
         const canvas = canvasRef.current;
 
-        redraw();
-        window.addEventListener('resize', redraw);
+        redrawBestAvailableFrame();
+        window.addEventListener('resize', redrawBestAvailableFrame);
 
         let resizeObserver;
         if (canvas && 'ResizeObserver' in window) {
-            resizeObserver = new window.ResizeObserver(redraw);
+            resizeObserver = new window.ResizeObserver(redrawBestAvailableFrame);
             resizeObserver.observe(canvas);
         }
 
         return () => {
-            window.removeEventListener('resize', redraw);
+            window.removeEventListener('resize', redrawBestAvailableFrame);
             resizeObserver?.disconnect();
         };
-    }, [displayFrame, drawFrame]);
+    }, [redrawBestAvailableFrame]);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') {
+            return undefined;
+        }
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState !== 'visible') {
+                return;
+            }
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    redrawBestAvailableFrame();
+                });
+            });
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [redrawBestAvailableFrame]);
 
     return (
         <div
@@ -524,8 +630,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
             <div
                 className={styles.canvasOverlay}
                 style={{
-                    opacity: isSettled ? 1 : 0,
-                    transition: 'opacity 0.2s ease-in-out',
+                    opacity: 1,
                     pointerEvents: isSettled ? 'auto' : 'none'
                 }}
             >

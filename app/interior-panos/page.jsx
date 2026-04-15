@@ -1,5 +1,19 @@
 import { Suspense } from "react";
 import InteriorPanoWalkthrough from "@/components/tour/InteriorPanoWalkthrough";
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata = createPageMetadata({
+  title: "Interior Panorama Walkthrough",
+  description:
+    "Explore interior panorama views at Aadhya Serene to preview room layouts, finishes, and spatial flow across selected apartments.",
+  path: "/interior-panos",
+  keywords: [
+    "Aadhya Serene interior panoramas",
+    "interior apartment walkthrough Bengaluru",
+    "virtual apartment interiors Thanisandra",
+    "Aadhya Serene room preview",
+  ],
+});
 
 export default function InteriorPanosPage() {
   return (
