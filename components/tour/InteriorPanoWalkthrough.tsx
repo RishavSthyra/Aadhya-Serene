@@ -250,6 +250,7 @@ export default function InteriorPanoWalkthrough({
 
     return allNodes.filter((node) => availableNodeIds.has(node.id));
   }, [allNodes, availableNodeIds]);
+
   const graph = useMemo(() => buildExteriorTourGraph(availableNodes), [availableNodes]);
 
   const currentNodeId =
@@ -320,6 +321,7 @@ export default function InteriorPanoWalkthrough({
     return () => {
       cancelled = true;
     };
+    
   }, [allNodes, assetStore]);
 
   const resolvePano = useCallback(

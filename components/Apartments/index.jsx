@@ -47,6 +47,7 @@ export default function Apartments() {
   const [viewerVersion, setViewerVersion] = useState(0);
   const [shouldMountViewer, setShouldMountViewer] = useState(false);
   const [isViewerReady, setIsViewerReady] = useState(false);
+  const [pendingFlatId, setPendingFlatId] = useState(null);
   const prefetchedFlatRoutesRef = useRef(new Set());
   const hasHandledInitialPathRef = useRef(false);
   const isCompactLayout = isTabletOrBelow;
@@ -56,6 +57,7 @@ export default function Apartments() {
     : isMobile
       ? "min(38dvh, 320px)"
       : "min(42dvh, 380px)";
+  const isFlatRoutePreparing = pendingFlatId !== null;
 
   const resetApartmentsExperience = useCallback((remountViewer = false) => {
     document.body.style.opacity = "1";
@@ -63,6 +65,7 @@ export default function Apartments() {
     setIsVideoPlaying(isBackgroundTransitionActive("apartments"));
     setIsViewerReady(false);
     setShouldMountViewer(false);
+    setPendingFlatId(null);
 
     if (remountViewer) {
       setViewerVersion((current) => current + 1);
@@ -134,12 +137,37 @@ export default function Apartments() {
   }, [data, allData]);
 
   const handleFlatClick = useCallback(
-    (flatId) => {
+    async (flatId) => {
+      if (!flatId || pendingFlatId) {
+        return;
+      }
+
+      setPendingFlatId(flatId);
       void preloadInteriorStartPano();
       router.prefetch("/interior-panos");
-      router.push(`/apartments/${flatId}`);
+
+      if (!prefetchedFlatRoutesRef.current.has(flatId)) {
+        prefetchedFlatRoutesRef.current.add(flatId);
+        router.prefetch(`/apartments/${flatId}`);
+      }
+
+      try {
+        await Promise.race([
+          preloadFlatEntryVideo(flatId, {
+            aggressive: true,
+            timeoutMs: isTabletOrBelow ? 2200 : 3200,
+          }),
+          new Promise((resolve) => {
+            window.setTimeout(resolve, isTabletOrBelow ? 1800 : 2400);
+          }),
+        ]);
+      } finally {
+        window.requestAnimationFrame(() => {
+          router.push(`/apartments/${flatId}`);
+        });
+      }
     },
-    [router],
+    [isTabletOrBelow, pendingFlatId, router],
   );
 
   const handleFlatHoverStart = useCallback(
@@ -181,12 +209,12 @@ export default function Apartments() {
       className="fixed right-0 top-[104px] z-[120] hidden xl:block"
       style={{
         opacity: isVideoPlaying ? 0 : 1,
-        pointerEvents: isVideoPlaying ? "none" : "auto",
+        pointerEvents: isVideoPlaying || isFlatRoutePreparing ? "none" : "auto",
         transform: isPanelOpen ? "translateX(0)" : `translateX(${DESKTOP_PANEL_WIDTH + 20}px)`,
         transition: "transform 420ms cubic-bezier(0.22,1,0.36,1), opacity 280ms ease",
       }}
     >
-      <aside className="relative mr-4 flex h-[calc(100dvh-120px)] max-h-[calc(100dvh-120px)] w-[392px] flex-col overflow-hidden rounded-[34px] border border-white/14 bg-[linear-gradient(165deg,rgba(95,107,127,0.44)_0%,rgba(58,67,83,0.54)_46%,rgba(28,34,45,0.74)_100%)] shadow-[-16px_0_80px_rgba(8,12,18,0.34)] backdrop-blur-[28px]">
+      <aside className="relative mr-4 flex h-[calc(100dvh-120px)] max-h-[calc(100dvh-120px)] w-[392px] flex-col overflow-hidden rounded-[34px] border border-white/12 bg-[linear-gradient(165deg,rgba(111,124,145,0.34)_0%,rgba(72,82,99,0.42)_46%,rgba(36,43,55,0.62)_100%)] shadow-[-14px_0_58px_rgba(8,12,18,0.24)] backdrop-blur-[18px]">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01)_18%,rgba(12,15,21,0.08)_100%)]" />
         <div
           className="relative flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-thin"
@@ -243,7 +271,7 @@ export default function Apartments() {
           top: compactMediaHeight,
           bottom: compactBottomOffset,
           opacity: 1,
-          pointerEvents: "auto",
+          pointerEvents: isFlatRoutePreparing ? "none" : "auto",
           height: "auto",
           transform: isPanelOpen
             ? "translateY(0)"
@@ -251,7 +279,7 @@ export default function Apartments() {
           transition: "transform 360ms cubic-bezier(0.22,1,0.36,1)",
         }}
       >
-        <aside className="relative flex h-full flex-col overflow-hidden rounded-none border border-b-0 border-x-0 border-white/10 bg-[linear-gradient(165deg,rgba(95,107,127,0.48)_0%,rgba(58,67,83,0.56)_46%,rgba(28,34,45,0.76)_100%)] shadow-[0_-20px_80px_rgba(8,12,18,0.34)] backdrop-blur-[28px]">
+        <aside className="relative flex h-full flex-col overflow-hidden rounded-none border border-b-0 border-x-0 border-white/10 bg-[linear-gradient(165deg,rgba(108,121,142,0.38)_0%,rgba(69,79,96,0.46)_46%,rgba(33,40,51,0.66)_100%)] shadow-[0_-16px_54px_rgba(8,12,18,0.24)] backdrop-blur-[16px]">
           <div className="px-4 pt-2">
             <div className="mx-auto h-1.5 w-14 rounded-full bg-white/12" />
           </div>
@@ -351,7 +379,7 @@ export default function Apartments() {
     <div
       className="fixed inset-0 overflow-hidden"
       style={{
-        backgroundColor: shouldRevealViewer ? "#050608" : "transparent",
+        backgroundColor: shouldRevealViewer ? "#0b1018" : "transparent",
       }}
     >
       <div
@@ -365,11 +393,11 @@ export default function Apartments() {
           height: isCompactLayout ? compactMediaHeight : "auto",
           transform: "none",
           overflow: "hidden",
-          backgroundColor: "#050608",
+          backgroundColor: "#0b1018",
           opacity: shouldRevealViewer ? 1 : 0,
           transition: "opacity 0.38s ease",
-          pointerEvents: shouldRevealViewer ? "auto" : "none",
-          backgroundImage: "linear-gradient(180deg, rgba(5,6,8,0.18), rgba(5,6,8,0.52))",
+          pointerEvents: shouldRevealViewer && !isFlatRoutePreparing ? "auto" : "none",
+          backgroundImage: "linear-gradient(180deg, rgba(11,16,24,0.08), rgba(11,16,24,0.3))",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
@@ -382,13 +410,27 @@ export default function Apartments() {
             onFlatHoverStart={handleFlatHoverStart}
             filteredFlatIds={filteredFlatIds}
             onReadyChange={setIsViewerReady}
+            interactionLocked={isFlatRoutePreparing}
           />
         ) : (
           <div className="h-full w-full bg-transparent" />
         )}
       </div>
 
-      <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(8,19,38,0.08)_0%,rgba(9,24,46,0.02)_28%,rgba(10,26,52,0.16)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(8,19,38,0.05)_0%,rgba(9,24,46,0.01)_28%,rgba(10,26,52,0.1)_100%)]" />
+
+      {isFlatRoutePreparing ? (
+        <div className="absolute inset-0 z-[125] flex items-center justify-center bg-[radial-gradient(circle_at_center,rgba(193,216,255,0.08),rgba(6,10,18,0.16))] backdrop-blur-[3px]">
+          <div className="rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(233,240,250,0.18),rgba(174,193,219,0.12))] px-5 py-3 text-center shadow-[0_18px_42px_rgba(7,10,18,0.18)] backdrop-blur-[14px]">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-white/58">
+              Preparing Residence
+            </p>
+            <p className="mt-1.5 text-[13px] font-medium tracking-[0.06em] text-white/88">
+              Apartment {pendingFlatId}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {renderDesktopPanel}
       {isCompactLayout ? renderCompactSheet : null}

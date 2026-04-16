@@ -69,9 +69,13 @@ function getPointerDistance(points) {
     return Math.hypot(secondPoint.x - firstPoint.x, secondPoint.y - firstPoint.y);
 }
 
-export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filteredFlatIds, onReadyChange }) {
-    const [currentFrame, setCurrentFrame] = useState(1);
-    const [displayFrame, setDisplayFrame] = useState(1);
+export default function Apartment360Viewer({
+    onFlatClick,
+    onFlatHoverStart,
+    filteredFlatIds,
+    onReadyChange,
+    interactionLocked = false,
+}) {
     const [snappedFrame, setSnappedFrame] = useState(1);
     const [isSettled, setIsSettled] = useState(true);
     const [isDraggingState, setIsDraggingState] = useState(false);
@@ -102,6 +106,8 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     const queuedFramesRef = useRef([]);
     const activeLoadsRef = useRef(0);
     const pendingFrameRef = useRef(1);
+    const currentFrameRef = useRef(1);
+    const displayFrameRef = useRef(1);
     const publishRafRef = useRef(null);
     const drawRafRef = useRef(null);
     const lastDrawnFrameRef = useRef(null);
@@ -216,7 +222,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
             const drawX = (canvasWidth - drawWidth) / 2;
             const drawY = (canvasHeight - drawHeight) / 2;
 
-            context.fillStyle = '#000';
+            context.fillStyle = '#0b1018';
             context.fillRect(0, 0, canvasWidth, canvasHeight);
             context.imageSmoothingEnabled = true;
             context.imageSmoothingQuality = canvasRatio > imageRatio ? 'high' : 'medium';
@@ -231,6 +237,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     }, [onReadyChange, syncCanvasSize]);
 
     const redrawBestAvailableFrame = useCallback(() => {
+        const displayFrame = displayFrameRef.current;
         const fallbackFrame = imageCacheRef.current.get(displayFrame)?.complete
             ? displayFrame
             : lastDrawnFrameRef.current;
@@ -238,11 +245,11 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
         if (fallbackFrame) {
             drawFrame(fallbackFrame);
         }
-    }, [displayFrame, drawFrame]);
+    }, [drawFrame]);
 
     const trimCache = useCallback(() => {
         const pinnedFrames = new Set([
-            displayFrame,
+            displayFrameRef.current,
             latestRequestedFrameRef.current,
             ...getPreloadSequence(latestRequestedFrameRef.current, preloadRadius),
         ]);
@@ -259,17 +266,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
             imageCacheRef.current.delete(frameNumber);
             loadedFramesRef.current.delete(frameNumber);
         }
-    }, [displayFrame, maxCacheSize, preloadRadius]);
-
-    const markFrameAsDisplayed = useCallback((frameNumber) => {
-        if (!mountedRef.current) {
-            return;
-        }
-
-        setDisplayFrame((previousFrame) => (
-            previousFrame === frameNumber ? previousFrame : frameNumber
-        ));
-    }, []);
+    }, [maxCacheSize, preloadRadius]);
 
     const pumpPreloadQueue = useCallback(() => {
         if (typeof window === 'undefined') {
@@ -307,7 +304,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
                     trimCache();
 
                     if (latestRequestedFrameRef.current === nextFrame) {
-                        markFrameAsDisplayed(nextFrame);
+                        displayFrameRef.current = nextFrame;
                         drawFrame(nextFrame);
                     }
                 })
@@ -322,7 +319,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
 
             loadingPromisesRef.current.set(nextFrame, promise);
         }
-    }, [drawFrame, markFrameAsDisplayed, preloadConcurrency, trimCache]);
+    }, [drawFrame, preloadConcurrency, trimCache]);
 
     const enqueueFrames = useCallback((frameNumbers) => {
         const normalizedFrames = frameNumbers.map((frameNumber) => normalizeFrame(frameNumber));
@@ -354,8 +351,23 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
         enqueueFrames(getPreloadSequence(frameNumber, preloadRadius));
     }, [enqueueFrames, preloadRadius]);
 
+    const requestFrame = useCallback((frameNumber) => {
+        const normalizedFrame = normalizeFrame(frameNumber);
+        currentFrameRef.current = normalizedFrame;
+        latestRequestedFrameRef.current = normalizedFrame;
+
+        if (loadedFramesRef.current.has(normalizedFrame)) {
+            displayFrameRef.current = normalizedFrame;
+            drawFrame(normalizedFrame);
+        } else if (!failedFramesRef.current.has(normalizedFrame)) {
+            ensureFrameLoaded(normalizedFrame);
+        }
+
+        preloadAroundFrame(normalizedFrame);
+    }, [drawFrame, ensureFrameLoaded, preloadAroundFrame]);
+
     const publishFrame = useCallback((frameNumber) => {
-        pendingFrameRef.current = frameNumber;
+        pendingFrameRef.current = normalizeFrame(frameNumber);
 
         if (publishRafRef.current !== null || typeof window === 'undefined') {
             return;
@@ -363,15 +375,17 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
 
         publishRafRef.current = window.requestAnimationFrame(() => {
             publishRafRef.current = null;
-            setCurrentFrame((previousFrame) => (
-                previousFrame === pendingFrameRef.current ? previousFrame : pendingFrameRef.current
-            ));
+            requestFrame(pendingFrameRef.current);
         });
-    }, []);
+    }, [requestFrame]);
 
     useEffect(() => {
         trimCache();
     }, [maxCacheSize, preloadRadius, trimCache]);
+
+    useEffect(() => {
+        requestFrame(1);
+    }, [requestFrame]);
 
     useEffect(() => {
         const snapFrameSet = new Set();
@@ -440,6 +454,10 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     }, []);
 
     const handlePointerDown = (e) => {
+        if (interactionLocked) {
+            return;
+        }
+
         activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
         if (activePointersRef.current.size === 2) {
@@ -462,6 +480,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     };
 
     const handlePointerMove = (e) => {
+        if (interactionLocked) return;
         if (!activePointersRef.current.has(e.pointerId)) return;
 
         activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -571,6 +590,12 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     }, [ensureFrameLoaded, frameMotion, preloadAroundFrame]);
 
     const handlePointerUp = (e) => {
+        if (interactionLocked) {
+            activePointersRef.current.clear();
+            lastPinchDistanceRef.current = null;
+            return;
+        }
+
         activePointersRef.current.delete(e.pointerId);
 
         if (activePointersRef.current.size < 2) {
@@ -587,35 +612,8 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     };
 
     const shouldAllowFlatClick = useCallback(() => {
-        return !isDragging.current && Date.now() >= suppressFlatClickUntilRef.current;
-    }, []);
-
-    useEffect(() => {
-        const normalizedFrame = normalizeFrame(currentFrame);
-
-        latestRequestedFrameRef.current = normalizedFrame;
-
-        if (loadedFramesRef.current.has(normalizedFrame)) {
-            markFrameAsDisplayed(normalizedFrame);
-        } else if (!failedFramesRef.current.has(normalizedFrame)) {
-            ensureFrameLoaded(normalizedFrame);
-        }
-
-        preloadAroundFrame(normalizedFrame);
-    }, [currentFrame, ensureFrameLoaded, markFrameAsDisplayed, preloadAroundFrame]);
-
-    useEffect(() => {
-        const cachedImage = imageCacheRef.current.get(displayFrame);
-        if (!cachedImage?.complete) {
-            const lastDrawnFrame = lastDrawnFrameRef.current;
-            if (lastDrawnFrame && lastDrawnFrame !== displayFrame) {
-                drawFrame(lastDrawnFrame);
-            }
-            return;
-        }
-
-        drawFrame(displayFrame);
-    }, [displayFrame, drawFrame]);
+        return !interactionLocked && !isDragging.current && Date.now() >= suppressFlatClickUntilRef.current;
+    }, [interactionLocked]);
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -638,6 +636,18 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
             resizeObserver?.disconnect();
         };
     }, [redrawBestAvailableFrame]);
+
+    useEffect(() => {
+        if (!interactionLocked) {
+            return;
+        }
+
+        activePointersRef.current.clear();
+        lastPinchDistanceRef.current = null;
+        isDragging.current = false;
+        didDragRef.current = false;
+        setIsDraggingState(false);
+    }, [interactionLocked]);
 
     useEffect(() => {
         if (typeof document === 'undefined') {
@@ -664,9 +674,13 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
     }, [redrawBestAvailableFrame]);
 
     const handleWheel = useCallback((event) => {
+        if (interactionLocked) {
+            return;
+        }
+
         event.preventDefault();
         setZoom((currentZoom) => clampZoom(currentZoom - event.deltaY * 0.0015));
-    }, []);
+    }, [interactionLocked]);
 
     return (
         <div
@@ -690,7 +704,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
                     className={styles.canvasOverlay}
                     style={{
                         opacity: 1,
-                        pointerEvents: isSettled && !isDraggingState ? 'auto' : 'none'
+                        pointerEvents: isSettled && !isDraggingState && !interactionLocked ? 'auto' : 'none'
                     }}
                 >
                     <BuildingModel
@@ -699,7 +713,8 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
                         onFlatClick={onFlatClick}
                         onFlatHoverStart={onFlatHoverStart}
                         shouldAllowFlatClick={shouldAllowFlatClick}
-                        meshInteractionEnabled={isSettled && !isDraggingState}
+                        isConstrainedDevice={isConstrainedDevice}
+                        meshInteractionEnabled={isSettled && !isDraggingState && !interactionLocked}
                     />
                 </div>
             </div>
@@ -716,6 +731,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
                     className={styles.hotspotButton}
                     onClick={() => moveToHotspot(-1)}
                     aria-label="Previous apartment view"
+                    disabled={interactionLocked}
                 >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M14.6 6.4 9 12l5.6 5.6-1.4 1.4L6.2 12l7-7z" />
@@ -726,6 +742,7 @@ export default function Apartment360Viewer({ onFlatClick, onFlatHoverStart, filt
                     className={styles.hotspotButton}
                     onClick={() => moveToHotspot(1)}
                     aria-label="Next apartment view"
+                    disabled={interactionLocked}
                 >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="m9.4 17.6 5.6-5.6-5.6-5.6L10.8 5l7 7-7 7z" />

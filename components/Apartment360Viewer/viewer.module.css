@@ -5,7 +5,7 @@
     min-height: 100dvh;
     overflow: hidden;
     cursor: grab;
-    background: #000;
+    background: #0b1018;
 }
 
 .viewerContainer:active {
@@ -86,6 +86,13 @@
     width: 19px;
     height: 19px;
     fill: currentColor;
+}
+
+.hotspotButton:disabled {
+    cursor: default;
+    opacity: 0.45;
+    transform: none;
+    box-shadow: none;
 }
 
 .instruction {

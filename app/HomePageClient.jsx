@@ -22,7 +22,17 @@ const HERO_MARKERS = [
   "North Bengaluru address",
 ];
 
-function AnimatedHeroTitle() {
+const heroRevealTransition = {
+  duration: 0.9,
+  ease: [0.22, 1, 0.36, 1],
+};
+
+const heroRevealVariants = {
+  hidden: { opacity: 0, y: 22 },
+  visible: { opacity: 1, y: 0 },
+};
+
+function AnimatedHeroTitle({ isActive }) {
   return (
     <span className={styles.heroTitleStack} aria-label={HERO_TITLE_LINES.join(" ")}>
       {HERO_TITLE_LINES.map((line, lineIndex) => (
@@ -37,8 +47,12 @@ function AnimatedHeroTitle() {
                 className={
                   isSpace ? styles.heroTitleSpace : styles.heroTitleLetter
                 }
-                initial={{ y: "112%", opacity: 0, filter: "blur(8px)" }}
-                animate={{ y: "0%", opacity: 1, filter: "blur(0px)" }}
+                initial="hidden"
+                animate={isActive ? "visible" : "hidden"}
+                variants={{
+                  hidden: { y: "112%", opacity: 0, filter: "blur(8px)" },
+                  visible: { y: "0%", opacity: 1, filter: "blur(0px)" },
+                }}
                 transition={{
                   duration: 0.92,
                   delay: 0.36 + lineIndex * 0.24 + charIndex * 0.045,
@@ -59,6 +73,7 @@ export default function HomePageClient() {
   const router = useRouter();
   const isNavigatingRef = useRef(false);
   const [showLoader, setShowLoader] = useState(true);
+  const [heroAnimationActive, setHeroAnimationActive] = useState(false);
   const { isTabletOrBelow } = useResponsiveViewport();
 
   useEffect(() => {
@@ -79,6 +94,21 @@ export default function HomePageClient() {
       clearTimeout(timer);
     };
   }, [isTabletOrBelow]);
+
+  useEffect(() => {
+    if (showLoader) {
+      setHeroAnimationActive(false);
+      return undefined;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      setHeroAnimationActive(true);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [showLoader]);
 
   const navigateTo = useCallback(
     (path) => {
@@ -144,9 +174,10 @@ export default function HomePageClient() {
       <section id="home-inner" className={styles.heroInner}>
         <div className={styles.heroContent}>
           <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+            initial="hidden"
+            animate={heroAnimationActive ? "visible" : "hidden"}
+            variants={heroRevealVariants}
+            transition={{ ...heroRevealTransition, delay: 0.12 }}
             className={styles.heroEyebrow}
           >
             {/* <span className={styles.heroEyebrowDot} /> */}
@@ -154,13 +185,14 @@ export default function HomePageClient() {
           </motion.div>
 
           <h1 className={styles.heroTitle}>
-            <AnimatedHeroTitle />
+            <AnimatedHeroTitle isActive={heroAnimationActive} />
           </h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 1.05, ease: [0.22, 1, 0.36, 1] }}
+            initial="hidden"
+            animate={heroAnimationActive ? "visible" : "hidden"}
+            variants={heroRevealVariants}
+            transition={{ ...heroRevealTransition, delay: 1.05 }}
             className={styles.heroSubtitle}
           >
             A calmer expression of premium living, with open skies, elevated leisure,
@@ -168,8 +200,9 @@ export default function HomePageClient() {
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial="hidden"
+            animate={heroAnimationActive ? "visible" : "hidden"}
+            variants={heroRevealVariants}
             transition={{ duration: 0.85, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
             className={styles.heroMarkerRow}
           >
@@ -181,9 +214,10 @@ export default function HomePageClient() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 1.34, ease: [0.22, 1, 0.36, 1] }}
+            initial="hidden"
+            animate={heroAnimationActive ? "visible" : "hidden"}
+            variants={heroRevealVariants}
+            transition={{ ...heroRevealTransition, delay: 1.34 }}
             className={styles.heroActions}
           >
             <button
@@ -205,8 +239,9 @@ export default function HomePageClient() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial="hidden"
+            animate={heroAnimationActive ? "visible" : "hidden"}
+            variants={heroRevealVariants}
             transition={{ duration: 0.85, delay: 1.5, ease: [0.22, 1, 0.36, 1] }}
             className={styles.heroScrollRow}
           >

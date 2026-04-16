@@ -655,7 +655,15 @@ function FlatTooltip({ flatId, x, y }) {
     );
 }
 
-export default function BuildingModel({ currentFrame, filteredFlatIds, onFlatClick, onFlatHoverStart, shouldAllowFlatClick, meshInteractionEnabled = true }) {
+export default function BuildingModel({
+    currentFrame,
+    filteredFlatIds,
+    onFlatClick,
+    onFlatHoverStart,
+    shouldAllowFlatClick,
+    isConstrainedDevice = false,
+    meshInteractionEnabled = true,
+}) {
     const [tooltip, setTooltip] = useState({ flatId: null, x: 0, y: 0 });
 
     const handleFlatHover = useCallback((flatId, x, y) => {
@@ -664,7 +672,15 @@ export default function BuildingModel({ currentFrame, filteredFlatIds, onFlatCli
 
     return (
         <>
-            <Canvas gl={{ antialias: true, alpha: true }}>
+            <Canvas
+                dpr={isConstrainedDevice ? [1, 1.25] : [1, 1.75]}
+                frameloop="demand"
+                gl={{
+                    antialias: !isConstrainedDevice,
+                    alpha: true,
+                    powerPreference: 'high-performance',
+                }}
+            >
                 <ambientLight intensity={1.8} />
                 <directionalLight position={[10, 20, 10]} intensity={2.8} />
                 <directionalLight position={[-10, 10, -5]} intensity={1.0} color="#aaddff" />

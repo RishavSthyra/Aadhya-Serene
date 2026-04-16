@@ -17,7 +17,7 @@ export default function ApartmentCard({ apartment, onSelect, compactMode = false
         <button
             type="button"
             onClick={() => onSelect(apartment)}
-            className={`group w-full border border-white/12 bg-[linear-gradient(145deg,rgba(89,101,121,0.42),rgba(55,63,77,0.48)_58%,rgba(36,43,54,0.58)_100%)] text-left shadow-[0_16px_32px_rgba(9,12,18,0.24)] backdrop-blur-[18px] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/22 hover:bg-[linear-gradient(145deg,rgba(103,116,136,0.44),rgba(60,68,84,0.5)_58%,rgba(40,47,59,0.62)_100%)] ${
+            className={`group w-full border border-white/11 bg-[linear-gradient(145deg,rgba(104,117,139,0.32),rgba(68,77,94,0.38)_58%,rgba(41,48,60,0.48)_100%)] text-left shadow-[0_12px_24px_rgba(9,12,18,0.18)] backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/18 hover:bg-[linear-gradient(145deg,rgba(115,128,149,0.36),rgba(72,82,98,0.42)_58%,rgba(45,52,65,0.52)_100%)] ${
                 compactMode ? 'rounded-none border-x-0 px-3 py-2.5' : 'rounded-[22px] px-4 py-3'
             }`}
         >
