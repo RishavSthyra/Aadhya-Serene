@@ -242,13 +242,13 @@ export default function Apartments() {
         style={{
           top: compactMediaHeight,
           bottom: compactBottomOffset,
-          opacity: isVideoPlaying ? 0 : 1,
-          pointerEvents: isVideoPlaying ? "none" : "auto",
+          opacity: 1,
+          pointerEvents: "auto",
           height: "auto",
           transform: isPanelOpen
             ? "translateY(0)"
             : `translateY(calc(100% - ${COMPACT_PEEK_HEIGHT}px))`,
-          transition: "transform 360ms cubic-bezier(0.22,1,0.36,1), opacity 280ms ease",
+          transition: "transform 360ms cubic-bezier(0.22,1,0.36,1)",
         }}
       >
         <aside className="relative flex h-full flex-col overflow-hidden rounded-none border border-b-0 border-x-0 border-white/10 bg-[linear-gradient(165deg,rgba(95,107,127,0.48)_0%,rgba(58,67,83,0.56)_46%,rgba(28,34,45,0.76)_100%)] shadow-[0_-20px_80px_rgba(8,12,18,0.34)] backdrop-blur-[28px]">

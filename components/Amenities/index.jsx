@@ -79,6 +79,8 @@ export default function Amenities({ initialAmenity = null }) {
                 className={`${styles.hamburgerBtn} ${isMobileOpen ? styles.open : ''}`}
                 onClick={toggleMobile}
                 aria-label="Toggle amenities sidebar"
+                aria-expanded={isMobileOpen}
+                aria-controls="amenities-sidebar"
                 type="button"
             >
                 <span className={styles.hamburgerLine} />
@@ -86,7 +88,12 @@ export default function Amenities({ initialAmenity = null }) {
                 <span className={styles.hamburgerLine} />
             </button>
 
-            <section className={sidebarClass} role="complementary" aria-label="Amenities sidebar">
+            <section
+                id="amenities-sidebar"
+                className={sidebarClass}
+                role="complementary"
+                aria-label="Amenities sidebar"
+            >
                 <header className={styles.header}>
                     <div className={styles.headerTop}>
                         <h1>AMENITIES</h1>

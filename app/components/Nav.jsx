@@ -287,14 +287,15 @@ export default function Nav() {
             <div className="flex items-center justify-between gap-4">
               <Link
                 href="/"
-                className="min-w-[160px] text-left text-[#121319] no-underline"
+                className="flex min-w-[210px] items-center text-left text-[#121319] no-underline"
               >
-                <span className="font-display block text-[1.28rem] font-semibold leading-none tracking-[-0.04em]">
-                  Aadhya Serene
-                </span>
-                {/* <span className="mt-0.5 block text-[8.5px] font-semibold uppercase tracking-[0.24em] text-[#6d727d]">
-                  Signature Residence
-                </span> */}
+                <img
+                  src="https://cdn.sthyra.com/AADHYA%20SERENE/images/generated-svg-image.svg"
+                  alt="Aadhya Serene"
+                  className="h-[34px] w-auto object-contain md:h-[38px]"
+                  loading="eager"
+                  decoding="async"
+                />
               </Link>
 
               <nav className="hidden items-center gap-1 lg:flex">

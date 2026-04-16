@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import AadhyaLogo from "@/components/Home/AadhyaLogo";
-import AbhignaLogo from "@/components/Home/AbhignaLogo";
+import { motion } from "framer-motion";
 import useResponsiveViewport from "@/hooks/useResponsiveViewport";
 import styles from "./home.module.css";
 
@@ -15,6 +14,46 @@ const HomeScrollLottie = dynamic(() => import("@/components/Home/HomeScrollLotti
   ssr: false,
   loading: () => null,
 });
+
+const HERO_TITLE_LINES = ["Quiet luxury,", "shaped for harmony."];
+const HERO_MARKERS = [
+  "132 curated residences",
+  "Sky leisure amenities",
+  "North Bengaluru address",
+];
+
+function AnimatedHeroTitle() {
+  return (
+    <span className={styles.heroTitleStack} aria-label={HERO_TITLE_LINES.join(" ")}>
+      {HERO_TITLE_LINES.map((line, lineIndex) => (
+        <span key={line} className={styles.heroTitleLine}>
+          {Array.from(line).map((char, charIndex) => {
+            const key = `${lineIndex}-${charIndex}-${char}`;
+            const isSpace = char === " ";
+
+            return (
+              <motion.span
+                key={key}
+                className={
+                  isSpace ? styles.heroTitleSpace : styles.heroTitleLetter
+                }
+                initial={{ y: "112%", opacity: 0, filter: "blur(8px)" }}
+                animate={{ y: "0%", opacity: 1, filter: "blur(0px)" }}
+                transition={{
+                  duration: 0.92,
+                  delay: 0.36 + lineIndex * 0.24 + charIndex * 0.045,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+              >
+                {isSpace ? "\u00A0" : char}
+              </motion.span>
+            );
+          })}
+        </span>
+      ))}
+    </span>
+  );
+}
 
 export default function HomePageClient() {
   const router = useRouter();
@@ -103,47 +142,76 @@ export default function HomePageClient() {
       {showLoader && <LuxuryPreloader />}
 
       <section id="home-inner" className={styles.heroInner}>
-        <div className={styles.heroLogoContainer}>
-          <div className={styles.heroLogo1}>
-            <AadhyaLogo />
-          </div>
-          <span className={styles.heroLogoSpacer}>by</span>
-          <div className={styles.heroLogo2}>
-            <a
-              href="https://abhignaconstructions.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <AbhignaLogo />
-            </a>
-          </div>
-        </div>
-
-        <h1 className={styles.heroTitle}>Your Haven of Harmony</h1>
-
-        <div className={styles.heroButtonContainer}>
-          <button
-            type="button"
-            onClick={() => navigateTo("/apartments")}
-            className={styles.heroCtaButton}
+        <div className={styles.heroContent}>
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+            className={styles.heroEyebrow}
           >
-            <span className={styles.heroCtaIcon}>
-              <svg
-                stroke="currentColor"
-                fill="currentColor"
-                strokeWidth="0"
-                viewBox="0 0 24 24"
-                height="1em"
-                width="1em"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M19.1642 12L12.9571 5.79291L11.5429 7.20712L16.3358 12L11.5429 16.7929L12.9571 18.2071L19.1642 12ZM13.5143 12L7.30722 5.79291L5.89301 7.20712L10.6859 12L5.89301 16.7929L7.30722 18.2071L13.5143 12Z"></path>
-              </svg>
-            </span>
-            <span>Step Inside Aadhya Serene </span>
-          </button>
+            {/* <span className={styles.heroEyebrowDot} /> */}
+            Aadhya Serene, Thanisandra
+          </motion.div>
 
-          <span className={styles.desktopScroll}>Scroll Down</span>
+          <h1 className={styles.heroTitle}>
+            <AnimatedHeroTitle />
+          </h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 1.05, ease: [0.22, 1, 0.36, 1] }}
+            className={styles.heroSubtitle}
+          >
+            A calmer expression of premium living, with open skies, elevated leisure,
+            and beautifully composed homes designed for a more serene daily rhythm.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.85, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            className={styles.heroMarkerRow}
+          >
+            {HERO_MARKERS.map((marker) => (
+              <span key={marker} className={styles.heroMarker}>
+                {marker}
+              </span>
+            ))}
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 1.34, ease: [0.22, 1, 0.36, 1] }}
+            className={styles.heroActions}
+          >
+            <button
+              type="button"
+              onClick={() => navigateTo("/apartments")}
+              className={styles.heroPrimaryCta}
+            >
+              <span>Explore Residences</span>
+              <span className={styles.heroCtaArrow}>↗</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateTo("/about")}
+              className={styles.heroSecondaryCta}
+            >
+              View Project Story
+            </button>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.85, delay: 1.5, ease: [0.22, 1, 0.36, 1] }}
+            className={styles.heroScrollRow}
+          >
+            {/* <span className={styles.desktopScroll}>Scroll to continue</span> */}
+          </motion.div>
         </div>
       </section>
       {!isTabletOrBelow ? <HomeScrollLottie className={styles.heroLottie} /> : null}
