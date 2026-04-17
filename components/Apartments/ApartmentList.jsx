@@ -4,7 +4,7 @@ import ApartmentCard from './ApartmentCard';
 export default function ApartmentList({ apartments, onSelect, compactMode = false }) {
     if (!apartments || apartments.length === 0) {
         return (
-            <div className={`border border-white/18 bg-[linear-gradient(145deg,rgba(250,252,255,0.2),rgba(196,221,255,0.08)_52%,rgba(255,255,255,0.08))] text-center shadow-[0_24px_70px_rgba(14,34,74,0.16)] backdrop-blur-[18px] ${compactMode ? 'rounded-none border-x-0 px-4 py-10' : 'rounded-[30px] px-6 py-12'}`}>
+            <div className={`border border-white/18 bg-[linear-gradient(145deg,rgba(9,14,22,0.76),rgba(7,12,19,0.46)_52%,rgba(5,9,14,0.32))] text-center shadow-[0_24px_70px_rgba(0,0,0,0.2)] backdrop-blur-[20px] ${compactMode ? 'rounded-none px-4 py-10' : 'rounded-none px-6 py-12'}`}>
                 <p className={`${compactMode ? 'text-[9px] tracking-[0.2em]' : 'text-[10px] tracking-[0.24em]'} font-semibold uppercase text-white/46`}>
                     No Matches
                 </p>

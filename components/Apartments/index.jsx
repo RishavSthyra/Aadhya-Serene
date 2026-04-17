@@ -187,11 +187,11 @@ export default function Apartments() {
   const renderListContent = (
     <div className={`space-y-2 ${isCompactLayout ? "px-0 pb-20 pt-0" : "mt-2 px-3 pb-5"}`}>
       {loading ? (
-        <div className="rounded-[28px] border border-white/18 bg-[linear-gradient(145deg,rgba(248,251,255,0.18),rgba(199,224,255,0.08)_52%,rgba(255,255,255,0.08))] px-6 py-8 text-center text-xs text-white/68 backdrop-blur-[18px]">
+        <div className="border border-white/18 bg-[linear-gradient(145deg,rgba(9,14,22,0.76),rgba(7,12,19,0.46)_52%,rgba(5,9,14,0.32))] px-6 py-8 text-center text-xs text-white/68 backdrop-blur-[20px]">
           Loading...
         </div>
       ) : error ? (
-        <div className="rounded-[28px] border border-red-200/30 bg-red-100/10 px-6 py-8 text-center text-xs text-red-100 backdrop-blur-[18px]">
+        <div className="border border-red-200/30 bg-[linear-gradient(145deg,rgba(40,10,10,0.62),rgba(22,7,7,0.4))] px-6 py-8 text-center text-xs text-red-100 backdrop-blur-[20px]">
           Error loading apartments.
         </div>
       ) : (
@@ -214,7 +214,7 @@ export default function Apartments() {
         transition: "transform 420ms cubic-bezier(0.22,1,0.36,1), opacity 280ms ease",
       }}
     >
-      <aside className="relative mr-4 flex h-[calc(100dvh-120px)] max-h-[calc(100dvh-120px)] w-[392px] flex-col overflow-hidden rounded-[34px] border border-white/12 bg-[linear-gradient(165deg,rgba(111,124,145,0.34)_0%,rgba(72,82,99,0.42)_46%,rgba(36,43,55,0.62)_100%)] shadow-[-14px_0_58px_rgba(8,12,18,0.24)] backdrop-blur-[18px]">
+      <aside className="relative mr-4 flex h-[calc(100dvh-120px)] max-h-[calc(100dvh-120px)] w-[392px] flex-col overflow-hidden border border-white/12 bg-[linear-gradient(165deg,rgba(10,16,26,0.82)_0%,rgba(8,13,20,0.68)_46%,rgba(5,8,14,0.52)_100%)] shadow-[-14px_0_58px_rgba(8,12,18,0.28)] backdrop-blur-[22px]">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01)_18%,rgba(12,15,21,0.08)_100%)]" />
         <div
           className="relative flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-thin"
@@ -279,9 +279,9 @@ export default function Apartments() {
           transition: "transform 360ms cubic-bezier(0.22,1,0.36,1)",
         }}
       >
-        <aside className="relative flex h-full flex-col overflow-hidden rounded-none border border-b-0 border-x-0 border-white/10 bg-[linear-gradient(165deg,rgba(108,121,142,0.38)_0%,rgba(69,79,96,0.46)_46%,rgba(33,40,51,0.66)_100%)] shadow-[0_-16px_54px_rgba(8,12,18,0.24)] backdrop-blur-[16px]">
+        <aside className="relative flex h-full flex-col overflow-hidden rounded-none border border-b-0 border-x-0 border-white/10 bg-[linear-gradient(165deg,rgba(9,15,24,0.84)_0%,rgba(8,13,20,0.7)_46%,rgba(5,8,14,0.56)_100%)] shadow-[0_-16px_54px_rgba(8,12,18,0.28)] backdrop-blur-[20px]">
           <div className="px-4 pt-2">
-            <div className="mx-auto h-1.5 w-14 rounded-full bg-white/12" />
+            <div className="mx-auto h-1.5 w-14 bg-white/12" />
           </div>
 
           <div className="relative flex items-center justify-between gap-3 border-b border-white/10 px-4 pb-2.5 pt-3">
@@ -314,7 +314,7 @@ export default function Apartments() {
           </div>
 
           <div className="relative border-b border-white/10 px-3 py-2.5">
-            <div className="grid grid-cols-2 gap-1.5 rounded-[18px] bg-black/10 p-1">
+            <div className="grid grid-cols-2 gap-1.5 bg-black/10 p-1">
               <button
                 type="button"
                 onClick={() => {
@@ -421,7 +421,7 @@ export default function Apartments() {
 
       {isFlatRoutePreparing ? (
         <div className="absolute inset-0 z-[125] flex items-center justify-center bg-[radial-gradient(circle_at_center,rgba(193,216,255,0.08),rgba(6,10,18,0.16))] backdrop-blur-[3px]">
-          <div className="rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(233,240,250,0.18),rgba(174,193,219,0.12))] px-5 py-3 text-center shadow-[0_18px_42px_rgba(7,10,18,0.18)] backdrop-blur-[14px]">
+          <div className="border border-white/14 bg-[linear-gradient(180deg,rgba(12,18,28,0.82),rgba(8,13,20,0.58))] px-5 py-3 text-center shadow-[0_18px_42px_rgba(7,10,18,0.22)] backdrop-blur-[18px]">
             <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-white/58">
               Preparing Residence
             </p>

@@ -39,6 +39,7 @@ import {
     INTERIOR_START_PREVIEW_URL,
 } from '../../../lib/interior-panos';
 import { skipNextApartmentsReplay } from '../../../lib/background-transition';
+import useResponsiveViewport from '../../../hooks/useResponsiveViewport';
 
 const WHATSAPP_URL = 'https://wa.me/919620993333?text=Hi!%20I%20want%20to%20know%20more%20about%20flat%20';
 
@@ -62,7 +63,7 @@ function getRoomIcon(name) {
 
 function StatCard({ icon: Icon, label, value, accent = 'text-white' }) {
     return (
-        <div className="rounded-[20px] border border-white/10 bg-black/18 px-4 py-3 backdrop-blur-[18px]">
+        <div className="border border-white/10 bg-[linear-gradient(135deg,rgba(6,10,16,0.76),rgba(8,13,20,0.42))] px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.22)] backdrop-blur-[24px]">
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/36">
                     <Icon className="h-4 w-4 text-[#dcc27c]" />
@@ -80,11 +81,11 @@ function RoomCard({ room }) {
     const Icon = getRoomIcon(room.name);
 
     return (
-        <div className="group rounded-[20px] border border-white/9 bg-white/[0.04] px-4 py-3 transition-all duration-300 hover:border-[#dcc27c]/25 hover:bg-white/[0.06]">
+        <div className="group border border-white/10 bg-[linear-gradient(135deg,rgba(7,11,17,0.72),rgba(8,13,20,0.38))] px-4 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.18)] transition-all duration-300 hover:border-[#dcc27c]/22 hover:bg-[linear-gradient(135deg,rgba(9,14,21,0.8),rgba(10,15,22,0.46))]">
             <div className="flex items-center justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#dcc27c]/18 bg-[#dcc27c]/8 text-[#dcc27c]">
-                    <Icon className="h-4 w-4" />
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center border border-[#dcc27c]/18 bg-[#dcc27c]/8 text-[#dcc27c]">
+                        <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
                         <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/35">
@@ -140,6 +141,7 @@ export default function FlatDetailPage() {
     const [videoPhase, setVideoPhase] = useState('intro');
     const [isExitTransitionActive, setIsExitTransitionActive] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const { isTabletOrBelow, width } = useResponsiveViewport();
 
     const flat = getFlatById(id);
     const fallbackId = flat ? flatVideoFallbackId(id) : null;
@@ -410,7 +412,7 @@ export default function FlatDetailPage() {
     if (!flat) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-[#090b10] px-6 text-white">
-                <div className="rounded-[32px] border border-white/10 bg-white/[0.04] px-8 py-10 text-center backdrop-blur-[22px]">
+                <div className="border border-white/10 bg-[linear-gradient(135deg,rgba(6,10,16,0.78),rgba(8,13,20,0.44))] px-8 py-10 text-center backdrop-blur-[24px]">
                     <p className="text-sm text-white/65">Apartment not found.</p>
                     <Link
                         href="/apartments"
@@ -439,6 +441,49 @@ export default function FlatDetailPage() {
         floorLabel: flat.floor === 'G' ? 'Ground' : flat.floor,
         bhk: Number.isFinite(bhkValue) ? bhkValue : null,
     });
+    const isCompactDesktop = !isTabletOrBelow && width < 1480;
+    const isWideDesktop = width >= 1700;
+    const desktopTopInset = isCompactDesktop ? '5.75rem' : '6.5rem';
+    const desktopPanelHeight = isCompactDesktop ? 'calc(100vh - 8rem)' : 'calc(100vh - 8.9rem)';
+    const desktopSidebarHeight = isCompactDesktop ? 'calc(100vh - 7.6rem)' : 'calc(100vh - 8.35rem)';
+    const desktopGridColumns = isWideDesktop
+        ? '420px 410px'
+        : isCompactDesktop
+            ? '360px 350px'
+            : '390px 380px';
+    const detailShellInsetClass = isTabletOrBelow
+        ? 'px-3 pb-24 pt-4 sm:px-5'
+        : 'px-4 pb-24 pt-5 2xl:px-8';
+    const dockShellClass = isCompactDesktop
+        ? 'gap-1.5 px-2 py-2'
+        : 'gap-2 px-2.5 py-2.5';
+    const dockButtonClass = isCompactDesktop
+        ? 'px-3 py-2 text-[10px] tracking-[0.16em]'
+        : 'px-4 py-2.5 text-[10px] tracking-[0.17em] 2xl:text-[11px]';
+    const heroTitleClass = isTabletOrBelow
+        ? 'text-[30px] sm:text-[34px]'
+        : isCompactDesktop
+            ? 'text-[28px] xl:text-[31px]'
+            : 'text-[32px] xl:text-[36px]';
+    const sectionTitleClass = isTabletOrBelow
+        ? 'text-[18px] sm:text-[20px]'
+        : isCompactDesktop
+            ? 'text-[18px] xl:text-[19px]'
+            : 'text-[20px]';
+    const roomSectionHeadingClass = isTabletOrBelow
+        ? 'text-[24px] sm:text-[26px]'
+        : isCompactDesktop
+            ? 'text-[22px] xl:text-[24px]'
+            : 'text-[26px]';
+    const bodyCopyClass = isTabletOrBelow
+        ? 'text-[11px] leading-5 sm:text-[12px] sm:leading-6'
+        : isCompactDesktop
+            ? 'text-[11px] leading-5 xl:text-[12px] xl:leading-6'
+            : 'text-[12px] leading-6';
+    const metaValueClass = isCompactDesktop ? 'text-[12px] xl:text-[13px]' : 'text-[13px]';
+    const cardSurfaceClass = 'border border-white/10 bg-[linear-gradient(135deg,rgba(5,8,14,0.78),rgba(8,12,19,0.42))] shadow-[0_24px_68px_rgba(0,0,0,0.28)] backdrop-blur-[30px]';
+    const insetSurfaceClass = 'border border-white/8 bg-[linear-gradient(180deg,rgba(9,13,19,0.72),rgba(5,8,13,0.38))] shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-[24px]';
+    const quietSurfaceClass = 'border border-white/8 bg-[linear-gradient(180deg,rgba(9,13,19,0.62),rgba(5,8,13,0.34))] shadow-[0_16px_38px_rgba(0,0,0,0.14)] backdrop-blur-[20px]';
 
     return (
         <div
@@ -515,21 +560,22 @@ export default function FlatDetailPage() {
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,14,0.72)_0%,rgba(7,9,14,0.18)_28%,rgba(7,9,14,0.62)_100%)]" />
 
             <div
-                className={`relative z-10 min-h-screen px-3 pb-24 pt-4 transition-opacity duration-500 sm:px-5 lg:px-6 lg:pb-28 lg:pt-6 2xl:px-8 ${
+                className={`relative z-10 min-h-screen transition-opacity duration-500 ${detailShellInsetClass} ${
                     isExitTransitionActive || !shouldShowDetailPanels
                         ? 'pointer-events-none opacity-0'
                         : 'opacity-100'
                 }`}
+                style={!isTabletOrBelow ? { paddingTop: desktopTopInset } : undefined}
             >
                 <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-none flex-col">
-                    <div className="fixed inset-x-0 bottom-6 z-20 flex justify-center px-4">
-                        <div className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-white/10 bg-[#0d1016]/78 px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.35)] backdrop-blur-[24px]">
+                    <div className="fixed inset-x-0 bottom-4 z-20 flex justify-center px-4 lg:bottom-5">
+                        <div className={`flex flex-wrap items-center justify-center border border-white/10 bg-[linear-gradient(135deg,rgba(6,9,14,0.88),rgba(10,15,22,0.58))] shadow-[0_18px_46px_rgba(0,0,0,0.32)] backdrop-blur-[28px] ${dockShellClass}`}>
                             <button
                                 type="button"
                                 onClick={toggleMute}
-                                className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.05] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/82 backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08]"
+                                className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.05] font-semibold uppercase text-white/82 backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08] ${dockButtonClass}`}
                             >
-                                {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                                {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
                                 {muted ? 'Muted' : 'Audio On'}
                             </button>
                             <button
@@ -539,38 +585,44 @@ export default function FlatDetailPage() {
                                     event.stopPropagation();
                                     void goFullscreen();
                                 }}
-                                className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.05] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/82 backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08]"
+                                className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.05] font-semibold uppercase text-white/82 backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08] ${dockButtonClass}`}
                             >
-                                <Maximize2 className="h-4 w-4" />
+                                <Maximize2 className="h-3.5 w-3.5" />
                                 {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
                             </button>
                             <a
                                 href={`${WHATSAPP_URL}${flat.flat}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 rounded-full bg-[#dcc27c] px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#17130b] transition hover:bg-[#e7cd85]"
+                                className={`inline-flex items-center gap-2 rounded-full bg-[#dcc27c] font-semibold uppercase text-[#17130b] transition hover:bg-[#e7cd85] ${dockButtonClass} ${isCompactDesktop ? 'px-3.5' : 'px-4 2xl:px-5'}`}
                             >
-                                <MessageCircle className="h-4 w-4" />
+                                <MessageCircle className="h-3.5 w-3.5" />
                                 Enquire
                             </a>
                         </div>
                     </div>
 
-                    <div className="mt-5 grid flex-1 gap-5 lg:grid-cols-[380px_370px] lg:justify-between lg:px-1 xl:grid-cols-[400px_390px] 2xl:grid-cols-[420px_410px]">
-                        <div className="min-h-0 w-full lg:mt-10">
-                            <div className="rounded-[36px] border border-white/10 bg-[linear-gradient(135deg,rgba(8,11,17,0.82),rgba(8,11,17,0.46))] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-[28px] sm:p-4 lg:h-[calc(100vh-11rem)] lg:overflow-hidden">
+                    <div
+                        className="mt-3 grid flex-1 gap-4 lg:justify-between lg:px-1 xl:mt-0 xl:gap-5"
+                        style={!isTabletOrBelow ? { gridTemplateColumns: desktopGridColumns } : undefined}
+                    >
+                        <div className="min-h-0 w-full">
+                            <div
+                                className={`${cardSurfaceClass} p-3 sm:p-4 lg:overflow-hidden`}
+                                style={!isTabletOrBelow ? { height: desktopPanelHeight } : undefined}
+                            >
                                 <div
                                     ref={mainPanelRef}
                                     className="flex min-h-0 flex-col gap-4 lg:h-full lg:overflow-y-auto lg:pr-1"
                                 >
-                                    <div className="flex shrink-0 flex-col rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(5,8,12,0.62),rgba(5,8,12,0.28))] p-4 backdrop-blur-[22px]">
+                                    <div className={`flex shrink-0 flex-col p-4 ${insetSurfaceClass}`}>
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <span className="inline-flex items-center gap-2 rounded-full border border-[#dcc27c]/20 bg-[#dcc27c]/8 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#dcc27c]">
+                                            <span className="inline-flex items-center gap-2 border border-[#dcc27c]/20 bg-[#dcc27c]/8 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#dcc27c]">
                                                 <Sparkles className="h-3.5 w-3.5" />
                                                 Aadhya Serene
                                             </span>
                                             <span
-                                                className={`inline-flex rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] ${
+                                                className={`inline-flex border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] ${
                                                     isAvailable
                                                         ? 'border-emerald-300/18 bg-emerald-300/10 text-emerald-200'
                                                         : 'border-white/12 bg-white/8 text-white/58'
@@ -584,49 +636,49 @@ export default function FlatDetailPage() {
                                             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
                                                 Signature Residence
                                             </p>
-                                            <h1 className="mt-3 font-serif text-[32px] leading-[0.94] text-[#f4efe5] sm:text-[36px]">
+                                            <h1 className={`mt-3 font-serif leading-[0.94] text-[#f4efe5] ${heroTitleClass}`}>
                                                 Apartment {flat.flat}
                                             </h1>
-                                            <p className="mt-3 text-[12px] leading-6 text-white/58">
+                                            <p className={`mt-3 text-white/58 ${bodyCopyClass}`}>
                                                 A calmer expression of premium living shaped with balanced proportions, refined daylight, and everyday ease.
                                             </p>
                                             {useVideoFallback ? (
-                                                <p className="mt-3 rounded-full border border-white/12 bg-white/[0.05] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/58">
+                                                <p className="mt-3 border border-white/12 bg-white/[0.05] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/58">
                                                     Sample exterior video shown while the flat-specific preview is unavailable.
                                                 </p>
                                             ) : null}
                                         </div>
 
-                                        <div className="mt-4 rounded-[22px] border border-white/8 bg-white/[0.03] p-3.5">
+                                        <div className={`mt-4 p-3.5 ${quietSurfaceClass}`}>
                                             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/34">
                                                 Curated Summary
                                             </p>
                                             <div className="mt-3 space-y-2.5">
                                                 <div className="flex items-center justify-between border-b border-white/8 pb-2">
                                                     <span className="text-[10px] uppercase tracking-[0.16em] text-white/36">Typology</span>
-                                                    <span className="text-[13px] font-medium text-white/88">{flat.type}</span>
+                                                    <span className={`${metaValueClass} font-medium text-white/88`}>{flat.type}</span>
                                                 </div>
                                                 <div className="flex items-center justify-between border-b border-white/8 pb-2">
                                                     <span className="text-[10px] uppercase tracking-[0.16em] text-white/36">Area</span>
-                                                    <span className="text-[13px] font-medium text-white/88">{flat.area} sqft</span>
+                                                    <span className={`${metaValueClass} font-medium text-white/88`}>{flat.area} sqft</span>
                                                 </div>
                                                 <div className="flex items-center justify-between border-b border-white/8 pb-2">
                                                     <span className="text-[10px] uppercase tracking-[0.16em] text-white/36">Facing</span>
-                                                    <span className="text-[13px] font-medium text-white/88">{facingLabel}</span>
+                                                    <span className={`${metaValueClass} font-medium text-white/88`}>{facingLabel}</span>
                                                 </div>
                                                 <div className="flex items-center justify-between border-b border-white/8 pb-2">
                                                     <span className="text-[10px] uppercase tracking-[0.16em] text-white/36">Level</span>
-                                                    <span className="text-[13px] font-medium text-white/88">{floorLabel}</span>
+                                                    <span className={`${metaValueClass} font-medium text-white/88`}>{floorLabel}</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] uppercase tracking-[0.16em] text-white/36">Balconies</span>
-                                                    <span className="text-[13px] font-medium text-white/88">{flat.balconies}</span>
+                                                    <span className={`${metaValueClass} font-medium text-white/88`}>{flat.balconies}</span>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="mt-4 grid gap-2">
-                                            <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-3.5 py-3">
+                                            <div className={`${quietSurfaceClass} px-3.5 py-3`}>
                                                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/34">Status</p>
                                                 <p className={`mt-1.5 text-[17px] font-medium ${isAvailable ? 'text-emerald-200' : 'text-white/64'}`}>
                                                     {isAvailable ? 'Available' : 'Sold Out'}
@@ -650,7 +702,7 @@ export default function FlatDetailPage() {
                                         </button>
                                     </div>
 
-                                    <div className="rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(7,10,15,0.56),rgba(7,10,15,0.24))] p-4 backdrop-blur-[18px] lg:pt-8">
+                                    <div className={`${insetSurfaceClass} p-4 lg:pt-8`}>
                                         <div className="grid gap-2">
                                             <StatCard icon={Building2} label="Type" value={flat.type} />
                                             <StatCard icon={Ruler} label="Area" value={`${flat.area} sqft`} />
@@ -670,11 +722,11 @@ export default function FlatDetailPage() {
                                                 <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-white/36">
                                                     Spatial Composition
                                                 </p>
-                                                <h2 className="mt-2 text-[26px] font-medium tracking-[0.02em] text-[#f4efe5]">
+                                                <h2 className={`mt-2 font-medium tracking-[0.02em] text-[#f4efe5] ${roomSectionHeadingClass}`}>
                                                     Room Dimensions
                                                 </h2>
                                             </div>
-                                            <p className="max-w-[34ch] text-[13px] leading-6 text-white/48">
+                                            <p className={`max-w-[34ch] text-white/48 ${isCompactDesktop ? 'text-[12px] leading-5' : 'text-[13px] leading-6'}`}>
                                                 Every room is proportioned for practical comfort while preserving a clean,
                                                 elevated planning language throughout the residence.
                                             </p>
@@ -690,28 +742,32 @@ export default function FlatDetailPage() {
                             </div>
                         </div>
 
-                        <div className="min-h-0 lg:sticky lg:top-6 lg:self-start">
+                        <div
+                            className="min-h-0 lg:sticky lg:self-start"
+                            style={!isTabletOrBelow ? { top: desktopTopInset } : undefined}
+                        >
                             <div
                                 ref={sidebarPanelRef}
-                                className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(5,7,12,0.96),rgba(5,7,12,0.84))] p-3 shadow-[0_28px_90px_rgba(0,0,0,0.4)] backdrop-blur-[30px] sm:p-4 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto"
+                                className={`${cardSurfaceClass} p-3 sm:p-4 lg:overflow-y-auto`}
+                                style={!isTabletOrBelow ? { maxHeight: desktopSidebarHeight } : undefined}
                             >
                                 <div className="space-y-4">
-                            <div className="rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(5,8,12,0.78),rgba(5,8,12,0.52))] p-4">
+                            <div className={`p-4 ${insetSurfaceClass}`}>
                                 <div className="mb-4 flex items-center justify-between gap-3">
                                     <div>
                                         <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
                                             Floor Plan
                                         </p>
-                                        <h2 className="mt-2 text-[20px] font-medium text-[#f4efe5]">
+                                        <h2 className={`mt-2 font-medium text-[#f4efe5] ${sectionTitleClass}`}>
                                             Residence layout
                                         </h2>
                                     </div>
-                                    <span className="rounded-full border border-white/12 bg-white/[0.04] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/55">
+                                    <span className="border border-white/12 bg-white/[0.04] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/55">
                                         {flat.flat}
                                     </span>
                                 </div>
 
-                                <div className="overflow-hidden rounded-[22px] border border-white/10 bg-black/25">
+                                <div className="overflow-hidden border border-white/10 bg-black/25">
                                     {!floorPlanError ? (
                                         <img
                                             src={planSrc}
@@ -755,11 +811,11 @@ export default function FlatDetailPage() {
                                 </div>
                             </div>
 
-                            <div className="rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(5,8,12,0.78),rgba(5,8,12,0.52))] p-4">
+                            <div className={`p-4 ${insetSurfaceClass}`}>
                                 <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
                                     Interior Preview
                                 </p>
-                                <h2 className="mt-2 text-[20px] font-medium text-[#f4efe5]">
+                                <h2 className={`mt-2 font-medium text-[#f4efe5] ${sectionTitleClass}`}>
                                     Sample walkthrough
                                 </h2>
 
@@ -781,18 +837,18 @@ export default function FlatDetailPage() {
                                         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(8,11,17,0.24)_40%,rgba(8,11,17,0.88)_100%)]" />
                                         <div className="absolute bottom-[40%] left-1/2 -translate-x-1/2 flex items-end justify-between gap-4">
                                           
-                                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/18 bg-white/12 text-white backdrop-blur-md transition group-hover:scale-105 group-hover:bg-white/16">
+                                            <span className="flex h-12 w-12 shrink-0 items-center justify-center border border-white/18 bg-white/12 text-white backdrop-blur-md transition group-hover:scale-105 group-hover:bg-white/16">
                                                 <Play className="ml-0.5 h-4 w-4 fill-current" />
                                             </span>
                                         </div>
                                     </div>
                                 </button>
 
-                                <div className="mt-4 rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(5,8,12,0.74),rgba(5,8,12,0.48))] px-4 py-4">
+                                <div className={`mt-4 px-4 py-4 ${quietSurfaceClass}`}>
                                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/36">
                                         Design Note
                                     </p>
-                                    <p className="mt-3 text-[13px] leading-6 text-white/56">
+                                    <p className={`mt-3 text-white/56 ${isCompactDesktop ? 'text-[12px] leading-5' : 'text-[13px] leading-6'}`}>
                                         The residence is positioned as a calm, daylight-led home with a more
                                         understated luxury language across proportion, flow, and private outdoor edges.
                                     </p>

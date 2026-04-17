@@ -211,15 +211,15 @@ export default function Filters({
         <FilterGroup label="Area" compactMode={compactMode}>
           <div className={`flex items-center justify-between gap-3 ${compactMode ? "mb-2" : "mb-2.5"}`}>
             <span className={compactMode ? "text-[8px] text-white/40" : "text-[9px] text-white/40"}>800 sqft</span>
-            <span className={`rounded-full border border-white/10 bg-white/[0.04] font-semibold uppercase text-white/66 ${compactMode ? "px-2.5 py-1 text-[6.5px] tracking-[0.12em]" : "px-3 py-1 text-[7px] tracking-[0.14em]"}`}>
+            <span className={`border border-white/10 bg-white/[0.04] font-semibold uppercase text-white/66 ${compactMode ? "px-2.5 py-1 text-[6.5px] tracking-[0.12em]" : "px-3 py-1 text-[7px] tracking-[0.14em]"}`}>
               {areaRange[0]} to {areaRange[1]} sqft
             </span>
             <span className={compactMode ? "text-[8px] text-white/40" : "text-[9px] text-white/40"}>1600 sqft</span>
           </div>
 
-          <div className="relative h-1 rounded-full bg-white/10">
+          <div className="relative h-1 bg-white/10">
             <div
-              className="absolute h-1 rounded-full bg-[linear-gradient(90deg,rgba(194,206,225,0.95)_0%,rgba(225,232,243,0.95)_100%)]"
+              className="absolute h-1 bg-[linear-gradient(90deg,rgba(194,206,225,0.95)_0%,rgba(225,232,243,0.95)_100%)]"
               style={{
                 left: `${minPercent}%`,
                 width: `${Math.max(maxPercent - minPercent, 2)}%`,

@@ -18,7 +18,7 @@ export default function ApartmentCard({ apartment, onSelect, compactMode = false
             type="button"
             onClick={() => onSelect(apartment)}
             className={`group w-full border border-white/11 bg-[linear-gradient(145deg,rgba(104,117,139,0.32),rgba(68,77,94,0.38)_58%,rgba(41,48,60,0.48)_100%)] text-left shadow-[0_12px_24px_rgba(9,12,18,0.18)] backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/18 hover:bg-[linear-gradient(145deg,rgba(115,128,149,0.36),rgba(72,82,98,0.42)_58%,rgba(45,52,65,0.52)_100%)] ${
-                compactMode ? 'rounded-none border-x-0 px-3 py-2.5' : 'rounded-[22px] px-4 py-3'
+                compactMode ? 'rounded-[18px] px-3 py-2.5' : 'rounded-[22px] px-4 py-3'
             }`}
         >
             <div className="flex items-center justify-between gap-3">
@@ -27,7 +27,7 @@ export default function ApartmentCard({ apartment, onSelect, compactMode = false
                         <span className={`${compactMode ? 'text-[1rem]' : 'text-[1.12rem]'} font-semibold tracking-[0.08em] text-white/94`}>
                             {id.toString().padStart(3, '0')}
                         </span>
-                        <span className={`rounded-full border border-white/10 bg-white/[0.05] font-semibold uppercase text-white/60 ${compactMode ? 'px-2 py-0.5 text-[6px] tracking-[0.12em]' : 'px-2.5 py-1 text-[7px] tracking-[0.16em]'}`}>
+                        <span className={`border border-white/10 bg-white/[0.05] font-semibold uppercase text-white/60 ${compactMode ? 'px-2 py-0.5 text-[6px] tracking-[0.12em]' : 'px-2.5 py-1 text-[7px] tracking-[0.16em]'}`}>
                             {type}
                         </span>
                     </div>
@@ -39,7 +39,7 @@ export default function ApartmentCard({ apartment, onSelect, compactMode = false
 
                 <div className="flex items-center gap-2">
                     <span
-                        className={`hidden rounded-full border font-semibold uppercase sm:inline-flex ${
+                        className={`hidden border font-semibold uppercase sm:inline-flex ${
                             compactMode ? 'px-2 py-0.5 text-[6px] tracking-[0.12em]' : 'px-2.5 py-1 text-[7px] tracking-[0.16em]'
                         } ${
                             isAvailable
@@ -50,7 +50,7 @@ export default function ApartmentCard({ apartment, onSelect, compactMode = false
                         {isAvailable ? 'Available' : 'Sold Out'}
                     </span>
                     <span
-                        className={`inline-flex items-center justify-center rounded-full border transition ${
+                        className={`inline-flex items-center justify-center border transition ${
                             compactMode ? 'h-8 w-8' : 'h-9 w-9'
                         } ${
                             isAvailable
@@ -65,7 +65,7 @@ export default function ApartmentCard({ apartment, onSelect, compactMode = false
 
             <div className={`${compactMode ? 'mt-1.5' : 'mt-2'} flex items-center justify-between gap-3 sm:hidden`}>
                 <span
-                    className={`inline-flex rounded-full border font-semibold uppercase ${
+                    className={`inline-flex border font-semibold uppercase ${
                         compactMode ? 'px-2 py-0.5 text-[6px] tracking-[0.12em]' : 'px-2.5 py-1 text-[7px] tracking-[0.16em]'
                     } ${
                         isAvailable

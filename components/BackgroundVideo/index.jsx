@@ -8,7 +8,7 @@ import styles from './background-video.module.css';
 const S3_BUCKET = 'https://aadhya-serene-assets-v2.s3.amazonaws.com';
 const HOMEPAGE_VIDEO_CDN = `${S3_BUCKET}/videos/homepage`;
 
-const HOME_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/1-1-Av1.mp4';
+const HOME_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/HLS_1_1/master.m3u8';
 const HOME_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/1-2-Vp9.mp4';
 const ABOUT_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-1-Av1.mp4';
 const ABOUT_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-2-av1.mp4';
@@ -34,6 +34,17 @@ const BACKGROUND_POSTERS = {
 };
 
 const APARTMENTS_LOOP_HOLD_MS = 0;
+const HOME_HLS_LOOP_PRELOAD_BUFFER_AHEAD_SECONDS = 8;
+const HOME_HLS_CONFIG = {
+    enableWorker: true,
+    lowLatencyMode: false,
+    capLevelToPlayerSize: true,
+    startLevel: 0,
+    maxBufferLength: 45,
+    maxMaxBufferLength: 90,
+    backBufferLength: 30,
+};
+const STRICT_HOME_HLS = true;
 
 const LAYOUT_CONFIG = {
     home: {
@@ -126,10 +137,45 @@ function uniqueSources(sources) {
     return [...new Set(sources.filter(Boolean))];
 }
 
+function isHlsSource(source) {
+    return typeof source === 'string' && source.toLowerCase().includes('.m3u8');
+}
+
+function canPlayHlsNatively(video) {
+    if (!video) return false;
+
+    return ['application/vnd.apple.mpegurl', 'application/x-mpegURL']
+        .some((mimeType) => video.canPlayType(mimeType) !== '');
+}
+
+function getBufferedAhead(video) {
+    if (!video || video.buffered.length === 0) {
+        return 0;
+    }
+
+    const currentTime = video.currentTime;
+
+    for (let index = 0; index < video.buffered.length; index += 1) {
+        const rangeStart = video.buffered.start(index);
+        const rangeEnd = video.buffered.end(index);
+
+        if (currentTime >= rangeStart && currentTime <= rangeEnd) {
+            return Math.max(0, rangeEnd - currentTime);
+        }
+    }
+
+    return 0;
+}
+
 export default function BackgroundVideo({ layout = 'home', playing = true, replayKey = 0 }) {
     const { isMobile, isTablet, isSafari, isIOS } = useResponsiveViewport();
     const transitionRef = useRef(null);
     const loopRef = useRef(null);
+    const transitionHlsRef = useRef(null);
+    const loopHlsRef = useRef(null);
+    const transitionLoadIdRef = useRef(0);
+    const loopLoadIdRef = useRef(0);
+    const hlsModulePromiseRef = useRef(null);
     const transitionSourceIndexRef = useRef(0);
     const loopSourceIndexRef = useRef(0);
     const [showLoop, setShowLoop] = useState(false);
@@ -138,7 +184,9 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const config = LAYOUT_CONFIG[layout] ?? DEFAULT_CONFIG;
     const transitionPreloadMode = 'auto';
     const loopPreloadMode = shouldConserveData ? 'metadata' : 'auto';
-    const shouldEagerlyPrepareLoop = !shouldConserveData;
+    const transitionIsHls = isHlsSource(config.transition);
+    const shouldEagerlyPrepareLoop = !shouldConserveData && !transitionIsHls;
+    const shouldDeferLoopPreloadForHls = !shouldConserveData && transitionIsHls;
     const shouldHideBackground = layout === 'location';
     const posterSrc = BACKGROUND_POSTERS[layout] ?? BACKGROUND_POSTERS.home;
     const transitionReadyEvent = shouldConserveData ? 'loadedmetadata' : 'loadeddata';
@@ -181,7 +229,9 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         };
     }, [isMobile]);
 
-    const getSourceCandidates = useCallback((source, assetId) => {
+    const getSourceCandidates = useCallback((source, assetId, options = {}) => {
+        const { forceSingleHlsSource = false } = options;
+
         if (!source) return [];
 
         const fallbackSource = MOBILE_VIDEO_FALLBACKS[source];
@@ -192,6 +242,14 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 'h264',
             )
             : null;
+
+        if (isHlsSource(source)) {
+            if (forceSingleHlsSource) {
+                return [source];
+            }
+
+            return uniqueSources([source, preferredMp4Source, fallbackSource]);
+        }
 
         if (shouldConserveData && fallbackSource) {
             return uniqueSources([fallbackSource, preferredMp4Source, source]);
@@ -204,9 +262,30 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         return [source];
     }, [isIOS, isSafari, isTablet, shouldConserveData]);
 
+    const getHlsModule = useCallback(() => {
+        if (!hlsModulePromiseRef.current) {
+            hlsModulePromiseRef.current = import('hls.js')
+                .then((module) => module.default ?? module)
+                .catch((error) => {
+                    hlsModulePromiseRef.current = null;
+                    throw error;
+                });
+        }
+
+        return hlsModulePromiseRef.current;
+    }, []);
+
+    const destroyHlsInstance = useCallback((target) => {
+        const ref = target === 'loop' ? loopHlsRef : transitionHlsRef;
+        ref.current?.destroy();
+        ref.current = null;
+    }, []);
+
     const transitionSources = useMemo(
-        () => getSourceCandidates(config.transition, config.transitionAssetId),
-        [config.transition, config.transitionAssetId, getSourceCandidates],
+        () => getSourceCandidates(config.transition, config.transitionAssetId, {
+            forceSingleHlsSource: STRICT_HOME_HLS && layout === 'home' && isHlsSource(config.transition),
+        }),
+        [config.transition, config.transitionAssetId, getSourceCandidates, layout],
     );
     const transitionSourcesKey = useMemo(
         () => transitionSources.join('|'),
@@ -240,22 +319,94 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     }, []);
 
     const loadVideoCandidate = useCallback((video, sources, index, options = {}) => {
-        const { shouldLoop = false, preload = 'auto' } = options;
+        const { shouldLoop = false, preload = 'auto', target = 'transition' } = options;
         const source = sources[index];
+        const loadIdRef = target === 'loop' ? loopLoadIdRef : transitionLoadIdRef;
+        const loadId = loadIdRef.current + 1;
 
         if (!video || !source) {
             return false;
         }
 
+        loadIdRef.current = loadId;
+        destroyHlsInstance(target);
         primeVideoElement(video);
         video.pause();
-        video.src = source;
         video.loop = shouldLoop;
         video.preload = preload;
+
+        if (isHlsSource(source)) {
+            video.removeAttribute('src');
+            video.load();
+
+            if (canPlayHlsNatively(video)) {
+                video.src = source;
+                video.load();
+                return true;
+            }
+
+            getHlsModule()
+                .then((Hls) => {
+                    if (loadIdRef.current !== loadId) return;
+
+                    if (!Hls.isSupported()) {
+                        console.error('[BackgroundVideo] HLS is not supported in this browser/runtime.', {
+                            layout,
+                            source,
+                            target,
+                        });
+                        video.dispatchEvent(new Event('error'));
+                        return;
+                    }
+
+                    const hls = new Hls({
+                        ...HOME_HLS_CONFIG,
+                    });
+
+                    const hlsRef = target === 'loop' ? loopHlsRef : transitionHlsRef;
+                    hlsRef.current = hls;
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+                        if (loadIdRef.current !== loadId) return;
+                        hls.loadSource(source);
+                    });
+                    hls.on(Hls.Events.ERROR, (_, data) => {
+                        if (data?.fatal && loadIdRef.current === loadId) {
+                            console.error('[BackgroundVideo] Fatal HLS playback error.', {
+                                layout,
+                                source,
+                                target,
+                                details: data,
+                            });
+                            video.dispatchEvent(new Event('error'));
+                        }
+                    });
+                })
+                .catch((error) => {
+                    if (loadIdRef.current === loadId) {
+                        console.error('[BackgroundVideo] Failed to initialize hls.js.', {
+                            layout,
+                            source,
+                            target,
+                            error,
+                        });
+                        video.dispatchEvent(new Event('error'));
+                    }
+                });
+
+            return true;
+        }
+
+        video.src = source;
         video.load();
 
         return true;
-    }, [primeVideoElement]);
+    }, [destroyHlsInstance, getHlsModule, layout, primeVideoElement]);
+
+    useEffect(() => () => {
+        destroyHlsInstance('transition');
+        destroyHlsInstance('loop');
+    }, [destroyHlsInstance]);
 
     useEffect(() => {
         primeVideoElement(transitionRef.current);
@@ -268,6 +419,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
         return loadVideoCandidate(transitionVideo, transitionSources, index, {
             preload: transitionPreloadMode,
+            target: 'transition',
         });
     }, [loadVideoCandidate, transitionPreloadMode, transitionSources]);
 
@@ -278,6 +430,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         return loadVideoCandidate(loopVideo, loopSources, index, {
             shouldLoop: true,
             preload: loopPreloadMode,
+            target: 'loop',
         });
     }, [loadVideoCandidate, loopPreloadMode, loopSources]);
 
@@ -288,11 +441,16 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
         let cancelled = false;
         let started = false;
+        let loopPrepared = false;
         let firstLoopPrepareFrame = null;
         let secondLoopPrepareFrame = null;
+        let deferredLoopPreloadCleanup = null;
 
         const prepareLoopVideo = () => {
-            if (cancelled) return;
+            if (cancelled || loopPrepared) return;
+            loopPrepared = true;
+            deferredLoopPreloadCleanup?.();
+            deferredLoopPreloadCleanup = null;
 
             if (loopSources.length > 0) {
                 loadLoopCandidate(0);
@@ -324,6 +482,21 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                         prepareLoopVideo();
                     });
                 });
+            } else if (shouldDeferLoopPreloadForHls) {
+                const maybePrepareLoopAfterBuffer = () => {
+                    if (getBufferedAhead(transitionVideo) >= HOME_HLS_LOOP_PRELOAD_BUFFER_AHEAD_SECONDS) {
+                        prepareLoopVideo();
+                    }
+                };
+
+                transitionVideo.addEventListener('progress', maybePrepareLoopAfterBuffer);
+                transitionVideo.addEventListener('timeupdate', maybePrepareLoopAfterBuffer);
+                deferredLoopPreloadCleanup = () => {
+                    transitionVideo.removeEventListener('progress', maybePrepareLoopAfterBuffer);
+                    transitionVideo.removeEventListener('timeupdate', maybePrepareLoopAfterBuffer);
+                };
+
+                maybePrepareLoopAfterBuffer();
             }
         };
 
@@ -351,6 +524,10 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 return;
             }
 
+            console.error('[BackgroundVideo] Transition video failed with no remaining fallback sources.', {
+                layout,
+                sources: transitionSources,
+            });
             setBackgroundTransitionState(layout, false);
             window.dispatchEvent(new CustomEvent('bg-transition-ended'));
         };
@@ -370,6 +547,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             if (secondLoopPrepareFrame !== null) {
                 cancelAnimationFrame(secondLoopPrepareFrame);
             }
+            deferredLoopPreloadCleanup?.();
             transitionVideo.removeEventListener(transitionReadyEvent, handleTransitionReady);
             transitionVideo.removeEventListener('error', handleTransitionError);
         };
@@ -379,6 +557,8 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         loopSourcesKey,
         playing,
         replayKey,
+        shouldEagerlyPrepareLoop,
+        shouldDeferLoopPreloadForHls,
         transitionSourcesKey,
     ]);
 
