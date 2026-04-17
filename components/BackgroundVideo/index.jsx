@@ -34,16 +34,27 @@ const BACKGROUND_POSTERS = {
 };
 
 const APARTMENTS_LOOP_HOLD_MS = 0;
-const HOME_HLS_LOOP_PRELOAD_BUFFER_AHEAD_SECONDS = 8;
+const HOME_HLS_MIN_START_BUFFER_AHEAD_SECONDS = 2.4;
+const HOME_HLS_FULLY_BUFFERED_TOLERANCE_SECONDS = 0.15;
 const HOME_HLS_CONFIG = {
     enableWorker: true,
     lowLatencyMode: false,
     capLevelToPlayerSize: true,
     startLevel: 0,
+    startFragPrefetch: true,
+    testBandwidth: false,
+    abrEwmaDefaultEstimate: 8000000,
     maxBufferLength: 45,
     maxMaxBufferLength: 90,
     backBufferLength: 30,
 };
+const HOME_HLS_PREFETCH_URLS = [
+    HOME_TRANSITION,
+    'https://cdn.sthyra.com/AADHYA%20SERENE/videos/HLS_1_1/init.mp4',
+    'https://cdn.sthyra.com/AADHYA%20SERENE/videos/HLS_1_1/seg_000.m4s',
+    'https://cdn.sthyra.com/AADHYA%20SERENE/videos/HLS_1_1/seg_001.m4s',
+    'https://cdn.sthyra.com/AADHYA%20SERENE/videos/HLS_1_1/seg_002.m4s',
+];
 const STRICT_HOME_HLS = true;
 
 const LAYOUT_CONFIG = {
@@ -185,8 +196,9 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const transitionPreloadMode = 'auto';
     const loopPreloadMode = shouldConserveData ? 'metadata' : 'auto';
     const transitionIsHls = isHlsSource(config.transition);
+    const shouldWaitForHlsStartupBuffer = transitionIsHls && layout === 'home';
     const shouldEagerlyPrepareLoop = !shouldConserveData && !transitionIsHls;
-    const shouldDeferLoopPreloadForHls = !shouldConserveData && transitionIsHls;
+    const shouldDeferLoopPreloadForHls = !shouldConserveData && transitionIsHls && layout !== 'home';
     const shouldHideBackground = layout === 'location';
     const posterSrc = BACKGROUND_POSTERS[layout] ?? BACKGROUND_POSTERS.home;
     const transitionReadyEvent = shouldConserveData ? 'loadedmetadata' : 'loadeddata';
@@ -201,6 +213,27 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         setBackgroundTransitionState(layout, false);
         window.dispatchEvent(new CustomEvent('bg-transition-ended'));
     }, [layout, shouldHideBackground]);
+
+    useEffect(() => {
+        if (layout !== 'home') return undefined;
+
+        const controller = new AbortController();
+
+        HOME_HLS_PREFETCH_URLS.forEach((url) => {
+            fetch(url, {
+                cache: 'force-cache',
+                credentials: 'omit',
+                mode: 'cors',
+                signal: controller.signal,
+            }).catch(() => {
+                // Best-effort warmup only.
+            });
+        });
+
+        return () => {
+            controller.abort();
+        };
+    }, [layout]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return undefined;
@@ -445,6 +478,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         let firstLoopPrepareFrame = null;
         let secondLoopPrepareFrame = null;
         let deferredLoopPreloadCleanup = null;
+        let deferredTransitionStartCleanup = null;
 
         const prepareLoopVideo = () => {
             if (cancelled || loopPrepared) return;
@@ -484,7 +518,14 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 });
             } else if (shouldDeferLoopPreloadForHls) {
                 const maybePrepareLoopAfterBuffer = () => {
-                    if (getBufferedAhead(transitionVideo) >= HOME_HLS_LOOP_PRELOAD_BUFFER_AHEAD_SECONDS) {
+                    const bufferedAhead = getBufferedAhead(transitionVideo);
+                    const duration = Number.isFinite(transitionVideo.duration)
+                        ? transitionVideo.duration
+                        : 0;
+                    const hasNearlyFullBuffer = duration > 0
+                        && bufferedAhead >= Math.max(0, duration - HOME_HLS_FULLY_BUFFERED_TOLERANCE_SECONDS);
+
+                    if (hasNearlyFullBuffer) {
                         prepareLoopVideo();
                     }
                 };
@@ -498,6 +539,44 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
                 maybePrepareLoopAfterBuffer();
             }
+        };
+
+        const startTransitionWhenBuffered = () => {
+            if (!shouldWaitForHlsStartupBuffer) {
+                startTransition();
+                return;
+            }
+
+            const maybeStartWhenBuffered = () => {
+                const bufferedAhead = getBufferedAhead(transitionVideo);
+                const duration = Number.isFinite(transitionVideo.duration)
+                    ? transitionVideo.duration
+                    : 0;
+                const hasNearlyFullBuffer = duration > 0
+                    && bufferedAhead >= Math.max(0, duration - HOME_HLS_FULLY_BUFFERED_TOLERANCE_SECONDS);
+
+                if (
+                    bufferedAhead >= HOME_HLS_MIN_START_BUFFER_AHEAD_SECONDS
+                    || hasNearlyFullBuffer
+                ) {
+                    deferredTransitionStartCleanup?.();
+                    deferredTransitionStartCleanup = null;
+                    startTransition();
+                }
+            };
+
+            transitionVideo.addEventListener('progress', maybeStartWhenBuffered);
+            transitionVideo.addEventListener('loadeddata', maybeStartWhenBuffered);
+            transitionVideo.addEventListener('canplay', maybeStartWhenBuffered);
+            transitionVideo.addEventListener('durationchange', maybeStartWhenBuffered);
+            deferredTransitionStartCleanup = () => {
+                transitionVideo.removeEventListener('progress', maybeStartWhenBuffered);
+                transitionVideo.removeEventListener('loadeddata', maybeStartWhenBuffered);
+                transitionVideo.removeEventListener('canplay', maybeStartWhenBuffered);
+                transitionVideo.removeEventListener('durationchange', maybeStartWhenBuffered);
+            };
+
+            maybeStartWhenBuffered();
         };
 
         setBackgroundTransitionState(layout, true);
@@ -515,7 +594,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
         const handleTransitionReady = () => {
             transitionVideo.removeEventListener(transitionReadyEvent, handleTransitionReady);
-            startTransition();
+            startTransitionWhenBuffered();
         };
 
         const handleTransitionError = () => {
@@ -536,7 +615,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         transitionVideo.addEventListener('error', handleTransitionError);
 
         if (transitionVideo.readyState >= transitionReadyStateThreshold) {
-            startTransition();
+            startTransitionWhenBuffered();
         }
 
         return () => {
@@ -548,6 +627,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 cancelAnimationFrame(secondLoopPrepareFrame);
             }
             deferredLoopPreloadCleanup?.();
+            deferredTransitionStartCleanup?.();
             transitionVideo.removeEventListener(transitionReadyEvent, handleTransitionReady);
             transitionVideo.removeEventListener('error', handleTransitionError);
         };
@@ -559,6 +639,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         replayKey,
         shouldEagerlyPrepareLoop,
         shouldDeferLoopPreloadForHls,
+        shouldWaitForHlsStartupBuffer,
         transitionSourcesKey,
     ]);
 
