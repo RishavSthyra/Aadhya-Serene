@@ -141,7 +141,7 @@ export default function FlatDetailPage() {
     const [videoPhase, setVideoPhase] = useState('intro');
     const [isExitTransitionActive, setIsExitTransitionActive] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const { isTabletOrBelow, width } = useResponsiveViewport();
+    const { isMobile, isTablet, isTabletOrBelow, width } = useResponsiveViewport();
 
     const flat = getFlatById(id);
     const fallbackId = flat ? flatVideoFallbackId(id) : null;
@@ -434,7 +434,9 @@ export default function FlatDetailPage() {
     const loopVideoSrc = hasFlatSpecificVideo ? flatVideoSrc(fallbackId, 2) : null;
     const reverseVideoSrc = hasFlatSpecificVideo ? flatReverseVideoSrc(fallbackId) : null;
     const bhkValue = Number.parseInt(flat.type, 10);
-    const shouldShowDetailPanels = !hasFlatSpecificVideo || videoPhase === 'loop';
+    const shouldShowDetailPanels = isTabletOrBelow
+        ? true
+        : !hasFlatSpecificVideo || videoPhase === 'loop';
     const interiorPanosHref = buildInteriorPanosHref({
         apartmentId: flat.id,
         flatNumber: flat.flat,
@@ -451,8 +453,14 @@ export default function FlatDetailPage() {
         : isCompactDesktop
             ? '360px 350px'
             : '390px 380px';
+    const compactMediaHeight = isTablet
+        ? 'min(46dvh, 430px)'
+        : isMobile
+            ? 'min(40dvh, 340px)'
+            : 'min(42dvh, 380px)';
+    const compactSheetOverlap = isTablet ? 28 : 24;
     const detailShellInsetClass = isTabletOrBelow
-        ? 'px-3 pb-24 pt-4 sm:px-5'
+        ? 'px-0 pb-24 pt-0'
         : 'px-4 pb-24 pt-5 2xl:px-8';
     const dockShellClass = isCompactDesktop
         ? 'gap-1.5 px-2 py-2'
@@ -490,7 +498,10 @@ export default function FlatDetailPage() {
             ref={pageShellRef}
             className="relative min-h-screen overflow-hidden bg-[#07090e] text-white"
         >
-            <div className="absolute inset-0 bg-black">
+            <div
+                className={isTabletOrBelow ? 'absolute inset-x-0 top-0 z-0 overflow-hidden bg-black' : 'absolute inset-0 bg-black'}
+                style={isTabletOrBelow ? { height: compactMediaHeight } : undefined}
+            >
                 <video
                     ref={introVideoRef}
                     key={introVideoSrc}
@@ -556,8 +567,22 @@ export default function FlatDetailPage() {
                 ) : null}
             </div>
 
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(201,214,236,0.1),transparent_34%),linear-gradient(90deg,rgba(7,9,14,0.8)_0%,rgba(7,9,14,0.34)_42%,rgba(7,9,14,0.68)_100%)]" />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,14,0.72)_0%,rgba(7,9,14,0.18)_28%,rgba(7,9,14,0.62)_100%)]" />
+            <div
+                className={isTabletOrBelow ? 'absolute inset-x-0 top-0 z-[1] bg-[radial-gradient(circle_at_20%_18%,rgba(201,214,236,0.1),transparent_34%),linear-gradient(90deg,rgba(7,9,14,0.8)_0%,rgba(7,9,14,0.34)_42%,rgba(7,9,14,0.68)_100%)]' : 'absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(201,214,236,0.1),transparent_34%),linear-gradient(90deg,rgba(7,9,14,0.8)_0%,rgba(7,9,14,0.34)_42%,rgba(7,9,14,0.68)_100%)]'}
+                style={isTabletOrBelow ? { height: compactMediaHeight } : undefined}
+            />
+            <div
+                className={isTabletOrBelow ? 'absolute inset-x-0 top-0 z-[1] bg-[linear-gradient(180deg,rgba(7,9,14,0.52)_0%,rgba(7,9,14,0.12)_52%,rgba(7,9,14,0.36)_100%)]' : 'absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,14,0.72)_0%,rgba(7,9,14,0.18)_28%,rgba(7,9,14,0.62)_100%)]'}
+                style={isTabletOrBelow ? { height: compactMediaHeight } : undefined}
+            />
+            {isTabletOrBelow ? (
+                <div
+                    className="absolute inset-x-0 bottom-0 z-[1] bg-[linear-gradient(180deg,rgba(8,12,18,0.86),rgba(7,10,16,0.96))]"
+                    style={{
+                        top: `calc(${compactMediaHeight} - ${compactSheetOverlap}px)`,
+                    }}
+                />
+            ) : null}
 
             <div
                 className={`relative z-10 min-h-screen transition-opacity duration-500 ${detailShellInsetClass} ${
@@ -565,7 +590,11 @@ export default function FlatDetailPage() {
                         ? 'pointer-events-none opacity-0'
                         : 'opacity-100'
                 }`}
-                style={!isTabletOrBelow ? { paddingTop: desktopTopInset } : undefined}
+                style={
+                    isTabletOrBelow
+                        ? { paddingTop: `calc(${compactMediaHeight} - ${compactSheetOverlap}px)` }
+                        : { paddingTop: desktopTopInset }
+                }
             >
                 <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-none flex-col">
                     <div className="fixed inset-x-0 bottom-4 z-20 flex justify-center px-4 lg:bottom-5">
@@ -608,7 +637,7 @@ export default function FlatDetailPage() {
                     >
                         <div className="min-h-0 w-full">
                             <div
-                                className={`${cardSurfaceClass} p-3 sm:p-4 lg:overflow-hidden`}
+                                className={`${cardSurfaceClass} ${isTabletOrBelow ? 'rounded-t-[28px] border-x-0 border-b-0 px-3 pb-6 pt-3 shadow-[0_-20px_60px_rgba(8,12,18,0.34),inset_0_1px_0_rgba(255,255,255,0.16)]' : 'p-3 sm:p-4 lg:overflow-hidden'}`}
                                 style={!isTabletOrBelow ? { height: desktopPanelHeight } : undefined}
                             >
                                 <div
@@ -744,6 +773,7 @@ export default function FlatDetailPage() {
 
                         <div
                             className="min-h-0 lg:sticky lg:self-start"
+                            hidden={isTabletOrBelow}
                             style={!isTabletOrBelow ? { top: desktopTopInset } : undefined}
                         >
                             <div
