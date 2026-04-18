@@ -281,7 +281,7 @@ export default function Nav() {
           scheduleHideNav();
         }}
       >
-        <div className="relative w-full px-4 pt-4 xl:px-8 xl:pt-5">
+        <div className="relative w-full px-4 pb-2 pt-4 xl:px-8 xl:pb-3 xl:pt-5">
           <div
             data-nav-shell
             className="rounded-full border border-white/42 bg-[linear-gradient(180deg,rgba(249,245,236,0.76)_0%,rgba(242,236,226,0.62)_100%)] px-4 py-3 text-[#17191f] shadow-[0_18px_42px_rgba(10,12,18,0.12),inset_0_1px_0_rgba(255,255,255,0.56)] backdrop-blur-[28px] supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(249,245,236,0.64)_0%,rgba(242,236,226,0.48)_100%)] md:px-6 xl:px-8"
@@ -402,7 +402,7 @@ export default function Nav() {
               duration: 0.3,
               ease: [0.22, 1, 0.36, 1],
             }}
-            className={`absolute inset-x-4 top-full mt-3 rounded-[30px] border border-white/38 bg-[linear-gradient(180deg,rgba(255,255,255,0.34)_0%,rgba(255,255,255,0.22)_100%)] p-5 shadow-[0_22px_58px_rgba(9,12,20,0.18),inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-[34px] xl:inset-x-8 ${
+            className={`absolute inset-x-4 top-full mt-0.5 rounded-[30px] border border-white/38 bg-[linear-gradient(180deg,rgba(255,255,255,0.34)_0%,rgba(255,255,255,0.22)_100%)] p-5 shadow-[0_22px_58px_rgba(9,12,20,0.18),inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-[34px] xl:inset-x-8 ${
               openMenu === "amenities" ? "pointer-events-auto" : "pointer-events-none"
             }`}
             style={{ transformOrigin: "top center" }}

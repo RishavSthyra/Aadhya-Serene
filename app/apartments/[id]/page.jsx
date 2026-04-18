@@ -929,40 +929,44 @@ export default function FlatDetailPage() {
                                     </div>
 
                                     <div className={`${insetSurfaceClass} p-4 lg:pt-8`}>
-                                        <div className="grid gap-2">
-                                            <StatCard icon={Building2} label="Type" value={flat.type} />
-                                            <StatCard icon={Ruler} label="Area" value={`${flat.area} sqft`} />
-                                            <StatCard icon={Compass} label="Facing" value={facingLabel} />
-                                            <StatCard icon={LayoutGrid} label="Level" value={floorLabel} />
-                                            <StatCard icon={Flower2} label="Balconies" value={`${flat.balconies}`} />
-                                            <StatCard
-                                                icon={Sparkles}
-                                                label="Status"
-                                                value={isAvailable ? 'Available' : 'Sold Out'}
-                                                accent={isAvailable ? 'text-emerald-200' : 'text-white/64'}
-                                            />
-                                        </div>
+                                        {!isTabletOrBelow ? (
+                                            <>
+                                                <div className="grid gap-2">
+                                                    <StatCard icon={Building2} label="Type" value={flat.type} />
+                                                    <StatCard icon={Ruler} label="Area" value={`${flat.area} sqft`} />
+                                                    <StatCard icon={Compass} label="Facing" value={facingLabel} />
+                                                    <StatCard icon={LayoutGrid} label="Level" value={floorLabel} />
+                                                    <StatCard icon={Flower2} label="Balconies" value={`${flat.balconies}`} />
+                                                    <StatCard
+                                                        icon={Sparkles}
+                                                        label="Status"
+                                                        value={isAvailable ? 'Available' : 'Sold Out'}
+                                                        accent={isAvailable ? 'text-emerald-200' : 'text-white/64'}
+                                                    />
+                                                </div>
 
-                                        <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
-                                            <div>
-                                                <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-white/36">
-                                                    Spatial Composition
-                                                </p>
-                                        <h2 className={`mt-2 font-medium tracking-[0.02em] text-white ${roomSectionHeadingClass}`}>
-                                                    Room Dimensions
-                                                </h2>
-                                            </div>
-                                            <p className={`max-w-[34ch] text-white/48 ${isCompactDesktop ? 'text-[12px] leading-5' : 'text-[13px] leading-6'}`}>
-                                                Every room is proportioned for practical comfort while preserving a clean,
-                                                elevated planning language throughout the residence.
-                                            </p>
-                                        </div>
+                                                <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+                                                    <div>
+                                                        <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-white/36">
+                                                            Spatial Composition
+                                                        </p>
+                                                        <h2 className={`mt-2 font-medium tracking-[0.02em] text-white ${roomSectionHeadingClass}`}>
+                                                            Room Dimensions
+                                                        </h2>
+                                                    </div>
+                                                    <p className={`max-w-[34ch] text-white/48 ${isCompactDesktop ? 'text-[12px] leading-5' : 'text-[13px] leading-6'}`}>
+                                                        Every room is proportioned for practical comfort while preserving a clean,
+                                                        elevated planning language throughout the residence.
+                                                    </p>
+                                                </div>
 
-                                        <div className="mt-5 grid gap-2">
-                                            {flat.rooms.map((room, index) => (
-                                                <RoomCard key={`${room.name}-${index}`} room={room} />
-                                            ))}
-                                        </div>
+                                                <div className="mt-5 grid gap-2">
+                                                    {flat.rooms.map((room, index) => (
+                                                        <RoomCard key={`${room.name}-${index}`} room={room} />
+                                                    ))}
+                                                </div>
+                                            </>
+                                        ) : null}
 
                                         {isTabletOrBelow ? (
                                             <div className="mt-5">

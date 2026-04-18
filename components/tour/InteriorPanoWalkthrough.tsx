@@ -68,16 +68,17 @@ type RoomTab = {
   featured: boolean;
 };
 
+
 const INTERIOR_PANO_DETAILS: Record<string, { label: string; featured?: boolean }> = {
   Bp_panoPath_interiorBP_panoPath4interior_F0000: { label: "Entrance", featured: true },
   Bp_panoPath_interiorBP_panoPath4interior_F0001: { label: "Entrance Passage" },
-  Bp_panoPath_interiorBP_panoPath3interior_F0002: { label: "Living Entry" },
+  Bp_panoPath_interiorBP_panoPath3interior_F0002: { label: "Kitchen", featured: true  },
   Bp_panoPath_interiorBP_panoPath3interior_F0003: { label: "Living Lounge" },
-  Bp_panoPath_interiorBP_panoPath3interior_F0004: { label: "Dining", featured: true },
+  Bp_panoPath_interiorBP_panoPath3interior_F0004: { label: "M.Bedroom", featured: true },
   Bp_panoPath_interiorBP_panoPath3interior_F0005: { label: "Dining Passage" },
   Bp_panoPath_interiorBP_panoPath3interior_F0006: { label: "Kitchen Transition" },
   Bp_panoPath_interiorBP_panoPath3interior_F0007: { label: "Kitchen Utility" },
-  Bp_panoPath_interiorBP_panoPath5interior_F0008: { label: "C.Toilet", featured: true },
+  Bp_panoPath_interiorBP_panoPath5interior_F0008: { label: "C.Toilet"},
   Bp_panoPath_interiorBP_panoPath5interior_F0009: { label: "Powder Area" },
   Bp_panoPath_interiorBP_panoPath2interior_F0010: { label: "Living", featured: true },
   Bp_panoPath_interiorBP_panoPath2interior_F0011: { label: "Balcony Lounge" },
@@ -85,11 +86,12 @@ const INTERIOR_PANO_DETAILS: Record<string, { label: string; featured?: boolean 
   Bp_panoPath_interiorBP_panoPath2interior_F0013: { label: "Master Bedroom" },
   Bp_panoPath_interiorBP_panoPath6interior_F0014: { label: "Wardrobe Passage" },
   Bp_panoPath_interiorBP_panoPath6interior2_F0015: { label: "Master Toilet" },
-  Bp_panoPath_interiorBP_panoPath6interior2_F0016: { label: "Bedroom 03", featured: true },
+  Bp_panoPath_interiorBP_panoPath6interior2_F0016: { label: "Bedroom 2", featured: true },
   Bp_panoPath_interiorBP_panoPath6interior2_F0017: { label: "Bedroom 03 Bath" },
-  Bp_panoPath_interiorBP_panoPath6interior2_F0018: { label: "Kitchen", featured: true },
-  Bp_panoPath_interiorBP_panoPath6interior2_F0019: { label: "Utility Balcony" },
+  Bp_panoPath_interiorBP_panoPath6interior2_F0018: { label: "Kitchen"},
+  Bp_panoPath_interiorBP_panoPath6interior2_F0019: { label: "Washroom", featured: true  },
 };
+
 
 function isFeaturedRoomTab(nodeId: string) {
   return Boolean(INTERIOR_PANO_DETAILS[nodeId]?.featured);

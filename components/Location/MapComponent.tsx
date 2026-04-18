@@ -1507,7 +1507,7 @@ export function CustomStyleExample() {
 
         {/* Mobile / Tablet bottom sheet */}
         <div
-          className={`absolute inset-x-3 bottom-3 z-40 rounded-[30px] border border-white/60 bg-white/92 shadow-[0_-16px_40px_rgba(15,23,42,0.2)] backdrop-blur-2xl transition-all duration-500 xl:hidden ${
+          className={`absolute inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-40 rounded-[30px] border border-white/60 bg-white/92 shadow-[0_-16px_40px_rgba(15,23,42,0.2)] backdrop-blur-2xl transition-all duration-500 xl:hidden ${
             isMobileFiltersOpen
               ? "pointer-events-auto translate-y-0 opacity-100"
               : "pointer-events-none translate-y-[calc(100%+1rem)] opacity-0"
@@ -1534,7 +1534,7 @@ export function CustomStyleExample() {
             </button>
           </div>
 
-          <div className="max-h-[calc(100dvh-5rem)] overflow-y-auto p-4">
+          <div className="max-h-[calc(100dvh-11rem)] overflow-y-auto p-4 pb-[calc(7rem+env(safe-area-inset-bottom))]">
             <div className="mb-4">
               <p className="text-xs uppercase tracking-[0.28em] text-slate-500">
                 Nearby Filters

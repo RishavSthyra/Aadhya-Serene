@@ -516,18 +516,36 @@ function MarkerTooltip({
     if (!map) return;
 
     tooltip.setDOMContent(container);
+    const markerElement = marker.getElement();
 
     const handleMouseEnter = () => {
       tooltip.setLngLat(marker.getLngLat()).addTo(map);
     };
     const handleMouseLeave = () => tooltip.remove();
+    const handleTooltipActivate = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      markerElement?.dispatchEvent(
+        new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+        })
+      );
+    };
 
-    marker.getElement()?.addEventListener("mouseenter", handleMouseEnter);
-    marker.getElement()?.addEventListener("mouseleave", handleMouseLeave);
+    markerElement?.addEventListener("mouseenter", handleMouseEnter);
+    markerElement?.addEventListener("mouseleave", handleMouseLeave);
+    container.addEventListener("click", handleTooltipActivate);
+    container.addEventListener("touchend", handleTooltipActivate, {
+      passive: false,
+    });
 
     return () => {
-      marker.getElement()?.removeEventListener("mouseenter", handleMouseEnter);
-      marker.getElement()?.removeEventListener("mouseleave", handleMouseLeave);
+      markerElement?.removeEventListener("mouseenter", handleMouseEnter);
+      markerElement?.removeEventListener("mouseleave", handleMouseLeave);
+      container.removeEventListener("click", handleTooltipActivate);
+      container.removeEventListener("touchend", handleTooltipActivate);
       tooltip.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -548,7 +566,7 @@ function MarkerTooltip({
 
   return createPortal(<div
     className={cn(
-      "pointer-events-none animate-in fade-in-0 zoom-in-95 rounded-full border border-white/85 bg-white/92 px-2.5 py-1 text-[11px] font-medium text-slate-900 shadow-[0_12px_30px_rgba(15,23,42,0.16)] backdrop-blur-md",
+      "pointer-events-auto cursor-pointer animate-in fade-in-0 zoom-in-95 rounded-full border border-white/85 bg-white/92 px-2.5 py-1 text-[11px] font-medium text-slate-900 shadow-[0_12px_30px_rgba(15,23,42,0.16)] backdrop-blur-md",
       className
     )}>
     {children}

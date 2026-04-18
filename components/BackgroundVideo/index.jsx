@@ -32,7 +32,6 @@ const BACKGROUND_POSTERS = {
     home: '/assets/background-video/posters/home.jpg',
     about: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_2_1.jpg',
     apartments: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_3_1%20(1).jpg',
-    walkthrough: '/assets/apartments/transition-poster.jpg',
     contact: '/assets/background-video/posters/about.jpg',
     amenities: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/umbrella-chair2.jpg',
 };
