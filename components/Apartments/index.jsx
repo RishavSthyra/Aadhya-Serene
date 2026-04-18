@@ -57,7 +57,6 @@ export default function Apartments() {
       ? "min(38dvh, 320px)"
       : "min(42dvh, 380px)";
   const isFlatRoutePreparing = pendingFlatId !== null;
-  const compactIntroActive = isCompactLayout && (isVideoPlaying || !shouldRevealViewer);
 
   const resetApartmentsExperience = useCallback((remountViewer = false) => {
     document.body.style.opacity = "1";
@@ -135,30 +134,6 @@ export default function Apartments() {
     if (!allData || data.length === allData.length) return null;
     return new Set(data.map((flat) => flat.id));
   }, [data, allData]);
-
-  const compactIntroStats = useMemo(() => {
-    const homes = allData ?? [];
-    const typeCounts = homes.reduce(
-      (acc, flat) => {
-        acc[flat.type] = (acc[flat.type] ?? 0) + 1;
-        return acc;
-      },
-      {},
-    );
-
-    const availableCount = homes.filter((flat) => flat.status === "available").length;
-    const areaValues = homes.map((flat) => flat.area).filter((area) => Number.isFinite(area));
-    const minArea = areaValues.length ? Math.min(...areaValues) : 800;
-    const maxArea = areaValues.length ? Math.max(...areaValues) : 1600;
-
-    return {
-      totalHomes: homes.length,
-      availableCount,
-      twoBhkCount: typeCounts["2 BHK"] ?? 0,
-      threeBhkCount: typeCounts["3 BHK"] ?? 0,
-      areaBand: `${minArea} to ${maxArea} sqft`,
-    };
-  }, [allData]);
 
   const handleFlatClick = useCallback(
     async (flatId) => {
@@ -275,91 +250,6 @@ export default function Apartments() {
     </div>
   );
 
-  const renderCompactIntroContent = (
-    <div
-      className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-4"
-      style={{
-        scrollbarWidth: "thin",
-        scrollbarColor: "rgba(255,255,255,0.12) transparent",
-      }}
-    >
-      <div className="rounded-[24px] border border-white/12 bg-[linear-gradient(160deg,rgba(255,255,255,0.1),rgba(58,70,88,0.12)_42%,rgba(8,12,18,0.32)_100%)] p-4 shadow-[0_22px_54px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[24px]">
-        <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/54">
-          Apartment Overview
-        </p>
-        <h2 className="mt-2 max-w-[18rem] text-[26px] font-medium leading-[1.02] tracking-[0.01em] text-white/94">
-          Explore signature apartments from the render above
-        </h2>
-        <p className="mt-3 text-[12px] leading-6 text-white/62">
-          On tablet and mobile, the entry render stays in the top frame only.
-          Filters and apartment cards will load here as soon as the render is ready.
-        </p>
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <div className="rounded-[20px] border border-white/10 bg-[linear-gradient(165deg,rgba(255,255,255,0.1),rgba(30,37,46,0.12)_45%,rgba(10,14,20,0.24)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px]">
-          <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-white/42">
-            Collection
-          </p>
-          <p className="mt-2 text-[22px] font-medium tracking-[0.02em] text-white/92">
-            {compactIntroStats.totalHomes}
-          </p>
-          <p className="mt-1 text-[11px] text-white/56">
-            curated residences
-          </p>
-        </div>
-
-        <div className="rounded-[20px] border border-white/10 bg-[linear-gradient(165deg,rgba(255,255,255,0.1),rgba(30,37,46,0.12)_45%,rgba(10,14,20,0.24)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px]">
-          <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-white/42">
-            Available
-          </p>
-          <p className="mt-2 text-[22px] font-medium tracking-[0.02em] text-white/92">
-            {compactIntroStats.availableCount}
-          </p>
-          <p className="mt-1 text-[11px] text-white/56">
-            homes ready now
-          </p>
-        </div>
-
-        <div className="rounded-[20px] border border-white/10 bg-[linear-gradient(165deg,rgba(255,255,255,0.1),rgba(30,37,46,0.12)_45%,rgba(10,14,20,0.24)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px]">
-          <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-white/42">
-            2 BHK
-          </p>
-          <p className="mt-2 text-[22px] font-medium tracking-[0.02em] text-white/92">
-            {compactIntroStats.twoBhkCount}
-          </p>
-          <p className="mt-1 text-[11px] text-white/56">
-            signature layouts
-          </p>
-        </div>
-
-        <div className="rounded-[20px] border border-white/10 bg-[linear-gradient(165deg,rgba(255,255,255,0.1),rgba(30,37,46,0.12)_45%,rgba(10,14,20,0.24)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px]">
-          <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-white/42">
-            3 BHK
-          </p>
-          <p className="mt-2 text-[22px] font-medium tracking-[0.02em] text-white/92">
-            {compactIntroStats.threeBhkCount}
-          </p>
-          <p className="mt-1 text-[11px] text-white/56">
-            premium layouts
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-3 rounded-[22px] border border-white/10 bg-[linear-gradient(165deg,rgba(255,255,255,0.08),rgba(28,34,43,0.12)_42%,rgba(10,14,20,0.26)_100%)] px-4 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px]">
-        <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-white/42">
-          Area Band
-        </p>
-        <p className="mt-2 text-[18px] font-medium tracking-[0.01em] text-white/92">
-          {compactIntroStats.areaBand}
-        </p>
-        <p className="mt-2 text-[12px] leading-6 text-white/58">
-          As soon as the top render hands over, this lower panel switches from overview mode to the live filters and apartment list.
-        </p>
-      </div>
-    </div>
-  );
-
   const renderCompactSheet = (
     <>
       {isPanelOpen ? (
@@ -422,69 +312,65 @@ export default function Apartments() {
             </div>
           </div>
 
-          {compactIntroActive ? (
-            renderCompactIntroContent
-          ) : (
-            <>
-              <div className="relative border-b border-white/10 px-3 py-2.5">
-                <div className="grid grid-cols-2 gap-2 rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab("filters");
-                      setIsPanelOpen(true);
-                    }}
-                    className={`rounded-[14px] px-4 py-2.5 text-[9px] font-medium uppercase tracking-[0.1em] transition md:text-[10px] ${
-                      activeTab === "filters"
-                        ? "border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.08))] text-white shadow-[0_10px_28px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.12)]"
-                        : "text-white/54 hover:text-white/76"
-                    }`}
-                  >
-                    Filters
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab("list");
-                      setIsPanelOpen(true);
-                    }}
-                    className={`rounded-[14px] px-4 py-2.5 text-[9px] font-medium uppercase tracking-[0.1em] transition md:text-[10px] ${
-                      activeTab === "list"
-                        ? "border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.08))] text-white shadow-[0_10px_28px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.12)]"
-                        : "text-white/54 hover:text-white/76"
-                    }`}
-                  >
-                    Apartments
-                  </button>
-                </div>
+          <>
+            <div className="relative border-b border-white/10 px-3 py-2.5">
+              <div className="grid grid-cols-2 gap-2 rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("filters");
+                    setIsPanelOpen(true);
+                  }}
+                  className={`rounded-[14px] px-4 py-2.5 text-[9px] font-medium uppercase tracking-[0.1em] transition md:text-[10px] ${
+                    activeTab === "filters"
+                      ? "border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.08))] text-white shadow-[0_10px_28px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.12)]"
+                      : "text-white/54 hover:text-white/76"
+                  }`}
+                >
+                  Filters
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("list");
+                    setIsPanelOpen(true);
+                  }}
+                  className={`rounded-[14px] px-4 py-2.5 text-[9px] font-medium uppercase tracking-[0.1em] transition md:text-[10px] ${
+                    activeTab === "list"
+                      ? "border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.08))] text-white shadow-[0_10px_28px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.12)]"
+                      : "text-white/54 hover:text-white/76"
+                  }`}
+                >
+                  Apartments
+                </button>
               </div>
+            </div>
 
-              <div
-                className="min-h-0 flex-1 overflow-y-auto scrollbar-thin"
-                style={{
-                  scrollbarWidth: "thin",
-                  scrollbarColor: "rgba(255,255,255,0.12) transparent",
-                }}
-              >
-                {activeTab === "filters" ? (
-                  <Filters
-                    filters={filters}
-                    onToggle={toggleFilter}
-                    onSetRange={setAreaRange}
-                    onToggleBoolean={toggleBoolean}
-                    onClose={() => setIsPanelOpen(false)}
-                    onReset={resetFilters}
-                    resultCount={data.length}
-                    totalCount={allData?.length ?? data.length}
-                    showCloseButton={false}
-                    compactMode
-                  />
-                ) : (
-                  renderListContent
-                )}
-              </div>
-            </>
-          )}
+            <div
+              className="min-h-0 flex-1 overflow-y-auto scrollbar-thin"
+              style={{
+                scrollbarWidth: "thin",
+                scrollbarColor: "rgba(255,255,255,0.12) transparent",
+              }}
+            >
+              {activeTab === "filters" ? (
+                <Filters
+                  filters={filters}
+                  onToggle={toggleFilter}
+                  onSetRange={setAreaRange}
+                  onToggleBoolean={toggleBoolean}
+                  onClose={() => setIsPanelOpen(false)}
+                  onReset={resetFilters}
+                  resultCount={data.length}
+                  totalCount={allData?.length ?? data.length}
+                  showCloseButton={false}
+                  compactMode
+                />
+              ) : (
+                renderListContent
+              )}
+            </div>
+          </>
         </aside>
       </div>
     </>

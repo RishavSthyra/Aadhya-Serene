@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Inter } from 'next/font/google';
 import { ArrowUpRight, CheckCircle2, ChevronLeft, MapPin, Ruler, X } from 'lucide-react';
 import useResponsiveViewport from '@/hooks/useResponsiveViewport';
+import { isBackgroundTransitionActive } from '@/lib/background-transition';
 
 const titleFont = Inter({
   subsets: ['latin'],
@@ -330,7 +331,10 @@ export default function About() {
   const router = useRouter();
   const isNavigatingRef = useRef(false);
   const [isMobileAboutOpen, setIsMobileAboutOpen] = React.useState(true);
-  const { isTabletOrBelow } = useResponsiveViewport();
+  const [isIntroVideoPlaying, setIsIntroVideoPlaying] = React.useState(() =>
+    isBackgroundTransitionActive('about'),
+  );
+  const { isTabletOrBelow, isMobile } = useResponsiveViewport();
 
   const navigateTo = useCallback(
     (path) => {
@@ -363,6 +367,24 @@ export default function About() {
   useEffect(() => {
     setIsMobileAboutOpen((current) => (isTabletOrBelow ? current : true));
   }, [isTabletOrBelow]);
+
+  useEffect(() => {
+    const handleStarted = () => {
+      if (isBackgroundTransitionActive('about')) {
+        setIsIntroVideoPlaying(true);
+      }
+    };
+    const handleEnded = () => setIsIntroVideoPlaying(false);
+
+    setIsIntroVideoPlaying(isBackgroundTransitionActive('about'));
+    window.addEventListener('bg-transition-started', handleStarted);
+    window.addEventListener('bg-transition-ended', handleEnded);
+
+    return () => {
+      window.removeEventListener('bg-transition-started', handleStarted);
+      window.removeEventListener('bg-transition-ended', handleEnded);
+    };
+  }, []);
 
   useEffect(() => {
     const container = document.getElementById('about-container');
@@ -407,18 +429,30 @@ export default function About() {
         <div className="relative z-[1] flex w-full flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
           <motion.div
             initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            animate={{
+              opacity: isIntroVideoPlaying ? 0 : 1,
+              y: isIntroVideoPlaying ? 28 : 0,
+            }}
+            transition={{ duration: 0.52, ease: [0.16, 1, 0.3, 1] }}
             className={`w-full max-w-[540px] overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-6 py-7 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] md:px-7 md:py-8 ${isTabletOrBelow ? 'hidden' : ''}`}
+            style={{
+              pointerEvents: isIntroVideoPlaying ? 'none' : 'auto',
+            }}
           >
             <AboutMainCardContent navigateTo={navigateTo} />
           </motion.div>
 
           <motion.aside
             initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.92, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className="hidden w-full max-w-[350px] self-start overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-5 py-6 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] lg:ml-auto lg:block lg:self-end md:px-6 md:py-7"
+            animate={{
+              opacity: isIntroVideoPlaying ? 0 : 1,
+              y: isIntroVideoPlaying ? 28 : 0,
+            }}
+            transition={{ duration: 0.52, delay: isIntroVideoPlaying ? 0 : 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="hidden w-full max-w-[350px] self-start overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-5 py-6 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] xl:ml-auto xl:block xl:self-end md:px-6 md:py-7"
+            style={{
+              pointerEvents: isIntroVideoPlaying ? 'none' : 'auto',
+            }}
           >
             <ProjectBriefContent />
           </motion.aside>
@@ -430,28 +464,42 @@ export default function About() {
           <motion.aside
             initial={false}
             animate={{
-              x: isMobileAboutOpen ? 0 : 'calc(100% + 1rem)',
-              opacity: isMobileAboutOpen ? 1 : 0.98,
+              x: isMobileAboutOpen && !isIntroVideoPlaying ? 0 : 'calc(100% + 1.5rem)',
+              opacity: isIntroVideoPlaying ? 0 : 1,
             }}
             transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-x-0 top-[max(12px,env(safe-area-inset-top,0px)+8px)] bottom-[max(98px,env(safe-area-inset-bottom,0px)+82px)] z-[30] mx-auto w-[min(620px,calc(100vw-24px))] overflow-hidden rounded-[28px] border border-white/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-4 py-5 shadow-[0_24px_60px_rgba(6,10,18,0.22),inset_0_1px_0_rgba(255,255,255,0.24)] backdrop-blur-[30px] md:w-[min(560px,calc(100vw-32px))] md:px-5"
+            className="fixed right-3 top-[max(14px,env(safe-area-inset-top,0px)+10px)] z-[30] w-[min(620px,calc(100vw-24px))] overflow-hidden rounded-[28px] border border-white/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-4 py-5 shadow-[0_24px_60px_rgba(6,10,18,0.22),inset_0_1px_0_rgba(255,255,255,0.24)] backdrop-blur-[30px] md:right-4 md:w-[min(560px,calc(100vw-32px))] md:px-5"
             style={{
-              pointerEvents: isMobileAboutOpen ? 'auto' : 'none',
+              pointerEvents: isMobileAboutOpen && !isIntroVideoPlaying ? 'auto' : 'none',
+              maxHeight: isMobile
+                ? 'min(760px, calc(100dvh - max(120px, env(safe-area-inset-bottom, 0px) + 106px)))'
+                : 'min(860px, calc(100dvh - max(126px, env(safe-area-inset-bottom, 0px) + 112px)))',
             }}
           >
-            <div className="h-full overflow-y-auto pr-1 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/16">
+            <button
+              type="button"
+              onClick={() => setIsMobileAboutOpen(false)}
+              aria-label="Hide about panel"
+              className="absolute right-4 top-4 z-[1] inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.26)_0%,rgba(255,255,255,0.12)_100%)] text-white shadow-[0_14px_34px_rgba(6,10,18,0.18)] backdrop-blur-[22px] transition duration-300 hover:bg-white/20"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="max-h-full overflow-y-auto pr-1 pt-1 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/16">
               <AboutMainCardContent navigateTo={navigateTo} />
             </div>
           </motion.aside>
 
-          <button
-            type="button"
-            onClick={() => setIsMobileAboutOpen((current) => !current)}
-            aria-label={isMobileAboutOpen ? 'Hide about panel' : 'Show about panel'}
-            className="fixed right-4 top-[max(14px,env(safe-area-inset-top,0px)+10px)] z-[31] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.26)_0%,rgba(255,255,255,0.12)_100%)] text-white shadow-[0_18px_40px_rgba(6,10,18,0.2)] backdrop-blur-[24px] transition duration-300 hover:bg-white/20"
-          >
-            {isMobileAboutOpen ? <X className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </button>
+          {!isIntroVideoPlaying && !isMobileAboutOpen ? (
+            <button
+              type="button"
+              onClick={() => setIsMobileAboutOpen((current) => !current)}
+              aria-label="Show about panel"
+              className="fixed right-4 top-[max(14px,env(safe-area-inset-top,0px)+10px)] z-[31] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.26)_0%,rgba(255,255,255,0.12)_100%)] text-white shadow-[0_18px_40px_rgba(6,10,18,0.2)] backdrop-blur-[24px] transition duration-300 hover:bg-white/20"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          ) : null}
         </>
       ) : null}
     </main>
