@@ -21,6 +21,7 @@ import { isBackgroundTransitionActive } from "../../lib/background-transition";
 import useResponsiveViewport from "../../hooks/useResponsiveViewport";
 
 const DESKTOP_PANEL_WIDTH = 392;
+const COMPACT_VIEWER_ASPECT_RATIO = 16 / 9;
 const Apartment360Viewer = dynamic(() => import("../Apartment360Viewer"), {
   ssr: false,
   loading: () => null,
@@ -41,7 +42,7 @@ export default function Apartments() {
 
   const router = useRouter();
   const pathname = usePathname();
-  const { isMobile, isTablet, isTabletOrBelow } = useResponsiveViewport();
+  const { isMobile, isTablet, isTabletOrBelow, width } = useResponsiveViewport();
 
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("filters");
@@ -54,12 +55,13 @@ export default function Apartments() {
   const hasHandledInitialPathRef = useRef(false);
   const isCompactLayout = isTabletOrBelow;
   const compactBottomOffset = "calc(86px + env(safe-area-inset-bottom, 0px))";
-  const compactSheetOverlap = isTablet ? 26 : 22;
-  const compactMediaHeight = isTablet
-    ? "min(46dvh, 430px)"
-    : isMobile
-      ? "min(38dvh, 320px)"
-      : "min(42dvh, 380px)";
+  const compactSheetOverlap = 0;
+  const compactMediaHeight = isTabletOrBelow
+    ? `${Math.min(
+      Math.max(Math.round(width / COMPACT_VIEWER_ASPECT_RATIO), isTablet ? 420 : 220),
+      isTablet ? 620 : 320,
+    )}px`
+    : "min(42dvh, 380px)";
   const isFlatRoutePreparing = pendingFlatId !== null;
 
   const resetApartmentsExperience = useCallback((remountViewer = false) => {
@@ -315,7 +317,7 @@ export default function Apartments() {
       <div
         className="fixed inset-x-0 bottom-0 z-[120] xl:hidden"
         style={{
-          top: `calc(${compactMediaHeight} - ${compactSheetOverlap}px)`,
+          top: compactMediaHeight,
           bottom: compactBottomOffset,
           opacity: 1,
           pointerEvents: isFlatRoutePreparing ? "none" : "auto",
@@ -327,11 +329,10 @@ export default function Apartments() {
         }}
       >
         <aside className="relative flex h-full flex-col overflow-hidden rounded-t-[22px] border border-b-0 border-x-0 border-white/14 bg-[linear-gradient(165deg,rgba(28,36,48,0.52)_0%,rgba(12,17,24,0.78)_40%,rgba(7,10,16,0.92)_100%)] shadow-[0_-20px_60px_rgba(8,12,18,0.34),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-[28px] saturate-[150%]">
-          <div className="px-4 pt-2">
-            <div className="mx-auto h-1.5 w-14 rounded-full bg-white/14" />
-          </div>
-
           <div className="relative flex items-center justify-between gap-3 border-b border-white/10 px-4 pb-3 pt-3">
+            <div className="absolute inset-x-0 top-1 flex justify-center">
+              <div className="h-1.5 w-14 rounded-full bg-white/14" />
+            </div>
             <div className="min-w-0">
               <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/74">
                 Residence Atelier
@@ -465,15 +466,6 @@ export default function Apartments() {
           <div className="h-full w-full bg-transparent" />
         )}
       </div>
-
-      {isCompactLayout ? (
-        <div
-          className="absolute inset-x-0 bottom-0 z-[1] bg-[linear-gradient(180deg,rgba(8,12,18,0.88),rgba(7,10,16,0.96))] xl:hidden"
-          style={{
-            top: `calc(${compactMediaHeight} - ${compactSheetOverlap}px)`,
-          }}
-        />
-      ) : null}
 
       <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(8,19,38,0.05)_0%,rgba(9,24,46,0.01)_28%,rgba(10,26,52,0.1)_100%)]" />
 

@@ -6,6 +6,8 @@
     overflow: hidden;
     cursor: grab;
     background: #0b1018;
+    touch-action: none;
+    user-select: none;
 }
 
 .viewerContainer:active {
@@ -28,6 +30,7 @@
     inset: 0;
     transform-origin: center center;
     will-change: transform;
+    touch-action: none;
 }
 
 .canvasOverlay {

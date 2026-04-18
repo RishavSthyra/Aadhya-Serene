@@ -43,6 +43,7 @@ import useResponsiveViewport from '../../../hooks/useResponsiveViewport';
 
 const WHATSAPP_URL = 'https://wa.me/919620993333?text=Hi!%20I%20want%20to%20know%20more%20about%20flat%20';
 const FLAT_VIDEO_POSTER = '/assets/apartments/transition-poster.jpg';
+const COMPACT_MEDIA_ASPECT_RATIO = 16 / 9;
 
 function formatFacing(facing) {
     return facing.charAt(0).toUpperCase() + facing.slice(1);
@@ -457,11 +458,12 @@ export default function FlatDetailPage() {
         : isCompactDesktop
             ? '360px 350px'
             : '390px 380px';
-    const compactMediaHeight = isTablet
-        ? 'min(46dvh, 430px)'
-        : isMobile
-            ? 'min(40dvh, 340px)'
-            : 'min(42dvh, 380px)';
+    const compactMediaHeight = isTabletOrBelow
+        ? `${Math.min(
+            Math.max(Math.round(width / COMPACT_MEDIA_ASPECT_RATIO), isTablet ? 420 : 220),
+            isTablet ? 620 : 340,
+        )}px`
+        : 'min(42dvh, 380px)';
     const compactSheetOverlap = isTablet ? 28 : 24;
     const shouldShowPosterScrim = hasFlatSpecificVideo && videoPhase === 'intro' && !isIntroFrameReady;
     const detailShellInsetClass = isTabletOrBelow
@@ -664,7 +666,9 @@ export default function FlatDetailPage() {
                     </div>
 
                     <div
-                        className="mt-3 grid flex-1 gap-4 lg:justify-between lg:px-1 xl:mt-0 xl:gap-5"
+                        className={isTabletOrBelow
+                            ? 'mt-3 flex flex-1 flex-col gap-4'
+                            : 'mt-3 grid flex-1 gap-4 lg:justify-between lg:px-1 xl:mt-0 xl:gap-5'}
                         style={!isTabletOrBelow ? { gridTemplateColumns: desktopGridColumns } : undefined}
                     >
                         <div className="min-h-0 w-full">
