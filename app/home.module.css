@@ -329,7 +329,7 @@
     }
 }
 
-/* Luxury particle preloader */
+/* Minimal home preloader */
 .luxuryLoader {
     position: fixed;
     inset: 0;
@@ -338,10 +338,9 @@
     place-items: center;
     overflow: hidden;
     background:
-        radial-gradient(circle at 50% 42%, rgba(210, 177, 106, 0.18), transparent 30%),
-        radial-gradient(circle at 50% 74%, rgba(255, 230, 170, 0.08), transparent 24%),
+        radial-gradient(circle at 50% 44%, rgba(255, 244, 222, 0.06), transparent 16rem),
         linear-gradient(135deg, #050507 0%, #0b0b0d 48%, #040405 100%);
-    animation: luxuryLoaderExit 0.82s ease 3.68s forwards;
+    animation: luxuryLoaderExit 0.72s ease 3.08s forwards;
     pointer-events: none;
 }
 
@@ -349,151 +348,126 @@
     content: "";
     position: absolute;
     inset: 0;
-    opacity: 0.26;
     background:
-        linear-gradient(90deg, transparent, rgba(236, 207, 139, 0.12), transparent),
-        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 82px);
-    mask-image: radial-gradient(circle at center, black 0%, transparent 72%);
+        radial-gradient(circle at center, rgba(224, 196, 146, 0.12), transparent 22%),
+        radial-gradient(circle at center, rgba(255, 255, 255, 0.04), transparent 58%);
+    opacity: 0.85;
 }
 
-.luxuryLoader::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.54) 72%);
-}
-
-.loaderCanvasWrap {
+.minimalLoaderShell {
     position: relative;
     z-index: 1;
-    width: min(100vw, 1560px);
-    height: min(76vh, 760px);
-    filter: drop-shadow(0 0 44px rgba(216, 181, 106, 0.22));
-    animation: loaderCanvasEnter 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+    width: clamp(72px, 9vw, 108px);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    animation: minimalLoaderReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.loaderWordmarkFrame {
+.minimalLoaderRing {
     position: absolute;
-    left: 50%;
-    top: 48%;
-    z-index: 2;
-    width: min(90vw, 1500px);
-    padding: clamp(28px, 4vw, 44px) clamp(24px, 4.5vw, 64px);
-    transform: translate(-50%, -50%);
-    border: 1px solid rgba(239, 216, 167, 0.24);
-    border-radius: 28px;
-    background:
-        linear-gradient(180deg, rgba(12, 12, 16, 0.42), rgba(12, 12, 16, 0.16)),
-        radial-gradient(circle at top, rgba(223, 190, 128, 0.09), transparent 56%);
+    inset: 0;
+    border-radius: 999px;
+}
+
+.minimalLoaderRingOuter {
+    border: 1px solid rgba(255, 245, 226, 0.12);
     box-shadow:
-        0 32px 90px rgba(0, 0, 0, 0.28),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(10px);
-    text-align: center;
-    animation: loaderInterfaceEnter 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+        0 0 0 1px rgba(255, 255, 255, 0.02),
+        inset 0 0 28px rgba(255, 234, 195, 0.04);
+    animation: minimalRingPulse 1.6s ease-in-out infinite;
 }
 
-.loaderWordmarkAccent {
-    margin: 0 0 18px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.34em;
-    text-transform: uppercase;
-    color: rgba(245, 224, 171, 0.82);
+.minimalLoaderRingMiddle {
+    inset: 16%;
+    border: 1px solid rgba(224, 196, 146, 0.36);
+    mask-image: conic-gradient(from 0deg, transparent 0deg 120deg, black 120deg 260deg, transparent 260deg 360deg);
+    box-shadow: 0 0 26px rgba(224, 196, 146, 0.16);
+    animation: minimalRingSpin 1.35s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-.loaderWordmark {
-    margin: 0;
-    font-family: "Brush Script MT", "Segoe Script", "Snell Roundhand", cursive;
-    font-size: clamp(4.6rem, 10vw, 9.8rem);
-    font-weight: 400;
-    line-height: 0.9;
-    letter-spacing: 0.02em;
-    color: #f5e3b6;
-    text-shadow:
-        0 0 24px rgba(219, 189, 126, 0.24),
-        0 18px 60px rgba(0, 0, 0, 0.38);
+.minimalLoaderCore {
+    width: 24%;
+    aspect-ratio: 1;
+    border-radius: 999px;
+    background: radial-gradient(circle at 35% 35%, rgba(255, 248, 237, 0.98), rgba(224, 196, 146, 0.72) 58%, rgba(224, 196, 146, 0.12) 100%);
+    box-shadow:
+        0 0 24px rgba(224, 196, 146, 0.24),
+        0 0 48px rgba(224, 196, 146, 0.12);
+    animation: minimalCorePulse 1.2s ease-in-out infinite;
 }
 
-.loaderWordmarkSubcopy {
-    margin: 20px 0 0;
-    font-size: clamp(12px, 1.2vw, 16px);
-    font-weight: 500;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-    color: rgba(255, 244, 221, 0.56);
-}
-
-.loaderInterface {
+.minimalLoaderDot {
     position: absolute;
+    top: 50%;
     left: 50%;
-    bottom: clamp(56px, 9vh, 96px);
-    z-index: 3;
-    width: min(420px, calc(100vw - 56px));
-    transform: translateX(-50%);
-    animation: loaderInterfaceEnter 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+    width: 9%;
+    aspect-ratio: 1;
+    margin: calc(clamp(72px, 9vw, 108px) * -0.045);
+    border-radius: 999px;
+    background: #fff7ea;
+    box-shadow: 0 0 18px rgba(255, 245, 226, 0.46);
+    transform-origin: 0 calc(clamp(72px, 9vw, 108px) * -0.235);
+    animation: minimalDotOrbit 1.35s linear infinite;
 }
 
-.loaderEyebrow {
-    margin: 0 0 18px;
-    text-align: center;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.34em;
-    text-transform: uppercase;
-    color: rgba(245, 224, 171, 0.82);
-}
-
-.loaderTrack {
-    position: relative;
-    height: 1px;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.14);
-}
-
-.loaderTrack span {
-    position: absolute;
-    inset: 0 auto 0 0;
-    background: linear-gradient(90deg, rgba(146, 113, 50, 0.55), #ffe3a0, rgba(216, 181, 106, 0.72));
-    box-shadow: 0 0 18px rgba(255, 218, 145, 0.44);
-    transition: width 120ms linear;
-}
-
-.loaderMeta {
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
-    margin-top: 14px;
-    color: rgba(255, 255, 255, 0.48);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-}
-
-@keyframes loaderCanvasEnter {
+@keyframes minimalLoaderReveal {
     from {
         opacity: 0;
-        transform: translateY(18px) scale(0.96);
-        filter: blur(8px);
+        transform: scale(0.88);
+        filter: blur(10px);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: scale(1);
         filter: blur(0);
     }
 }
 
-@keyframes loaderInterfaceEnter {
+@keyframes minimalRingSpin {
     from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(16px);
+        transform: rotate(0deg);
     }
 
     to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes minimalDotOrbit {
+    from {
+        transform: rotate(0deg) translateY(calc(clamp(72px, 9vw, 108px) * -0.235));
+    }
+
+    to {
+        transform: rotate(360deg) translateY(calc(clamp(72px, 9vw, 108px) * -0.235));
+    }
+}
+
+@keyframes minimalRingPulse {
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.72;
+    }
+
+    50% {
+        transform: scale(1.04);
         opacity: 1;
-        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes minimalCorePulse {
+    0%,
+    100% {
+        transform: scale(0.92);
+        opacity: 0.92;
+    }
+
+    50% {
+        transform: scale(1.06);
+        opacity: 1;
     }
 }
 
@@ -504,46 +478,14 @@
     }
 }
 
-@media (max-width: 700px) {
-    .loaderCanvasWrap {
-        width: 100vw;
-        height: 62vh;
-    }
-
-    .loaderWordmarkFrame {
-        width: calc(100vw - 28px);
-        top: 46%;
-        border-radius: 22px;
-        padding: 24px 18px 22px;
-    }
-
-    .loaderWordmarkAccent {
-        margin-bottom: 14px;
-        font-size: 10px;
-        letter-spacing: 0.24em;
-    }
-
-    .loaderWordmark {
-        font-size: clamp(3.2rem, 15vw, 5.4rem);
-        line-height: 0.98;
-    }
-
-    .loaderWordmarkSubcopy {
-        margin-top: 14px;
-        font-size: 10px;
-        letter-spacing: 0.18em;
-    }
-
-    .loaderEyebrow {
-        font-size: 10px;
-        letter-spacing: 0.26em;
-    }
-}
-
 @media (prefers-reduced-motion: reduce) {
     .luxuryLoader,
-    .loaderCanvasWrap,
-    .loaderInterface {
+    .minimalLoaderShell,
+    .minimalLoaderRingOuter,
+    .minimalLoaderRingMiddle,
+    .minimalLoaderCore,
+    .minimalLoaderDot {
         animation-duration: 0.01ms;
+        animation-iteration-count: 1;
     }
 }
