@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import BuildingModel from './BuildingModel';
 import styles from './viewer.module.css';
+import { flatViewKeyFromFrame } from '../../lib/flats';
 
 const TOTAL_FRAMES = 360;
 const SNAP_POINTS = [1, 90, 180, 270, 360];
@@ -927,6 +928,16 @@ export default function Apartment360Viewer({
         setZoom((currentZoom) => clampZoom(currentZoom - event.deltaY * 0.0015));
     }, [interactionLocked]);
 
+    const handleModelFlatClick = useCallback((flatId) => {
+        if (!flatId) {
+            return;
+        }
+
+        onFlatClick?.(flatId, {
+            viewKey: flatViewKeyFromFrame(currentFrameRef.current),
+        });
+    }, [onFlatClick]);
+
     return (
         <div
             className={styles.viewerContainer}
@@ -955,7 +966,7 @@ export default function Apartment360Viewer({
                     <BuildingModel
                         currentFrame={snappedFrame}
                         filteredFlatIds={filteredFlatIds}
-                        onFlatClick={onFlatClick}
+                        onFlatClick={handleModelFlatClick}
                         onFlatHoverStart={onFlatHoverStart}
                         shouldAllowFlatClick={shouldAllowFlatClick}
                         isConstrainedDevice={isConstrainedDevice}

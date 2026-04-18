@@ -65,7 +65,35 @@ type RoomTab = {
   id: string;
   label: string;
   previewUrl: string;
+  featured: boolean;
 };
+
+const INTERIOR_PANO_DETAILS: Record<string, { label: string; featured?: boolean }> = {
+  Bp_panoPath_interiorBP_panoPath4interior_F0000: { label: "Entrance", featured: true },
+  Bp_panoPath_interiorBP_panoPath4interior_F0001: { label: "Entrance Passage" },
+  Bp_panoPath_interiorBP_panoPath3interior_F0002: { label: "Living Entry" },
+  Bp_panoPath_interiorBP_panoPath3interior_F0003: { label: "Living Lounge" },
+  Bp_panoPath_interiorBP_panoPath3interior_F0004: { label: "Dining", featured: true },
+  Bp_panoPath_interiorBP_panoPath3interior_F0005: { label: "Dining Passage" },
+  Bp_panoPath_interiorBP_panoPath3interior_F0006: { label: "Kitchen Transition" },
+  Bp_panoPath_interiorBP_panoPath3interior_F0007: { label: "Kitchen Utility" },
+  Bp_panoPath_interiorBP_panoPath5interior_F0008: { label: "C.Toilet", featured: true },
+  Bp_panoPath_interiorBP_panoPath5interior_F0009: { label: "Powder Area" },
+  Bp_panoPath_interiorBP_panoPath2interior_F0010: { label: "Living", featured: true },
+  Bp_panoPath_interiorBP_panoPath2interior_F0011: { label: "Balcony Lounge" },
+  Bp_panoPath_interiorBP_panoPath2interior_F0012: { label: "Bedroom Passage" },
+  Bp_panoPath_interiorBP_panoPath2interior_F0013: { label: "Master Bedroom" },
+  Bp_panoPath_interiorBP_panoPath6interior_F0014: { label: "Wardrobe Passage" },
+  Bp_panoPath_interiorBP_panoPath6interior2_F0015: { label: "Master Toilet" },
+  Bp_panoPath_interiorBP_panoPath6interior2_F0016: { label: "Bedroom 03", featured: true },
+  Bp_panoPath_interiorBP_panoPath6interior2_F0017: { label: "Bedroom 03 Bath" },
+  Bp_panoPath_interiorBP_panoPath6interior2_F0018: { label: "Kitchen", featured: true },
+  Bp_panoPath_interiorBP_panoPath6interior2_F0019: { label: "Utility Balcony" },
+};
+
+function isFeaturedRoomTab(nodeId: string) {
+  return Boolean(INTERIOR_PANO_DETAILS[nodeId]?.featured);
+}
 
 function isAbortLikeError(error: unknown) {
   if (!error) {
@@ -113,7 +141,12 @@ function ArrowButton({
   );
 }
 
-function formatRoomLabel(imageFilename: string) {
+function formatRoomLabel(nodeId: string, imageFilename: string) {
+  const namedRoom = INTERIOR_PANO_DETAILS[nodeId]?.label;
+  if (namedRoom) {
+    return namedRoom;
+  }
+
   const panoId = imageFilenameToPanoId(imageFilename);
   const frame = panoId.match(/F(\d{4})$/i)?.[1];
 
@@ -121,7 +154,7 @@ function formatRoomLabel(imageFilename: string) {
     return panoId;
   }
 
-  return `Pano ${frame}`;
+  return `Room ${frame}`;
 }
 
 function vectorFromAngle(angle: number) {
@@ -272,12 +305,26 @@ export default function InteriorPanoWalkthrough({
         const panoId = imageFilenameToPanoId(node.imageFilename);
         return {
           id: node.id,
-          label: formatRoomLabel(node.imageFilename),
+          label: formatRoomLabel(node.id, node.imageFilename),
           previewUrl: getResolvedPreviewUrl(panoId, INTERIOR_PANO_BASE_URL, "preview.jpg"),
+          featured: isFeaturedRoomTab(node.id),
         };
       }),
     [graph.nodes],
   );
+
+  const visibleRoomTabs = useMemo(() => {
+    const featuredTabs = roomTabs.filter((tab) => tab.featured);
+
+    if (!featuredTabs.some((tab) => tab.id === currentNodeId)) {
+      const currentTab = roomTabs.find((tab) => tab.id === currentNodeId);
+      if (currentTab) {
+        return [currentTab, ...featuredTabs];
+      }
+    }
+
+    return featuredTabs;
+  }, [currentNodeId, roomTabs]);
 
   const walkthroughContext = useMemo(
     () => ({
@@ -366,8 +413,8 @@ export default function InteriorPanoWalkthrough({
         id: node.id,
         panorama: resolved.panorama,
         thumbnail: resolved.previewUrl,
-        name: formatRoomLabel(node.imageFilename),
-        caption: formatRoomLabel(node.imageFilename),
+        name: formatRoomLabel(node.id, node.imageFilename),
+        caption: formatRoomLabel(node.id, node.imageFilename),
         links: node.neighbors
           .map((neighbor) => graph.byId[neighbor.id])
           .filter((target): target is ExteriorTourNode => Boolean(target))
@@ -416,7 +463,7 @@ export default function InteriorPanoWalkthrough({
         }
       } catch (error) {
         console.error("Failed to change interior pano node:", error);
-        setViewerError(`Failed to load ${formatRoomLabel(targetNode.imageFilename)}.`);
+        setViewerError(`Failed to load ${formatRoomLabel(targetNode.id, targetNode.imageFilename)}.`);
         setIsTransitioning(false);
         transitionLockRef.current = false;
       }
@@ -619,8 +666,8 @@ export default function InteriorPanoWalkthrough({
   if (availableNodeIds === null) {
     return (
       <div className="flex h-full items-center justify-center bg-black text-white/70">
-        Loading interior panoramas...
-      </div>
+        Loading Interior Walkthrough. Please Wait
+             </div>
     );
   }
 
@@ -650,11 +697,17 @@ export default function InteriorPanoWalkthrough({
         />
       </div>
 
-      <div className="pointer-events-none absolute left-4 top-4 z-30">
+      <div
+        className={`pointer-events-none absolute left-4 top-4 z-30 transition-opacity duration-200 ${
+          isMenuOpen ? "opacity-0" : "opacity-100"
+        }`}
+      >
         <button
           type="button"
           onClick={() => setIsMenuOpen(true)}
-          className={`pointer-events-auto flex h-12 w-12 items-center justify-center rounded-[1.1rem] ${glassButtonClass}`}
+          className={`flex h-12 w-12 items-center justify-center rounded-[1.1rem] ${glassButtonClass} ${
+            isMenuOpen ? "pointer-events-none" : "pointer-events-auto"
+          }`}
           aria-label="Open pano list"
         >
           <Menu className="h-5 w-5" />
@@ -705,18 +758,16 @@ export default function InteriorPanoWalkthrough({
             className="absolute inset-0 bg-[rgba(10,14,20,0.48)]"
           />
 
-          <div className="relative flex h-full w-full max-w-[26rem] flex-col border-r border-white/22 bg-[linear-gradient(180deg,rgba(32,40,52,0.52),rgba(14,18,26,0.62))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-[28px] saturate-[180%]">
+          <div className="relative flex h-full w-full items-start md:p-0 lg:p-6">
+            <div className="relative flex h-full w-full max-w-[26rem] flex-col border-r border-white/22 bg-[linear-gradient(180deg,rgba(42,39,31,0.34),rgba(26,24,20,0.42)_32%,rgba(18,17,15,0.56)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-[28px] saturate-[160%] md:rounded-none lg:h-auto lg:max-h-[50vh] lg:rounded-[2rem] lg:border lg:border-white/20">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.3em] text-white/50">
-                  Entire Interior Set
+                  Furnished
                 </div>
                 <div className="mt-2 text-[1.9rem] font-medium leading-none text-white">
-                  Pano Index
+                  Room Index
                 </div>
-                <p className="mt-2 text-sm leading-6 text-white/62">
-                  Jump to any pano from the furnished interior walkthrough.
-                </p>
               </div>
 
               <button
@@ -730,7 +781,7 @@ export default function InteriorPanoWalkthrough({
             </div>
 
             <div className="mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
-              {roomTabs.map((tab) => {
+              {visibleRoomTabs.map((tab) => {
                 const isActive = tab.id === currentNodeId;
 
                 return (
@@ -741,10 +792,10 @@ export default function InteriorPanoWalkthrough({
                       setIsMenuOpen(false);
                       void goToNode(tab.id);
                     }}
-                    className={`group flex w-full items-center gap-3 rounded-[1.3rem] border p-2.5 text-left transition ${
+                    className={`group flex w-full items-center gap-3 rounded-[1.5rem] border p-3 text-left transition ${
                       isActive
-                        ? "border-white/34 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(226,235,243,0.14))] shadow-[0_18px_42px_rgba(8,12,20,0.18),inset_0_1px_0_rgba(255,255,255,0.3)]"
-                        : "border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(226,235,243,0.08))] hover:-translate-y-0.5 hover:border-white/28 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.24),rgba(230,237,244,0.12))]"
+                        ? "border-[#9cd8e0]/46 bg-[linear-gradient(180deg,rgba(210,214,200,0.22),rgba(132,130,114,0.1))] shadow-[0_18px_42px_rgba(8,12,20,0.18),inset_0_1px_0_rgba(255,255,255,0.28)]"
+                        : "border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(226,235,243,0.07))] hover:-translate-y-0.5 hover:border-white/28 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(230,237,244,0.1))]"
                     }`}
                   >
                     <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-[1rem] border border-white/14 bg-white/6">
@@ -757,15 +808,19 @@ export default function InteriorPanoWalkthrough({
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-[15px] font-semibold text-white">{tab.label}</div>
-                      <div className="mt-1 text-sm leading-5 text-white/68">
+                      <div className="mt-1 text-sm leading-5 text-white/72">
                         {isActive
-                          ? "You are currently viewing this pano."
-                          : "Open this pano in the viewer."}
+                          ? "You are currently inside this room."
+                          : "Tap to switch the panorama view to this room."}
+                      </div>
+                      <div className="mt-3 text-[11px] font-semibold uppercase tracking-[0.32em] text-white/54">
+                        {isActive ? "Current" : "Open"}
                       </div>
                     </div>
                   </button>
                 );
               })}
+            </div>
             </div>
           </div>
         </div>

@@ -186,10 +186,15 @@ export default function Apartments() {
   }, [data, allData]);
 
   const handleFlatClick = useCallback(
-    async (flatId) => {
+    async (flatId, options = {}) => {
       if (!flatId || pendingFlatId) {
         return;
       }
+
+      const viewKey = typeof options === "string" ? options : options?.viewKey;
+      const apartmentHref = viewKey
+        ? `/apartments/${flatId}?view=${encodeURIComponent(viewKey)}`
+        : `/apartments/${flatId}`;
 
       setPendingFlatId(flatId);
       void preloadInteriorStartPano();
@@ -197,7 +202,7 @@ export default function Apartments() {
 
       if (!prefetchedFlatRoutesRef.current.has(flatId)) {
         prefetchedFlatRoutesRef.current.add(flatId);
-        router.prefetch(`/apartments/${flatId}`);
+        router.prefetch(apartmentHref);
       }
 
       try {
@@ -212,7 +217,7 @@ export default function Apartments() {
         ]);
       } finally {
         window.requestAnimationFrame(() => {
-          router.push(`/apartments/${flatId}`);
+          router.push(apartmentHref);
         });
       }
     },

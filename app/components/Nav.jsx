@@ -35,7 +35,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
     url: "rooftopLeisureDeck",
     sublabel: "Aadhya Serene",
     image:
-      "https://cdn.sthyra.com/AADHYA%20SERENE/images/rooftop-sunset-city-view%20(1).jpg",
+      "https://cdn.sthyra.com/AADHYA%20SERENE/images/Are%20Rooftops%20The%20New%20Backyards_.jpg",
   },
   {
     label: "Children's Play Area",
@@ -70,7 +70,7 @@ const AMENITIES_DROPDOWN_ITEMS = [
     url: "clubhouse",
     sublabel: "Aadhya Serene",
     image:
-      "https://cdn.sthyra.com/AADHYA%20SERENE/images/rooftop-sunset-city-view%20(1).jpg",
+      "https://cdn.sthyra.com/AADHYA%20SERENE/images/download.jpg",
   },
   {
     label: "Outdoor Basketball Court",

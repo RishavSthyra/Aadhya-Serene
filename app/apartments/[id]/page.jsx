@@ -26,10 +26,12 @@ import {
 } from 'lucide-react';
 import {
     floorPlanSrc,
+    flatRenderFallbackPoster,
     flatVideoFallbackId,
     flatReverseVideoSrc,
     flatVideoSrc,
     getFlatById,
+    normalizeFlatViewKey,
     supportsFlatRenderVideoPlayback,
     WALKTHROUGH_VIDEO,
 } from '../../../lib/flats';
@@ -42,7 +44,6 @@ import { skipNextApartmentsReplay } from '../../../lib/background-transition';
 import useResponsiveViewport from '../../../hooks/useResponsiveViewport';
 
 const WHATSAPP_URL = 'https://wa.me/919620993333?text=Hi!%20I%20want%20to%20know%20more%20about%20flat%20';
-const FLAT_VIDEO_POSTER = '/assets/apartments/transition-poster.jpg';
 const COMPACT_MEDIA_ASPECT_RATIO = 16 / 9;
 
 function formatFacing(facing) {
@@ -106,6 +107,133 @@ function RoomCard({ room }) {
     );
 }
 
+function FloorPlanCard({
+    flat,
+    planSrc,
+    floorPlanError,
+    onFloorPlanError,
+    sectionTitleClass,
+    compactMode = false,
+}) {
+    const imageHeightClass = compactMode ? 'h-[220px] sm:h-[250px]' : 'h-[260px]';
+
+    return (
+        <div className="p-4 rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(25,33,44,0.14)_24%,rgba(7,11,17,0.26)_100%)] shadow-[0_16px_38px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[22px]">
+            <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
+                        Floor Plan
+                    </p>
+                    <h2 className={`mt-2 font-medium text-white ${sectionTitleClass}`}>
+                        Residence layout
+                    </h2>
+                </div>
+                <span className="rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                    {flat.flat}
+                </span>
+            </div>
+
+            <div className="overflow-hidden rounded-[18px] border border-white/12 bg-[linear-gradient(180deg,rgba(5,8,14,0.48),rgba(5,8,14,0.26))] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                {!floorPlanError ? (
+                    <img
+                        src={planSrc}
+                        alt={`Floor plan of apartment ${flat.flat}`}
+                        className={`${imageHeightClass} w-full object-cover transition duration-500 hover:scale-[1.02]`}
+                        draggable={false}
+                        onError={onFloorPlanError}
+                    />
+                ) : (
+                    <div className={`flex ${imageHeightClass} flex-col items-center justify-center bg-black/20 px-6 text-center`}>
+                        <Fullscreen className="h-10 w-10 text-white/64" />
+                        <p className="mt-4 text-[12px] font-semibold uppercase tracking-[0.2em] text-white/42">
+                            Floor plan unavailable
+                        </p>
+                        <p className="mt-2 text-sm text-white/56">
+                            This plan preview will be added shortly.
+                        </p>
+                    </div>
+                )}
+            </div>
+
+            <div className="mt-4 grid gap-2">
+                <a
+                    href={planSrc}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:border-white/24 hover:bg-white/[0.08]"
+                >
+                    <Maximize2 className="h-4 w-4" />
+                    Open Plan
+                </a>
+                <a
+                    href={`${WHATSAPP_URL}${flat.flat}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06))] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/88 shadow-[0_12px_26px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.1)] transition hover:border-white/24 hover:bg-white/[0.1]"
+                >
+                    <MessageCircle className="h-4 w-4" />
+                    Discuss
+                </a>
+            </div>
+        </div>
+    );
+}
+
+function WalkthroughPreviewCard({
+    onOpenWalkthrough,
+    sectionTitleClass,
+    bodyCopyClass,
+    quietSurfaceClass,
+    compactMode = false,
+}) {
+    const imageHeightClass = compactMode ? 'h-[230px] sm:h-[260px]' : 'h-[210px]';
+
+    return (
+        <div className="p-4 rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(25,33,44,0.14)_24%,rgba(7,11,17,0.26)_100%)] shadow-[0_16px_38px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[22px]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
+                Interior Preview
+            </p>
+            <h2 className={`mt-2 font-medium text-white ${sectionTitleClass}`}>
+                Sample walkthrough
+            </h2>
+
+            <button
+                type="button"
+                onClick={onOpenWalkthrough}
+                className="group mt-4 block w-full overflow-hidden rounded-[18px] border border-white/12 bg-[linear-gradient(180deg,rgba(5,8,14,0.48),rgba(5,8,14,0.26))] text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+            >
+                <div className="relative">
+                    <img
+                        src={INTERIOR_START_PREVIEW_URL}
+                        alt="Interior walkthrough"
+                        className={`${imageHeightClass} w-full object-cover transition duration-500 group-hover:scale-[1.03]`}
+                        draggable={false}
+                        onError={(event) => {
+                            event.currentTarget.style.opacity = '0.3';
+                        }}
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(8,11,17,0.24)_40%,rgba(8,11,17,0.88)_100%)]" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06))] text-white backdrop-blur-md transition group-hover:scale-105 group-hover:bg-white/16">
+                            <Play className="ml-0.5 h-4 w-4 fill-current" />
+                        </span>
+                    </div>
+                </div>
+            </button>
+
+            <div className={`mt-4 px-4 py-4 ${quietSurfaceClass}`}>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/36">
+                    Design Note
+                </p>
+                <p className={`mt-3 text-white/56 ${bodyCopyClass}`}>
+                    The residence is positioned as a calm, daylight-led home with a more
+                    understated luxury language across proportion, flow, and private outdoor edges.
+                </p>
+            </div>
+        </div>
+    );
+}
+
 function primeInlineVideoElement(videoElement) {
     if (!videoElement) return;
 
@@ -139,6 +267,7 @@ export default function FlatDetailPage() {
 
     const [muted, setMuted] = useState(true);
     const [floorPlanError, setFloorPlanError] = useState(false);
+    const [activeViewKey, setActiveViewKey] = useState('A1');
     const [useVideoFallback, setUseVideoFallback] = useState(() => !supportsFlatRenderVideoPlayback());
     const [videoPhase, setVideoPhase] = useState('intro');
     const [isIntroFrameReady, setIsIntroFrameReady] = useState(false);
@@ -146,7 +275,19 @@ export default function FlatDetailPage() {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const { isMobile, isTablet, isTabletOrBelow, width } = useResponsiveViewport();
 
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const nextViewKey = normalizeFlatViewKey(
+            new URLSearchParams(window.location.search).get('view'),
+        );
+        setActiveViewKey(nextViewKey);
+    }, [id]);
+
     const flat = getFlatById(id);
+    const renderPosterSrc = flatRenderFallbackPoster(activeViewKey);
     const fallbackId = flat ? flatVideoFallbackId(id) : null;
     const hasVideo = !!fallbackId;
     const hasFlatSpecificVideo = hasVideo && !useVideoFallback;
@@ -499,6 +640,26 @@ export default function FlatDetailPage() {
     const cardSurfaceClass = 'rounded-[24px] border border-white/14 bg-[linear-gradient(160deg,rgba(255,255,255,0.12),rgba(48,58,72,0.16)_42%,rgba(9,13,20,0.4)_100%)] shadow-[0_24px_68px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-[32px]';
     const insetSurfaceClass = 'rounded-[20px] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(28,36,47,0.16)_26%,rgba(7,11,17,0.3)_100%)] shadow-[0_18px_40px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[26px]';
     const quietSurfaceClass = 'rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(25,33,44,0.14)_24%,rgba(7,11,17,0.26)_100%)] shadow-[0_16px_38px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[22px]';
+    const openWalkthrough = () => router.push(interiorPanosHref);
+    const renderSupportCards = (compactMode = false) => (
+        <div className="space-y-4">
+            <FloorPlanCard
+                flat={flat}
+                planSrc={planSrc}
+                floorPlanError={floorPlanError}
+                onFloorPlanError={() => setFloorPlanError(true)}
+                sectionTitleClass={sectionTitleClass}
+                compactMode={compactMode}
+            />
+            <WalkthroughPreviewCard
+                onOpenWalkthrough={openWalkthrough}
+                sectionTitleClass={sectionTitleClass}
+                bodyCopyClass={bodyCopyClass}
+                quietSurfaceClass={quietSurfaceClass}
+                compactMode={compactMode}
+            />
+        </div>
+    );
 
     return (
         <div
@@ -511,13 +672,13 @@ export default function FlatDetailPage() {
                     isTabletOrBelow
                         ? {
                             height: compactMediaHeight,
-                            backgroundImage: `url(${FLAT_VIDEO_POSTER})`,
+                            backgroundImage: `url(${renderPosterSrc})`,
                             backgroundPosition: 'center',
                             backgroundRepeat: 'no-repeat',
                             backgroundSize: 'cover',
                         }
                         : {
-                            backgroundImage: `url(${FLAT_VIDEO_POSTER})`,
+                            backgroundImage: `url(${renderPosterSrc})`,
                             backgroundPosition: 'center',
                             backgroundRepeat: 'no-repeat',
                             backgroundSize: 'cover',
@@ -528,7 +689,7 @@ export default function FlatDetailPage() {
                     <div
                         className="absolute inset-0 z-[2] transition-opacity duration-300"
                         style={{
-                            backgroundImage: `linear-gradient(180deg,rgba(7,10,15,0.06),rgba(7,10,15,0.18)), url(${FLAT_VIDEO_POSTER})`,
+                            backgroundImage: `linear-gradient(180deg,rgba(7,10,15,0.06),rgba(7,10,15,0.18)), url(${renderPosterSrc})`,
                             backgroundPosition: 'center',
                             backgroundRepeat: 'no-repeat',
                             backgroundSize: 'cover',
@@ -547,7 +708,7 @@ export default function FlatDetailPage() {
                     preload="auto"
                     fetchPriority="high"
                     autoPlay
-                    poster={FLAT_VIDEO_POSTER}
+                    poster={renderPosterSrc}
                     controls={false}
                     disablePictureInPicture
                     controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
@@ -802,6 +963,12 @@ export default function FlatDetailPage() {
                                                 <RoomCard key={`${room.name}-${index}`} room={room} />
                                             ))}
                                         </div>
+
+                                        {isTabletOrBelow ? (
+                                            <div className="mt-5">
+                                                {renderSupportCards(true)}
+                                            </div>
+                                        ) : null}
                                     </div>
                                 </div>
                             </div>
@@ -817,110 +984,7 @@ export default function FlatDetailPage() {
                                 className={`${cardSurfaceClass} p-3 sm:p-4 lg:overflow-y-auto`}
                                 style={!isTabletOrBelow ? { maxHeight: desktopSidebarHeight } : undefined}
                             >
-                                <div className="space-y-4">
-                            <div className={`p-4 ${insetSurfaceClass}`}>
-                                <div className="mb-4 flex items-center justify-between gap-3">
-                                    <div>
-                                        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
-                                            Floor Plan
-                                        </p>
-                                        <h2 className={`mt-2 font-medium text-white ${sectionTitleClass}`}>
-                                            Residence layout
-                                        </h2>
-                                    </div>
-                                    <span className="rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                                        {flat.flat}
-                                    </span>
-                                </div>
-
-                                <div className="overflow-hidden rounded-[18px] border border-white/12 bg-[linear-gradient(180deg,rgba(5,8,14,0.48),rgba(5,8,14,0.26))] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-                                    {!floorPlanError ? (
-                                        <img
-                                            src={planSrc}
-                                            alt={`Floor plan of apartment ${flat.flat}`}
-                                            className="h-[260px] w-full object-cover transition duration-500 hover:scale-[1.02]"
-                                            draggable={false}
-                                            onError={() => setFloorPlanError(true)}
-                                        />
-                                    ) : (
-                                        <div className="flex h-[260px] flex-col items-center justify-center bg-black/20 px-6 text-center">
-                                            <Fullscreen className="h-10 w-10 text-white/64" />
-                                            <p className="mt-4 text-[12px] font-semibold uppercase tracking-[0.2em] text-white/42">
-                                                Floor plan unavailable
-                                            </p>
-                                            <p className="mt-2 text-sm text-white/56">
-                                                This plan preview will be added shortly.
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="mt-4 grid gap-2">
-                                    <a
-                                        href={planSrc}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:border-white/24 hover:bg-white/[0.08]"
-                                    >
-                                        <Maximize2 className="h-4 w-4" />
-                                        Open Plan
-                                    </a>
-                                    <a
-                                        href={`${WHATSAPP_URL}${flat.flat}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06))] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/88 shadow-[0_12px_26px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.1)] transition hover:border-white/24 hover:bg-white/[0.1]"
-                                    >
-                                        <MessageCircle className="h-4 w-4" />
-                                        Discuss
-                                    </a>
-                                </div>
-                            </div>
-
-                            <div className={`p-4 ${insetSurfaceClass}`}>
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
-                                    Interior Preview
-                                </p>
-                                <h2 className={`mt-2 font-medium text-white ${sectionTitleClass}`}>
-                                    Sample walkthrough
-                                </h2>
-
-                                <button
-                                    type="button"
-                                    onClick={() => router.push(interiorPanosHref)}
-                                    className="group mt-4 block w-full overflow-hidden rounded-[18px] border border-white/12 bg-[linear-gradient(180deg,rgba(5,8,14,0.48),rgba(5,8,14,0.26))] text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
-                                >
-                                    <div className="relative">
-                                        <img
-                                            src={INTERIOR_START_PREVIEW_URL}
-                                            alt="Interior walkthrough"
-                                            className="h-[210px] w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                                            draggable={false}
-                                            onError={(event) => {
-                                                event.currentTarget.style.opacity = '0.3';
-                                            }}
-                                        />
-                                        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(8,11,17,0.24)_40%,rgba(8,11,17,0.88)_100%)]" />
-                                        <div className="absolute bottom-[40%] left-1/2 -translate-x-1/2 flex items-end justify-between gap-4">
-                                          
-                                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06))] text-white backdrop-blur-md transition group-hover:scale-105 group-hover:bg-white/16">
-                                                <Play className="ml-0.5 h-4 w-4 fill-current" />
-                                            </span>
-                                        </div>
-                                    </div>
-                                </button>
-
-                                <div className={`mt-4 px-4 py-4 ${quietSurfaceClass}`}>
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/36">
-                                        Design Note
-                                    </p>
-                                    <p className={`mt-3 text-white/56 ${isCompactDesktop ? 'text-[12px] leading-5' : 'text-[13px] leading-6'}`}>
-                                        The residence is positioned as a calm, daylight-led home with a more
-                                        understated luxury language across proportion, flow, and private outdoor edges.
-                                    </p>
-                                </div>
-                            </div>
-                                </div>
+                                {renderSupportCards(false)}
                             </div>
                         </div>
                     </div>
