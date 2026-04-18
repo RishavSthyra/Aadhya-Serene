@@ -1,29 +1,37 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useMotionValue, useSpring } from 'framer-motion';
 import BuildingModel from './BuildingModel';
 import styles from './viewer.module.css';
 
 const TOTAL_FRAMES = 360;
 const SNAP_POINTS = [1, 90, 180, 270, 360];
 const ROT360_CDN_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp';
+//https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp/frame_0001.webp
+const ROT360_FRAME_EXTENSION = ROT360_CDN_BASE.includes('webp') ? 'webp' : 'avif';
 const DRAG_FRAME_STEP = 1;
-const PRELOAD_RADIUS = 14;
-const PRELOAD_CONCURRENCY = 8;
-const MAX_CACHE_SIZE = 72;
+const MOBILE_DRAG_FRAME_STEP = 2;
+const PRELOAD_RADIUS = 12;
+const PRELOAD_CONCURRENCY = 6;
+const MAX_CACHE_SIZE = 56;
 const DRAG_SENSITIVITY = 0.36;
-const MOBILE_PRELOAD_RADIUS = 6;
-const MOBILE_PRELOAD_CONCURRENCY = 3;
-const MOBILE_MAX_CACHE_SIZE = 24;
-const MOBILE_DPR_CAP = 1.25;
-const DESKTOP_DPR_CAP = 2;
+const MOBILE_PRELOAD_RADIUS = 4;
+const MOBILE_PRELOAD_CONCURRENCY = 2;
+const MOBILE_MAX_CACHE_SIZE = 16;
+const MOBILE_DPR_CAP = 1;
+const DESKTOP_DPR_CAP = 1.6;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 2.25;
 const DRAG_START_THRESHOLD = 8;
+const SNAP_ANIMATION_DURATION_MS = 260;
+const MOBILE_SNAP_ANIMATION_DURATION_MS = 200;
+const DRAG_PRELOAD_RADIUS = 3;
+const MOBILE_DRAG_PRELOAD_RADIUS = 1;
+const DRAG_PRELOAD_STRIDE = 5;
+const MOBILE_DRAG_PRELOAD_STRIDE = 10;
 
 function getFrameUrl(frameNumber) {
-    return `${ROT360_CDN_BASE}/frame_${String(frameNumber).padStart(4, '0')}.avif`;
+    return `${ROT360_CDN_BASE}/frame_${String(frameNumber).padStart(4, '0')}.${ROT360_FRAME_EXTENSION}`;
 }
 
 function normalizeFrame(frameNumber) {
@@ -33,6 +41,11 @@ function normalizeFrame(frameNumber) {
 function quantizeFrame(frameNumber, step) {
     const zeroIndexed = ((Math.round(frameNumber) - 1) % TOTAL_FRAMES + TOTAL_FRAMES) % TOTAL_FRAMES;
     return ((Math.round(zeroIndexed / step) * step) % TOTAL_FRAMES) + 1;
+}
+
+function getCircularFrameDistance(fromFrame, toFrame) {
+    const forwardDistance = Math.abs(normalizeFrame(fromFrame) - normalizeFrame(toFrame));
+    return Math.min(forwardDistance, TOTAL_FRAMES - forwardDistance);
 }
 
 function getPreloadSequence(centerFrame, radius) {
@@ -82,15 +95,8 @@ export default function Apartment360Viewer({
     const [isConstrainedDevice, setIsConstrainedDevice] = useState(false);
     const [zoom, setZoom] = useState(MIN_ZOOM);
 
-    const frameMotion = useMotionValue(1);
-    const smoothFrame = useSpring(frameMotion, {
-        stiffness: 82,
-        damping: 28,
-        mass: 0.72,
-        restDelta: 0.18,
-    });
-
     const canvasRef = useRef(null);
+    const canvasContextRef = useRef(null);
     const mountedRef = useRef(false);
     const isDragging = useRef(false);
     const didDragRef = useRef(false);
@@ -110,15 +116,22 @@ export default function Apartment360Viewer({
     const displayFrameRef = useRef(1);
     const publishRafRef = useRef(null);
     const drawRafRef = useRef(null);
+    const snapAnimationRafRef = useRef(null);
     const lastDrawnFrameRef = useRef(null);
     const hasAnnouncedReadyRef = useRef(false);
     const activePointersRef = useRef(new Map());
     const lastPinchDistanceRef = useRef(null);
+    const pendingPublishOptionsRef = useRef({ preload: true, preloadRadius: PRELOAD_RADIUS });
+    const lastDragPreloadedFrameRef = useRef(1);
     const startY = useRef(0);
+    const dragFrameStep = isConstrainedDevice ? MOBILE_DRAG_FRAME_STEP : DRAG_FRAME_STEP;
     const preloadRadius = isConstrainedDevice ? MOBILE_PRELOAD_RADIUS : PRELOAD_RADIUS;
     const preloadConcurrency = isConstrainedDevice ? MOBILE_PRELOAD_CONCURRENCY : PRELOAD_CONCURRENCY;
     const maxCacheSize = isConstrainedDevice ? MOBILE_MAX_CACHE_SIZE : MAX_CACHE_SIZE;
     const devicePixelRatioCap = isConstrainedDevice ? MOBILE_DPR_CAP : DESKTOP_DPR_CAP;
+    const dragPreloadRadius = isConstrainedDevice ? MOBILE_DRAG_PRELOAD_RADIUS : DRAG_PRELOAD_RADIUS;
+    const dragPreloadStride = isConstrainedDevice ? MOBILE_DRAG_PRELOAD_STRIDE : DRAG_PRELOAD_STRIDE;
+    const snapAnimationDuration = isConstrainedDevice ? MOBILE_SNAP_ANIMATION_DURATION_MS : SNAP_ANIMATION_DURATION_MS;
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -170,10 +183,20 @@ export default function Apartment360Viewer({
         if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
             canvas.width = targetWidth;
             canvas.height = targetHeight;
+            canvasContextRef.current = null;
         }
 
         return { bounds, dpr };
     }, [devicePixelRatioCap]);
+
+    const cancelSnapAnimation = useCallback(() => {
+        if (snapAnimationRafRef.current === null || typeof window === 'undefined') {
+            return;
+        }
+
+        window.cancelAnimationFrame(snapAnimationRafRef.current);
+        snapAnimationRafRef.current = null;
+    }, []);
 
     const drawFrame = useCallback((frameNumber) => {
         if (typeof window === 'undefined') {
@@ -198,10 +221,12 @@ export default function Apartment360Viewer({
                 return;
             }
 
-            const context = canvas.getContext('2d', { alpha: false });
+            const context = canvasContextRef.current
+                ?? canvas.getContext('2d', { alpha: false, desynchronized: true });
             if (!context) {
                 return;
             }
+            canvasContextRef.current = context;
 
             const { bounds, dpr } = size;
             const canvasWidth = bounds.width * dpr;
@@ -347,12 +372,25 @@ export default function Apartment360Viewer({
         enqueueFrames([normalizedFrame]);
     }, [enqueueFrames]);
 
-    const preloadAroundFrame = useCallback((frameNumber) => {
-        enqueueFrames(getPreloadSequence(frameNumber, preloadRadius));
+    const preloadAroundFrame = useCallback((frameNumber, radius = preloadRadius) => {
+        enqueueFrames(getPreloadSequence(frameNumber, radius));
     }, [enqueueFrames, preloadRadius]);
 
-    const requestFrame = useCallback((frameNumber) => {
+    const requestFrame = useCallback((frameNumber, options = {}) => {
         const normalizedFrame = normalizeFrame(frameNumber);
+        const shouldPreload = options.preload ?? true;
+        const preloadRadiusOverride = options.preloadRadius ?? preloadRadius;
+
+        if (
+            latestRequestedFrameRef.current === normalizedFrame
+            && (
+                loadedFramesRef.current.has(normalizedFrame)
+                || loadingPromisesRef.current.has(normalizedFrame)
+            )
+        ) {
+            return;
+        }
+
         currentFrameRef.current = normalizedFrame;
         latestRequestedFrameRef.current = normalizedFrame;
 
@@ -363,11 +401,17 @@ export default function Apartment360Viewer({
             ensureFrameLoaded(normalizedFrame);
         }
 
-        preloadAroundFrame(normalizedFrame);
-    }, [drawFrame, ensureFrameLoaded, preloadAroundFrame]);
+        if (shouldPreload) {
+            preloadAroundFrame(normalizedFrame, preloadRadiusOverride);
+        }
+    }, [drawFrame, ensureFrameLoaded, preloadAroundFrame, preloadRadius]);
 
-    const publishFrame = useCallback((frameNumber) => {
+    const publishFrame = useCallback((frameNumber, options = {}) => {
         pendingFrameRef.current = normalizeFrame(frameNumber);
+        pendingPublishOptionsRef.current = {
+            preload: options.preload ?? true,
+            preloadRadius: options.preloadRadius ?? preloadRadius,
+        };
 
         if (publishRafRef.current !== null || typeof window === 'undefined') {
             return;
@@ -375,9 +419,48 @@ export default function Apartment360Viewer({
 
         publishRafRef.current = window.requestAnimationFrame(() => {
             publishRafRef.current = null;
-            requestFrame(pendingFrameRef.current);
+            requestFrame(pendingFrameRef.current, pendingPublishOptionsRef.current);
         });
-    }, [requestFrame]);
+    }, [preloadRadius, requestFrame]);
+
+    const animateToFrame = useCallback((fromFrame, toFrame, finalSnapPoint) => {
+        if (typeof window === 'undefined') {
+            publishFrame(toFrame);
+            setIsSettled(true);
+            setSnappedFrame(finalSnapPoint);
+            return;
+        }
+
+        cancelSnapAnimation();
+
+        const startTime = window.performance.now();
+        const runAnimation = (now) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / snapAnimationDuration, 1);
+            const eased = 1 - ((1 - progress) ** 3);
+            const interpolatedFrame = fromFrame + ((toFrame - fromFrame) * eased);
+
+            publishFrame(interpolatedFrame, {
+                preload: true,
+                preloadRadius: preloadRadius,
+            });
+
+            if (progress < 1) {
+                snapAnimationRafRef.current = window.requestAnimationFrame(runAnimation);
+                return;
+            }
+
+            snapAnimationRafRef.current = null;
+            publishFrame(toFrame, {
+                preload: true,
+                preloadRadius: preloadRadius,
+            });
+            setIsSettled(true);
+            setSnappedFrame(finalSnapPoint);
+        };
+
+        snapAnimationRafRef.current = window.requestAnimationFrame(runAnimation);
+    }, [cancelSnapAnimation, preloadRadius, publishFrame, snapAnimationDuration]);
 
     useEffect(() => {
         trimCache();
@@ -410,38 +493,6 @@ export default function Apartment360Viewer({
     }, [onReadyChange]);
 
     useEffect(() => {
-        return smoothFrame.on('change', (latest) => {
-            let wrapped = Math.round(latest);
-            if (wrapped <= 0) wrapped += TOTAL_FRAMES;
-            if (wrapped > TOTAL_FRAMES) wrapped -= TOTAL_FRAMES;
-            const requestedFrame = isDragging.current
-                ? quantizeFrame(wrapped, DRAG_FRAME_STEP)
-                : wrapped;
-            publishFrame(requestedFrame);
-
-            if (!isDragging.current && !isSettled) {
-                if (Math.abs(latest - targetFrameRef.current) <= 1.5) {
-                    setIsSettled(true);
-                    let targetWrapped = Math.round(targetFrameRef.current);
-                    if (targetWrapped <= 0) targetWrapped += TOTAL_FRAMES;
-                    if (targetWrapped > TOTAL_FRAMES) targetWrapped -= TOTAL_FRAMES;
-                    let finalSnap = 1;
-                    let minDist = Infinity;
-                    for (const pt of SNAP_POINTS) {
-                        const dist = Math.min(
-                            Math.abs(targetWrapped - pt),
-                            Math.abs(targetWrapped - (pt + TOTAL_FRAMES)),
-                            Math.abs(targetWrapped - (pt - TOTAL_FRAMES))
-                        );
-                        if (dist < minDist) { minDist = dist; finalSnap = pt; }
-                    }
-                    setSnappedFrame(finalSnap);
-                }
-            }
-        });
-    }, [publishFrame, smoothFrame, isSettled]);
-
-    useEffect(() => {
         return () => {
             if (publishRafRef.current !== null && typeof window !== 'undefined') {
                 window.cancelAnimationFrame(publishRafRef.current);
@@ -450,8 +501,10 @@ export default function Apartment360Viewer({
             if (drawRafRef.current !== null && typeof window !== 'undefined') {
                 window.cancelAnimationFrame(drawRafRef.current);
             }
+
+            cancelSnapAnimation();
         };
-    }, []);
+    }, [cancelSnapAnimation]);
 
     const handlePointerDown = (e) => {
         if (interactionLocked) {
@@ -473,10 +526,11 @@ export default function Apartment360Viewer({
 
         isDragging.current = false;
         didDragRef.current = false;
+        cancelSnapAnimation();
         startX.current = e.clientX;
         startY.current = e.clientY;
-        lastFrame.current = smoothFrame.get();
-        frameMotion.stop();
+        lastFrame.current = currentFrameRef.current;
+        lastDragPreloadedFrameRef.current = currentFrameRef.current;
     };
 
     const handlePointerMove = (e) => {
@@ -522,7 +576,18 @@ export default function Apartment360Viewer({
             didDragRef.current = true;
         }
 
-        frameMotion.set(lastFrame.current - deltaX * (DRAG_SENSITIVITY / zoom));
+        const rawFrame = lastFrame.current - deltaX * (DRAG_SENSITIVITY / zoom);
+        const nextFrame = quantizeFrame(rawFrame, dragFrameStep);
+
+        publishFrame(nextFrame, {
+            preload: false,
+            preloadRadius: dragPreloadRadius,
+        });
+
+        if (getCircularFrameDistance(lastDragPreloadedFrameRef.current, nextFrame) >= dragPreloadStride) {
+            lastDragPreloadedFrameRef.current = nextFrame;
+            preloadAroundFrame(nextFrame, dragPreloadRadius);
+        }
     };
 
     const settleToClosestHotspot = useCallback((sourceFrame) => {
@@ -547,11 +612,13 @@ export default function Apartment360Viewer({
         if (diff < -180) diff += 360;
         const snapTarget = finalFrame + diff;
         targetFrameRef.current = snapTarget;
-        frameMotion.set(snapTarget);
-    }, [frameMotion]);
+        ensureFrameLoaded(bestTargetNorm);
+        preloadAroundFrame(bestTargetNorm, preloadRadius);
+        animateToFrame(finalFrame, snapTarget, bestTargetNorm);
+    }, [animateToFrame, ensureFrameLoaded, preloadAroundFrame, preloadRadius]);
 
     const moveToHotspot = useCallback((direction) => {
-        const rawFrame = frameMotion.get();
+        const rawFrame = currentFrameRef.current;
         const normalizedFrame = normalizeFrame(rawFrame);
         const orderedPoints = SNAP_POINTS.slice(0, -1);
         const currentIndex = orderedPoints.findIndex((point) => {
@@ -586,8 +653,8 @@ export default function Apartment360Viewer({
         ensureFrameLoaded(nextPoint);
         preloadAroundFrame(nextPoint);
         targetFrameRef.current = rawFrame + diff;
-        frameMotion.set(targetFrameRef.current);
-    }, [ensureFrameLoaded, frameMotion, preloadAroundFrame]);
+        animateToFrame(rawFrame, targetFrameRef.current, nextPoint);
+    }, [animateToFrame, ensureFrameLoaded, preloadAroundFrame]);
 
     const handlePointerUp = (e) => {
         if (interactionLocked) {
@@ -608,7 +675,7 @@ export default function Apartment360Viewer({
         if (didDragRef.current) {
             suppressFlatClickUntilRef.current = Date.now() + 550;
         }
-        settleToClosestHotspot(frameMotion.get());
+        settleToClosestHotspot(currentFrameRef.current);
     };
 
     const shouldAllowFlatClick = useCallback(() => {
