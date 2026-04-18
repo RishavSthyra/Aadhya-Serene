@@ -17,8 +17,6 @@ import { isBackgroundTransitionActive } from "../../lib/background-transition";
 import useResponsiveViewport from "../../hooks/useResponsiveViewport";
 
 const DESKTOP_PANEL_WIDTH = 392;
-const COMPACT_PEEK_HEIGHT = 82;
-
 const Apartment360Viewer = dynamic(() => import("../Apartment360Viewer"), {
   ssr: false,
   loading: () => null,
@@ -52,12 +50,14 @@ export default function Apartments() {
   const hasHandledInitialPathRef = useRef(false);
   const isCompactLayout = isTabletOrBelow;
   const compactBottomOffset = "calc(86px + env(safe-area-inset-bottom, 0px))";
+  const compactSheetOverlap = isTablet ? 26 : 22;
   const compactMediaHeight = isTablet
     ? "min(46dvh, 430px)"
     : isMobile
       ? "min(38dvh, 320px)"
       : "min(42dvh, 380px)";
   const isFlatRoutePreparing = pendingFlatId !== null;
+  const compactIntroActive = isCompactLayout && (isVideoPlaying || !shouldRevealViewer);
 
   const resetApartmentsExperience = useCallback((remountViewer = false) => {
     document.body.style.opacity = "1";
@@ -135,6 +135,30 @@ export default function Apartments() {
     if (!allData || data.length === allData.length) return null;
     return new Set(data.map((flat) => flat.id));
   }, [data, allData]);
+
+  const compactIntroStats = useMemo(() => {
+    const homes = allData ?? [];
+    const typeCounts = homes.reduce(
+      (acc, flat) => {
+        acc[flat.type] = (acc[flat.type] ?? 0) + 1;
+        return acc;
+      },
+      {},
+    );
+
+    const availableCount = homes.filter((flat) => flat.status === "available").length;
+    const areaValues = homes.map((flat) => flat.area).filter((area) => Number.isFinite(area));
+    const minArea = areaValues.length ? Math.min(...areaValues) : 800;
+    const maxArea = areaValues.length ? Math.max(...areaValues) : 1600;
+
+    return {
+      totalHomes: homes.length,
+      availableCount,
+      twoBhkCount: typeCounts["2 BHK"] ?? 0,
+      threeBhkCount: typeCounts["3 BHK"] ?? 0,
+      areaBand: `${minArea} to ${maxArea} sqft`,
+    };
+  }, [allData]);
 
   const handleFlatClick = useCallback(
     async (flatId) => {
@@ -214,8 +238,8 @@ export default function Apartments() {
         transition: "transform 420ms cubic-bezier(0.22,1,0.36,1), opacity 280ms ease",
       }}
     >
-      <aside className="relative mr-4 flex h-[calc(100dvh-120px)] max-h-[calc(100dvh-120px)] w-[392px] flex-col overflow-hidden border border-white/12 bg-[linear-gradient(165deg,rgba(10,16,26,0.82)_0%,rgba(8,13,20,0.68)_46%,rgba(5,8,14,0.52)_100%)] shadow-[-14px_0_58px_rgba(8,12,18,0.28)] backdrop-blur-[22px]">
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01)_18%,rgba(12,15,21,0.08)_100%)]" />
+      <aside className="relative mr-4 flex h-[calc(100dvh-120px)] max-h-[calc(100dvh-120px)] w-[392px] flex-col overflow-hidden rounded-[26px] border border-white/16 bg-[linear-gradient(165deg,rgba(30,38,50,0.56)_0%,rgba(13,18,26,0.72)_46%,rgba(8,11,17,0.82)_100%)] shadow-[-14px_0_58px_rgba(8,12,18,0.28),inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-[28px] saturate-[150%]">
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02)_18%,rgba(12,15,21,0.12)_100%)]" />
         <div
           className="relative flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-thin"
           style={{
@@ -251,6 +275,91 @@ export default function Apartments() {
     </div>
   );
 
+  const renderCompactIntroContent = (
+    <div
+      className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-4"
+      style={{
+        scrollbarWidth: "thin",
+        scrollbarColor: "rgba(255,255,255,0.12) transparent",
+      }}
+    >
+      <div className="rounded-[24px] border border-white/12 bg-[linear-gradient(160deg,rgba(255,255,255,0.1),rgba(58,70,88,0.12)_42%,rgba(8,12,18,0.32)_100%)] p-4 shadow-[0_22px_54px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[24px]">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/54">
+          Apartment Overview
+        </p>
+        <h2 className="mt-2 max-w-[18rem] text-[26px] font-medium leading-[1.02] tracking-[0.01em] text-white/94">
+          Explore signature apartments from the render above
+        </h2>
+        <p className="mt-3 text-[12px] leading-6 text-white/62">
+          On tablet and mobile, the entry render stays in the top frame only.
+          Filters and apartment cards will load here as soon as the render is ready.
+        </p>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="rounded-[20px] border border-white/10 bg-[linear-gradient(165deg,rgba(255,255,255,0.1),rgba(30,37,46,0.12)_45%,rgba(10,14,20,0.24)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px]">
+          <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-white/42">
+            Collection
+          </p>
+          <p className="mt-2 text-[22px] font-medium tracking-[0.02em] text-white/92">
+            {compactIntroStats.totalHomes}
+          </p>
+          <p className="mt-1 text-[11px] text-white/56">
+            curated residences
+          </p>
+        </div>
+
+        <div className="rounded-[20px] border border-white/10 bg-[linear-gradient(165deg,rgba(255,255,255,0.1),rgba(30,37,46,0.12)_45%,rgba(10,14,20,0.24)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px]">
+          <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-white/42">
+            Available
+          </p>
+          <p className="mt-2 text-[22px] font-medium tracking-[0.02em] text-white/92">
+            {compactIntroStats.availableCount}
+          </p>
+          <p className="mt-1 text-[11px] text-white/56">
+            homes ready now
+          </p>
+        </div>
+
+        <div className="rounded-[20px] border border-white/10 bg-[linear-gradient(165deg,rgba(255,255,255,0.1),rgba(30,37,46,0.12)_45%,rgba(10,14,20,0.24)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px]">
+          <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-white/42">
+            2 BHK
+          </p>
+          <p className="mt-2 text-[22px] font-medium tracking-[0.02em] text-white/92">
+            {compactIntroStats.twoBhkCount}
+          </p>
+          <p className="mt-1 text-[11px] text-white/56">
+            signature layouts
+          </p>
+        </div>
+
+        <div className="rounded-[20px] border border-white/10 bg-[linear-gradient(165deg,rgba(255,255,255,0.1),rgba(30,37,46,0.12)_45%,rgba(10,14,20,0.24)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px]">
+          <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-white/42">
+            3 BHK
+          </p>
+          <p className="mt-2 text-[22px] font-medium tracking-[0.02em] text-white/92">
+            {compactIntroStats.threeBhkCount}
+          </p>
+          <p className="mt-1 text-[11px] text-white/56">
+            premium layouts
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-[22px] border border-white/10 bg-[linear-gradient(165deg,rgba(255,255,255,0.08),rgba(28,34,43,0.12)_42%,rgba(10,14,20,0.26)_100%)] px-4 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px]">
+        <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-white/42">
+          Area Band
+        </p>
+        <p className="mt-2 text-[18px] font-medium tracking-[0.01em] text-white/92">
+          {compactIntroStats.areaBand}
+        </p>
+        <p className="mt-2 text-[12px] leading-6 text-white/58">
+          As soon as the top render hands over, this lower panel switches from overview mode to the live filters and apartment list.
+        </p>
+      </div>
+    </div>
+  );
+
   const renderCompactSheet = (
     <>
       {isPanelOpen ? (
@@ -258,7 +367,7 @@ export default function Apartments() {
           type="button"
           aria-label="Close apartments panel backdrop"
           onClick={() => setIsPanelOpen(false)}
-          className="fixed inset-0 z-[109] bg-[radial-gradient(circle_at_top,rgba(173,207,255,0.22),rgba(6,10,18,0.38))] backdrop-blur-[4px] xl:hidden"
+          className="fixed inset-0 z-[109] bg-[radial-gradient(circle_at_top,rgba(126,146,176,0.16),rgba(6,10,18,0.26))] backdrop-blur-[3px] xl:hidden"
           style={{
             top: compactMediaHeight,
           }}
@@ -268,28 +377,28 @@ export default function Apartments() {
       <div
         className="fixed inset-x-0 bottom-0 z-[120] xl:hidden"
         style={{
-          top: compactMediaHeight,
+          top: `calc(${compactMediaHeight} - ${compactSheetOverlap}px)`,
           bottom: compactBottomOffset,
           opacity: 1,
           pointerEvents: isFlatRoutePreparing ? "none" : "auto",
           height: "auto",
           transform: isPanelOpen
             ? "translateY(0)"
-            : `translateY(calc(100% - ${COMPACT_PEEK_HEIGHT}px))`,
-          transition: "transform 360ms cubic-bezier(0.22,1,0.36,1)",
+            : "translateY(calc(100% - 82px))",
+          transition: "transform 300ms cubic-bezier(0.22,1,0.36,1)",
         }}
       >
-        <aside className="relative flex h-full flex-col overflow-hidden rounded-none border border-b-0 border-x-0 border-white/10 bg-[linear-gradient(165deg,rgba(9,15,24,0.84)_0%,rgba(8,13,20,0.7)_46%,rgba(5,8,14,0.56)_100%)] shadow-[0_-16px_54px_rgba(8,12,18,0.28)] backdrop-blur-[20px]">
+        <aside className="relative flex h-full flex-col overflow-hidden rounded-t-[22px] border border-b-0 border-x-0 border-white/14 bg-[linear-gradient(165deg,rgba(28,36,48,0.52)_0%,rgba(12,17,24,0.78)_40%,rgba(7,10,16,0.92)_100%)] shadow-[0_-20px_60px_rgba(8,12,18,0.34),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-[28px] saturate-[150%]">
           <div className="px-4 pt-2">
-            <div className="mx-auto h-1.5 w-14 bg-white/12" />
+            <div className="mx-auto h-1.5 w-14 rounded-full bg-white/14" />
           </div>
 
-          <div className="relative flex items-center justify-between gap-3 border-b border-white/10 px-4 pb-2.5 pt-3">
+          <div className="relative flex items-center justify-between gap-3 border-b border-white/10 px-4 pb-3 pt-3">
             <div className="min-w-0">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/78">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/74">
                 Residence Atelier
               </p>
-              <p className="mt-1 text-[12px] text-white/62 md:text-[13px]">
+              <p className="mt-1 text-[12px] text-white/60 md:text-[13px]">
                 {data.length} matches from {allData?.length ?? data.length} homes
               </p>
             </div>
@@ -298,14 +407,14 @@ export default function Apartments() {
               <button
                 type="button"
                 onClick={resetFilters}
-                className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-white/64 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                className="rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.05))] px-3 py-2 text-[14px] font-medium uppercase tracking-[0.08em] text-white/70 shadow-[0_14px_32px_rgba(7,10,18,0.14),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-[18px] transition hover:border-white/24 hover:bg-white/[0.1] hover:text-white"
               >
                 Reset
               </button>
               <button
                 type="button"
                 onClick={() => setIsPanelOpen((current) => !current)}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white/64 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.05))] text-white/70 shadow-[0_14px_32px_rgba(7,10,18,0.14),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-[18px] transition hover:border-white/24 hover:bg-white/[0.1] hover:text-white"
                 aria-label={isPanelOpen ? "Collapse apartments panel" : "Expand apartments panel"}
               >
                 {isPanelOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
@@ -313,63 +422,69 @@ export default function Apartments() {
             </div>
           </div>
 
-          <div className="relative border-b border-white/10 px-3 py-2.5">
-            <div className="grid grid-cols-2 gap-1.5 bg-black/10 p-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab("filters");
-                  setIsPanelOpen(true);
-                }}
-                className={`rounded-[14px] px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] transition md:text-[10px] ${
-                  activeTab === "filters"
-                    ? "bg-white/14 text-white shadow-[0_8px_20px_rgba(0,0,0,0.18)]"
-                    : "text-white/54"
-                }`}
-              >
-                Filters
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab("list");
-                  setIsPanelOpen(true);
-                }}
-                className={`rounded-[14px] px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] transition md:text-[10px] ${
-                  activeTab === "list"
-                    ? "bg-white/14 text-white shadow-[0_8px_20px_rgba(0,0,0,0.18)]"
-                    : "text-white/54"
-                }`}
-              >
-                Apartments
-              </button>
-            </div>
-          </div>
+          {compactIntroActive ? (
+            renderCompactIntroContent
+          ) : (
+            <>
+              <div className="relative border-b border-white/10 px-3 py-2.5">
+                <div className="grid grid-cols-2 gap-2 rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab("filters");
+                      setIsPanelOpen(true);
+                    }}
+                    className={`rounded-[14px] px-4 py-2.5 text-[9px] font-medium uppercase tracking-[0.1em] transition md:text-[10px] ${
+                      activeTab === "filters"
+                        ? "border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.08))] text-white shadow-[0_10px_28px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.12)]"
+                        : "text-white/54 hover:text-white/76"
+                    }`}
+                  >
+                    Filters
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab("list");
+                      setIsPanelOpen(true);
+                    }}
+                    className={`rounded-[14px] px-4 py-2.5 text-[9px] font-medium uppercase tracking-[0.1em] transition md:text-[10px] ${
+                      activeTab === "list"
+                        ? "border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.08))] text-white shadow-[0_10px_28px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.12)]"
+                        : "text-white/54 hover:text-white/76"
+                    }`}
+                  >
+                    Apartments
+                  </button>
+                </div>
+              </div>
 
-          <div
-            className="min-h-0 flex-1 overflow-y-auto scrollbar-thin"
-            style={{
-              scrollbarWidth: "thin",
-              scrollbarColor: "rgba(255,255,255,0.12) transparent",
-            }}
-          >
-            {activeTab === "filters" ? (
-              <Filters
-                filters={filters}
-                onToggle={toggleFilter}
-                onSetRange={setAreaRange}
-                onToggleBoolean={toggleBoolean}
-                onClose={() => setIsPanelOpen(false)}
-                onReset={resetFilters}
-                resultCount={data.length}
-                totalCount={allData?.length ?? data.length}
-                showCloseButton={false}
-                compactMode
-              />
-            ) : (
-              renderListContent
-            )}
-          </div>
+              <div
+                className="min-h-0 flex-1 overflow-y-auto scrollbar-thin"
+                style={{
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "rgba(255,255,255,0.12) transparent",
+                }}
+              >
+                {activeTab === "filters" ? (
+                  <Filters
+                    filters={filters}
+                    onToggle={toggleFilter}
+                    onSetRange={setAreaRange}
+                    onToggleBoolean={toggleBoolean}
+                    onClose={() => setIsPanelOpen(false)}
+                    onReset={resetFilters}
+                    resultCount={data.length}
+                    totalCount={allData?.length ?? data.length}
+                    showCloseButton={false}
+                    compactMode
+                  />
+                ) : (
+                  renderListContent
+                )}
+              </div>
+            </>
+          )}
         </aside>
       </div>
     </>
@@ -379,7 +494,7 @@ export default function Apartments() {
     <div
       className="fixed inset-0 overflow-hidden"
       style={{
-        backgroundColor: shouldRevealViewer ? "#0b1018" : "transparent",
+        backgroundColor: "transparent",
       }}
     >
       <div
@@ -393,9 +508,9 @@ export default function Apartments() {
           height: isCompactLayout ? compactMediaHeight : "auto",
           transform: "none",
           overflow: "hidden",
-          backgroundColor: "#0b1018",
+          backgroundColor: "transparent",
           opacity: shouldRevealViewer ? 1 : 0,
-          transition: "opacity 0.38s ease",
+          transition: isCompactLayout ? "opacity 0.18s linear" : "opacity 0.38s ease",
           pointerEvents: shouldRevealViewer && !isFlatRoutePreparing ? "auto" : "none",
           backgroundImage: "linear-gradient(180deg, rgba(11,16,24,0.08), rgba(11,16,24,0.3))",
           backgroundPosition: "center",
@@ -416,6 +531,15 @@ export default function Apartments() {
           <div className="h-full w-full bg-transparent" />
         )}
       </div>
+
+      {isCompactLayout ? (
+        <div
+          className="absolute inset-x-0 bottom-0 z-[1] bg-[linear-gradient(180deg,rgba(8,12,18,0.88),rgba(7,10,16,0.96))] xl:hidden"
+          style={{
+            top: `calc(${compactMediaHeight} - ${compactSheetOverlap}px)`,
+          }}
+        />
+      ) : null}
 
       <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(8,19,38,0.05)_0%,rgba(9,24,46,0.01)_28%,rgba(10,26,52,0.1)_100%)]" />
 
@@ -440,7 +564,7 @@ export default function Apartments() {
           type="button"
           onClick={() => setIsPanelOpen(true)}
           aria-label="Show apartments panel"
-          className="fixed right-4 top-1/2 z-[130] hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/14 bg-[linear-gradient(145deg,rgba(91,103,123,0.5),rgba(54,63,77,0.64))] text-white shadow-[-8px_0_30px_rgba(8,12,18,0.28)] backdrop-blur-[18px] transition-all duration-300 hover:border-white/22 hover:bg-[linear-gradient(145deg,rgba(103,116,137,0.54),rgba(58,68,84,0.7))] xl:flex"
+          className="fixed right-4 top-1/2 z-[130] hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(226,233,242,0.08))] text-white shadow-[-8px_0_30px_rgba(8,12,18,0.28),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-[22px] transition-all duration-300 hover:border-white/26 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(232,238,245,0.12))] xl:flex"
         >
           <ChevronRight size={20} className="text-white" />
         </button>

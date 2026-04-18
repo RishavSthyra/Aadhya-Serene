@@ -1046,6 +1046,7 @@ export function CustomStyleExample() {
       >
         <MapControls
           position="bottom-right"
+          className="bottom-[max(132px,env(safe-area-inset-bottom,0px)+120px)] right-3 md:bottom-[max(140px,env(safe-area-inset-bottom,0px)+126px)] md:right-4 xl:bottom-10 xl:right-2"
           showZoom
           showCompass
           showLocate
@@ -1254,7 +1255,7 @@ export function CustomStyleExample() {
 
         {/* Mobile / Tablet open button */}
         <div
-          className={`absolute bottom-4 right-4 z-30 xl:hidden ${
+          className={`absolute right-4 top-[max(16px,env(safe-area-inset-top,0px)+12px)] z-30 xl:hidden ${
             isMobileFiltersOpen ? "pointer-events-none opacity-0" : "opacity-100"
           }`}
         >
@@ -1369,7 +1370,7 @@ export function CustomStyleExample() {
                         duration: 1200,
                       })
                     }
-                    className="rounded-xl border border-slate-200 bg-white/80 px-3 py-1.5 text-xs text-slate-700 transition hover:bg-slate-50"
+                    className="rounded-xl border border-slate-200 bg-white/80 px-3 py-1.5 !text-[11px] !font-medium !leading-none text-slate-700 transition hover:bg-slate-50"
                   >
                     Recenter
                   </button>
@@ -1459,18 +1460,18 @@ export function CustomStyleExample() {
                         duration: 1200,
                       })
                     }
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-3 py-3 text-sm text-slate-800 transition hover:bg-slate-50"
+                    className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white/80 px-3 py-3 !text-[12px] !font-medium !leading-none text-slate-800 transition hover:bg-slate-50"
                   >
-                    <MapPinned className="size-4" />
+                    <MapPinned className="size-3.5" />
                     Project
                   </button>
 
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-3 py-3 text-sm text-slate-800 transition hover:bg-slate-50"
+                    className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white/80 px-3 py-3 !text-[12px] !font-medium !leading-none text-slate-800 transition hover:bg-slate-50"
                   >
-                    <X className="size-4" />
+                    <X className="size-3.5" />
                     Reset
                   </button>
                 </div>
@@ -1662,18 +1663,18 @@ export function CustomStyleExample() {
                     duration: 1200,
                   })
                 }
-                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-3 py-3 text-sm text-slate-800"
+                className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white/80 px-3 py-3 !text-[12px] !font-medium !leading-none text-slate-800"
               >
-                <MapPinned className="size-4" />
+                <MapPinned className="size-3.5" />
                 Project
               </button>
 
               <button
                 type="button"
                 onClick={resetFilters}
-                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-3 py-3 text-sm text-slate-800"
+                className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white/80 px-3 py-3 !text-[12px] !font-medium !leading-none text-slate-800"
               >
-                <X className="size-4" />
+                <X className="size-3.5" />
                 Reset
               </button>
             </div>

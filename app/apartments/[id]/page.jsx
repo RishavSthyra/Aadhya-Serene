@@ -63,10 +63,10 @@ function getRoomIcon(name) {
 
 function StatCard({ icon: Icon, label, value, accent = 'text-white' }) {
     return (
-        <div className="border border-white/10 bg-[linear-gradient(135deg,rgba(6,10,16,0.76),rgba(8,13,20,0.42))] px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.22)] backdrop-blur-[24px]">
+        <div className="rounded-[20px] border border-white/14 bg-[linear-gradient(160deg,rgba(255,255,255,0.12),rgba(48,57,71,0.16)_42%,rgba(10,14,21,0.38)_100%)] px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-[26px]">
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/36">
-                    <Icon className="h-4 w-4 text-[#dcc27c]" />
+                    <Icon className="h-4 w-4 text-white/68" />
                     <span>{label}</span>
                 </div>
                 <p className={`text-[16px] font-medium ${accent}`}>
@@ -81,10 +81,10 @@ function RoomCard({ room }) {
     const Icon = getRoomIcon(room.name);
 
     return (
-        <div className="group border border-white/10 bg-[linear-gradient(135deg,rgba(7,11,17,0.72),rgba(8,13,20,0.38))] px-4 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.18)] transition-all duration-300 hover:border-[#dcc27c]/22 hover:bg-[linear-gradient(135deg,rgba(9,14,21,0.8),rgba(10,15,22,0.46))]">
+        <div className="group rounded-[20px] border border-white/14 bg-[linear-gradient(160deg,rgba(255,255,255,0.1),rgba(47,57,70,0.14)_42%,rgba(10,14,21,0.34)_100%)] px-4 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[22px] transition-all duration-300 hover:border-white/22 hover:bg-[linear-gradient(160deg,rgba(255,255,255,0.14),rgba(52,61,75,0.18)_42%,rgba(12,17,24,0.4)_100%)]">
             <div className="flex items-center justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center border border-[#dcc27c]/18 bg-[#dcc27c]/8 text-[#dcc27c]">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] text-white/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                         <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
@@ -481,9 +481,9 @@ export default function FlatDetailPage() {
             ? 'text-[11px] leading-5 xl:text-[12px] xl:leading-6'
             : 'text-[12px] leading-6';
     const metaValueClass = isCompactDesktop ? 'text-[12px] xl:text-[13px]' : 'text-[13px]';
-    const cardSurfaceClass = 'border border-white/10 bg-[linear-gradient(135deg,rgba(5,8,14,0.78),rgba(8,12,19,0.42))] shadow-[0_24px_68px_rgba(0,0,0,0.28)] backdrop-blur-[30px]';
-    const insetSurfaceClass = 'border border-white/8 bg-[linear-gradient(180deg,rgba(9,13,19,0.72),rgba(5,8,13,0.38))] shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-[24px]';
-    const quietSurfaceClass = 'border border-white/8 bg-[linear-gradient(180deg,rgba(9,13,19,0.62),rgba(5,8,13,0.34))] shadow-[0_16px_38px_rgba(0,0,0,0.14)] backdrop-blur-[20px]';
+    const cardSurfaceClass = 'rounded-[24px] border border-white/14 bg-[linear-gradient(160deg,rgba(255,255,255,0.12),rgba(48,58,72,0.16)_42%,rgba(9,13,20,0.4)_100%)] shadow-[0_24px_68px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-[32px]';
+    const insetSurfaceClass = 'rounded-[20px] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(28,36,47,0.16)_26%,rgba(7,11,17,0.3)_100%)] shadow-[0_18px_40px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[26px]';
+    const quietSurfaceClass = 'rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(25,33,44,0.14)_24%,rgba(7,11,17,0.26)_100%)] shadow-[0_16px_38px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[22px]';
 
     return (
         <div
@@ -556,7 +556,7 @@ export default function FlatDetailPage() {
                 ) : null}
             </div>
 
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(220,194,124,0.14),transparent_34%),linear-gradient(90deg,rgba(7,9,14,0.8)_0%,rgba(7,9,14,0.34)_42%,rgba(7,9,14,0.68)_100%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(201,214,236,0.1),transparent_34%),linear-gradient(90deg,rgba(7,9,14,0.8)_0%,rgba(7,9,14,0.34)_42%,rgba(7,9,14,0.68)_100%)]" />
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,14,0.72)_0%,rgba(7,9,14,0.18)_28%,rgba(7,9,14,0.62)_100%)]" />
 
             <div
@@ -569,11 +569,11 @@ export default function FlatDetailPage() {
             >
                 <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-none flex-col">
                     <div className="fixed inset-x-0 bottom-4 z-20 flex justify-center px-4 lg:bottom-5">
-                        <div className={`flex flex-wrap items-center justify-center border border-white/10 bg-[linear-gradient(135deg,rgba(6,9,14,0.88),rgba(10,15,22,0.58))] shadow-[0_18px_46px_rgba(0,0,0,0.32)] backdrop-blur-[28px] ${dockShellClass}`}>
+                        <div className={`flex flex-wrap items-center justify-center rounded-[22px] border border-white/12 bg-[linear-gradient(160deg,rgba(255,255,255,0.12),rgba(33,42,55,0.16)_42%,rgba(8,12,18,0.42)_100%)] shadow-[0_18px_46px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[28px] ${dockShellClass}`}>
                             <button
                                 type="button"
                                 onClick={toggleMute}
-                                className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.05] font-semibold uppercase text-white/82 backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08] ${dockButtonClass}`}
+                                className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] font-semibold uppercase text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08] ${dockButtonClass}`}
                             >
                                 {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
                                 {muted ? 'Muted' : 'Audio On'}
@@ -585,7 +585,7 @@ export default function FlatDetailPage() {
                                     event.stopPropagation();
                                     void goFullscreen();
                                 }}
-                                className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.05] font-semibold uppercase text-white/82 backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08] ${dockButtonClass}`}
+                                className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] font-semibold uppercase text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08] ${dockButtonClass}`}
                             >
                                 <Maximize2 className="h-3.5 w-3.5" />
                                 {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
@@ -594,7 +594,7 @@ export default function FlatDetailPage() {
                                 href={`${WHATSAPP_URL}${flat.flat}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className={`inline-flex items-center gap-2 rounded-full bg-[#dcc27c] font-semibold uppercase text-[#17130b] transition hover:bg-[#e7cd85] ${dockButtonClass} ${isCompactDesktop ? 'px-3.5' : 'px-4 2xl:px-5'}`}
+                                className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06))] font-semibold uppercase text-white/88 shadow-[0_12px_26px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.1)] transition hover:border-white/24 hover:bg-white/[0.1] ${dockButtonClass} ${isCompactDesktop ? 'px-3.5' : 'px-4 2xl:px-5'}`}
                             >
                                 <MessageCircle className="h-3.5 w-3.5" />
                                 Enquire
@@ -617,7 +617,7 @@ export default function FlatDetailPage() {
                                 >
                                     <div className={`flex shrink-0 flex-col p-4 ${insetSurfaceClass}`}>
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <span className="inline-flex items-center gap-2 border border-[#dcc27c]/20 bg-[#dcc27c]/8 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#dcc27c]">
+                                            <span className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.05))] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                                                 <Sparkles className="h-3.5 w-3.5" />
                                                 Aadhya Serene
                                             </span>
@@ -636,7 +636,7 @@ export default function FlatDetailPage() {
                                             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
                                                 Signature Residence
                                             </p>
-                                            <h1 className={`mt-3 font-serif leading-[0.94] text-[#f4efe5] ${heroTitleClass}`}>
+                                            <h1 className={`mt-3 font-serif leading-[0.94] text-white ${heroTitleClass}`}>
                                                 Apartment {flat.flat}
                                             </h1>
                                             <p className={`mt-3 text-white/58 ${bodyCopyClass}`}>
@@ -695,7 +695,7 @@ export default function FlatDetailPage() {
                                         <button
                                             type="button"
                                             onClick={navigateBack}
-                                            className="mt-4 inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-white/14 bg-white/[0.05] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/82 backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08]"
+                                                className="mt-4 inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08]"
                                         >
                                             <ArrowLeft className="h-4 w-4" />
                                             Back to Apartments
@@ -722,7 +722,7 @@ export default function FlatDetailPage() {
                                                 <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-white/36">
                                                     Spatial Composition
                                                 </p>
-                                                <h2 className={`mt-2 font-medium tracking-[0.02em] text-[#f4efe5] ${roomSectionHeadingClass}`}>
+                                        <h2 className={`mt-2 font-medium tracking-[0.02em] text-white ${roomSectionHeadingClass}`}>
                                                     Room Dimensions
                                                 </h2>
                                             </div>
@@ -758,16 +758,16 @@ export default function FlatDetailPage() {
                                         <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
                                             Floor Plan
                                         </p>
-                                        <h2 className={`mt-2 font-medium text-[#f4efe5] ${sectionTitleClass}`}>
+                                        <h2 className={`mt-2 font-medium text-white ${sectionTitleClass}`}>
                                             Residence layout
                                         </h2>
                                     </div>
-                                    <span className="border border-white/12 bg-white/[0.04] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/55">
+                                    <span className="rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                                         {flat.flat}
                                     </span>
                                 </div>
 
-                                <div className="overflow-hidden border border-white/10 bg-black/25">
+                                <div className="overflow-hidden rounded-[18px] border border-white/12 bg-[linear-gradient(180deg,rgba(5,8,14,0.48),rgba(5,8,14,0.26))] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
                                     {!floorPlanError ? (
                                         <img
                                             src={planSrc}
@@ -778,7 +778,7 @@ export default function FlatDetailPage() {
                                         />
                                     ) : (
                                         <div className="flex h-[260px] flex-col items-center justify-center bg-black/20 px-6 text-center">
-                                            <Fullscreen className="h-10 w-10 text-[#dcc27c]" />
+                                            <Fullscreen className="h-10 w-10 text-white/64" />
                                             <p className="mt-4 text-[12px] font-semibold uppercase tracking-[0.2em] text-white/42">
                                                 Floor plan unavailable
                                             </p>
@@ -794,7 +794,7 @@ export default function FlatDetailPage() {
                                         href={planSrc}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center gap-2 rounded-full border border-white/14 bg-white/[0.05] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/82 transition hover:border-white/24 hover:bg-white/[0.08]"
+                                        className="inline-flex items-center justify-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:border-white/24 hover:bg-white/[0.08]"
                                     >
                                         <Maximize2 className="h-4 w-4" />
                                         Open Plan
@@ -803,7 +803,7 @@ export default function FlatDetailPage() {
                                         href={`${WHATSAPP_URL}${flat.flat}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center gap-2 rounded-full bg-[#dcc27c] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#17130b] transition hover:bg-[#e7cd85]"
+                                        className="inline-flex items-center justify-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06))] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/88 shadow-[0_12px_26px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.1)] transition hover:border-white/24 hover:bg-white/[0.1]"
                                     >
                                         <MessageCircle className="h-4 w-4" />
                                         Discuss
@@ -815,14 +815,14 @@ export default function FlatDetailPage() {
                                 <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
                                     Interior Preview
                                 </p>
-                                <h2 className={`mt-2 font-medium text-[#f4efe5] ${sectionTitleClass}`}>
+                                <h2 className={`mt-2 font-medium text-white ${sectionTitleClass}`}>
                                     Sample walkthrough
                                 </h2>
 
                                 <button
                                     type="button"
                                     onClick={() => router.push(interiorPanosHref)}
-                                    className="group mt-4 block w-full overflow-hidden rounded-[22px] border border-white/10 bg-black/25 text-left"
+                                    className="group mt-4 block w-full overflow-hidden rounded-[18px] border border-white/12 bg-[linear-gradient(180deg,rgba(5,8,14,0.48),rgba(5,8,14,0.26))] text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
                                 >
                                     <div className="relative">
                                         <img
@@ -837,7 +837,7 @@ export default function FlatDetailPage() {
                                         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(8,11,17,0.24)_40%,rgba(8,11,17,0.88)_100%)]" />
                                         <div className="absolute bottom-[40%] left-1/2 -translate-x-1/2 flex items-end justify-between gap-4">
                                           
-                                            <span className="flex h-12 w-12 shrink-0 items-center justify-center border border-white/18 bg-white/12 text-white backdrop-blur-md transition group-hover:scale-105 group-hover:bg-white/16">
+                                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06))] text-white backdrop-blur-md transition group-hover:scale-105 group-hover:bg-white/16">
                                                 <Play className="ml-0.5 h-4 w-4 fill-current" />
                                             </span>
                                         </div>

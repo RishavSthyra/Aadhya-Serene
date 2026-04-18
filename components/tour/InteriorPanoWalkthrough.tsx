@@ -106,7 +106,7 @@ function ArrowButton({
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
-      className="group flex h-12 w-12 items-center justify-center rounded-[1.15rem] border border-white/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(214,224,230,0.08))] text-white shadow-[0_18px_38px_rgba(0,0,0,0.24)] backdrop-blur-2xl transition duration-200 hover:border-white/32 hover:bg-white/[0.16] disabled:cursor-not-allowed disabled:opacity-30"
+      className="group flex h-12 w-12 items-center justify-center rounded-[1.15rem] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.36),rgba(235,240,245,0.14))] text-white shadow-[0_20px_46px_rgba(8,12,20,0.26),inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(255,255,255,0.08)] backdrop-blur-[26px] saturate-[180%] transition duration-200 hover:-translate-y-0.5 hover:border-white/50 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.44),rgba(238,243,247,0.2))] disabled:cursor-not-allowed disabled:opacity-30"
     >
       <Icon className="h-5 w-5 transition duration-200 group-hover:scale-110" />
     </button>
@@ -633,6 +633,8 @@ export default function InteriorPanoWalkthrough({
   }
 
   const backHref = "/apartments";
+  const glassButtonClass =
+    "border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.36),rgba(235,240,245,0.14))] text-white shadow-[0_20px_46px_rgba(8,12,20,0.26),inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(255,255,255,0.08)] backdrop-blur-[26px] saturate-[180%] transition duration-200 hover:-translate-y-0.5 hover:border-white/50 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.44),rgba(238,243,247,0.2))]";
 
   return (
     <section
@@ -648,22 +650,25 @@ export default function InteriorPanoWalkthrough({
         />
       </div>
 
-      <div className="pointer-events-none absolute left-4 top-4 z-30 flex gap-3">
-        <button
-          type="button"
-          onClick={() => router.push(backHref)}
-          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/16 bg-[rgba(12,16,22,0.72)] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/86 backdrop-blur-xl transition hover:border-white/28 hover:bg-white/10"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
+      <div className="pointer-events-none absolute left-4 top-4 z-30">
         <button
           type="button"
           onClick={() => setIsMenuOpen(true)}
-          className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-[1rem] border border-white/16 bg-[rgba(12,16,22,0.72)] text-white backdrop-blur-xl transition hover:border-white/28 hover:bg-white/10"
+          className={`pointer-events-auto flex h-12 w-12 items-center justify-center rounded-[1.1rem] ${glassButtonClass}`}
           aria-label="Open pano list"
         >
           <Menu className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="pointer-events-none absolute right-4 top-4 z-30">
+        <button
+          type="button"
+          onClick={() => router.push(backHref)}
+          className={`pointer-events-auto inline-flex items-center gap-2 rounded-full px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] ${glassButtonClass}`}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
         </button>
       </div>
 
@@ -700,7 +705,7 @@ export default function InteriorPanoWalkthrough({
             className="absolute inset-0 bg-[rgba(10,14,20,0.48)]"
           />
 
-          <div className="relative flex h-full w-full max-w-[26rem] flex-col border-r border-white/14 bg-[linear-gradient(180deg,rgba(12,16,22,0.9),rgba(12,16,22,0.76))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.4)] backdrop-blur-[24px]">
+          <div className="relative flex h-full w-full max-w-[26rem] flex-col border-r border-white/22 bg-[linear-gradient(180deg,rgba(32,40,52,0.52),rgba(14,18,26,0.62))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-[28px] saturate-[180%]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.3em] text-white/50">
@@ -718,7 +723,7 @@ export default function InteriorPanoWalkthrough({
                 type="button"
                 aria-label="Close pano list"
                 onClick={() => setIsMenuOpen(false)}
-                className="flex h-11 w-11 items-center justify-center rounded-[1rem] border border-white/16 bg-white/8 text-white transition hover:border-white/28 hover:bg-white/12"
+                className={`flex h-11 w-11 items-center justify-center rounded-[1rem] ${glassButtonClass}`}
               >
                 <X className="h-4.5 w-4.5" />
               </button>
@@ -738,8 +743,8 @@ export default function InteriorPanoWalkthrough({
                     }}
                     className={`group flex w-full items-center gap-3 rounded-[1.3rem] border p-2.5 text-left transition ${
                       isActive
-                        ? "border-[#7fd9d5]/34 bg-[linear-gradient(135deg,rgba(127,217,213,0.14),rgba(60,90,98,0.12))]"
-                        : "border-white/12 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(166,180,188,0.04))] hover:border-white/20 hover:bg-white/8"
+                        ? "border-white/34 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(226,235,243,0.14))] shadow-[0_18px_42px_rgba(8,12,20,0.18),inset_0_1px_0_rgba(255,255,255,0.3)]"
+                        : "border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(226,235,243,0.08))] hover:-translate-y-0.5 hover:border-white/28 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.24),rgba(230,237,244,0.12))]"
                     }`}
                   >
                     <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-[1rem] border border-white/14 bg-white/6">
@@ -767,7 +772,7 @@ export default function InteriorPanoWalkthrough({
       ) : null}
 
       <div className="pointer-events-auto absolute right-5 top-[56%] z-30 -translate-y-1/2">
-        <div className="flex flex-col items-center gap-3 rounded-[1.8rem] border border-white/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(214,224,230,0.08))] px-4 py-5 shadow-[0_18px_46px_rgba(0,0,0,0.24)] backdrop-blur-2xl">
+        <div className="flex flex-col items-center gap-3 rounded-[1.8rem] border border-white/34 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(230,237,244,0.12))] px-4 py-5 shadow-[0_22px_52px_rgba(8,12,20,0.24),inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(255,255,255,0.08)] backdrop-blur-[28px] saturate-[180%]">
           <ArrowButton
             icon={ArrowUp}
             label="Move forward"

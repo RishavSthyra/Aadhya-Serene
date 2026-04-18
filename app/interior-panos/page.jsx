@@ -21,7 +21,7 @@ export default function InteriorPanosPage() {
       <Suspense
         fallback={
           <div className="flex h-full w-full items-center justify-center bg-black text-white/70">
-            Loading interior panoramas...
+            Loading Interior Walkthough. Please Wait...
           </div>
         }
       >

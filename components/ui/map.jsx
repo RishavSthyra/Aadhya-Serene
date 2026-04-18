@@ -548,7 +548,7 @@ function MarkerTooltip({
 
   return createPortal(<div
     className={cn(
-      "bg-foreground text-background animate-in fade-in-0 zoom-in-95 rounded-md px-2 py-1 text-xs shadow-md",
+      "pointer-events-none animate-in fade-in-0 zoom-in-95 rounded-full border border-white/85 bg-white/92 px-2.5 py-1 text-[11px] font-medium text-slate-900 shadow-[0_12px_30px_rgba(15,23,42,0.16)] backdrop-blur-md",
       className
     )}>
     {children}
@@ -590,7 +590,7 @@ function ControlGroup({
 }) {
   return (
     <div
-      className="border-border bg-background [&>button:not(:last-child)]:border-border flex flex-col overflow-hidden rounded-md border shadow-sm [&>button:not(:last-child)]:border-b">
+      className="flex flex-col overflow-hidden rounded-2xl border border-white/85 bg-white/88 shadow-[0_16px_36px_rgba(15,23,42,0.16)] backdrop-blur-xl [&>button:not(:last-child)]:border-b [&>button:not(:last-child)]:border-slate-200/85">
       {children}
     </div>
   );
@@ -608,7 +608,7 @@ function ControlButton({
       aria-label={label}
       type="button"
       className={cn(
-        "hover:bg-accent dark:hover:bg-accent/40 flex size-8 items-center justify-center transition-colors",
+        "flex size-8 items-center justify-center bg-transparent text-slate-900 transition-colors hover:bg-slate-100/95 active:bg-slate-200/80",
         disabled && "pointer-events-none cursor-not-allowed opacity-50"
       )}
       disabled={disabled}>
@@ -756,8 +756,8 @@ function CompassButton({
         style={{ transformStyle: "preserve-3d" }}>
         <path d="M12 2L16 12H12V2Z" className="fill-red-500" />
         <path d="M12 2L8 12H12V2Z" className="fill-red-300" />
-        <path d="M12 22L16 12H12V22Z" className="fill-muted-foreground/60" />
-        <path d="M12 22L8 12H12V22Z" className="fill-muted-foreground/30" />
+        <path d="M12 22L16 12H12V22Z" className="fill-slate-700" />
+        <path d="M12 22L8 12H12V22Z" className="fill-slate-500" />
       </svg>
     </ControlButton>
   );

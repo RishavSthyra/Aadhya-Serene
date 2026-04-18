@@ -245,3 +245,16 @@ body::before {
     @apply hidden!;
     }
 }
+
+
+.maplibregl-ctrl-attrib.maplibregl-compact {
+    background-color: rgb(255, 255, 255);
+    border-radius: 12px;
+    box-sizing: content-box;
+    color: rgb(0, 0, 0);
+    margin: 10px;
+    min-height: 20px;
+    padding: 2px 24px 2px 0px;
+    position: relative;
+    display: none;
+}

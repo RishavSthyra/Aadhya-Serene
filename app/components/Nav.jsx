@@ -356,23 +356,24 @@ export default function Nav() {
                 <button
                   type="button"
                   onClick={() => router.push("/contact")}
-                  className="inline-flex min-h-[42px] items-center gap-1.5 rounded-full bg-[#17191f] px-4 text-[#f7f3eb] shadow-[0_10px_18px_rgba(10,12,18,0.16)] transition hover:-translate-y-0.5"
+                  className="inline-flex min-h-[42px] cursor-pointer items-center gap-1.5 rounded-full bg-[#17191f] px-4 text-[#f7f3eb] shadow-[0_10px_18px_rgba(10,12,18,0.16)] transition hover:-translate-y-0.5"
                 >
                   <Phone className="h-3 w-3" />
                   <span className="text-[12px] font-medium uppercase tracking-[0.12em]">
                     Contact Us
                   </span>
                 </button>
+                <Link href={'https://aadhya-serene-assets-v2.s3.ap-south-1.amazonaws.com/brochure/Aadhya_Serene_brochure.pdf'} target="_blank">
                 <button
                   type="button"
-                  onClick={() => router.push("/contact")}
-                  className="inline-flex min-h-[42px] items-center gap-1.5 rounded-full border border-black/7 bg-white/74 px-4 text-[#20232b] transition hover:bg-white"
+                  className="inline-flex cursor-pointer min-h-[42px] items-center gap-1.5 rounded-full border border-black/7 bg-white/74 px-4 text-[#20232b] transition hover:bg-white"
                 >
                   <FileText className="h-3 w-3" />
                   <span className="text-[12px] font-medium uppercase tracking-[0.12em]">
                     Brochure
                   </span>
                 </button>
+                </Link>
               </div>
             </div>
           </div>
@@ -495,8 +496,8 @@ export default function Nav() {
         </div>
       </header>
 
-      <div className="fixed bottom-[max(12px,env(safe-area-inset-bottom,0px)+8px)] left-1/2 z-[160] w-[min(96vw,720px)] -translate-x-1/2 rounded-full border border-black/6 bg-[#f7f3eb]/92 px-3 py-2.5 shadow-[0_16px_38px_rgba(10,12,18,0.18)] backdrop-blur-2xl xl:hidden md:px-5 md:py-3">
-        <nav className="flex items-center justify-between gap-0.5">
+      <div className="fixed bottom-[max(10px,env(safe-area-inset-bottom,0px)+6px)] left-1/2 z-[160] w-[min(95vw,680px)] -translate-x-1/2 rounded-full border border-black/6 bg-[#f7f3eb]/92 px-2 py-1.5 shadow-[0_14px_32px_rgba(10,12,18,0.16)] backdrop-blur-2xl xl:hidden md:px-4 md:py-2">
+        <nav className="flex items-center justify-between gap-0">
           {NAV_LINKS.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
 
@@ -505,12 +506,12 @@ export default function Nav() {
                 key={href}
                 type="button"
                 onClick={() => handleRouteNavigation(href)}
-                className={`flex min-h-[48px] min-w-0 flex-1 flex-col items-center justify-center gap-1 px-2 text-center transition md:min-h-[56px] md:gap-1.5 ${
+                className={`flex min-h-[42px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1.5 text-center transition md:min-h-[46px] md:gap-1 ${
                   active ? "text-[#17191f]" : "text-[#5f636c]"
                 }`}
               >
-                {Icon ? <Icon className="h-4 w-4 md:h-[18px] md:w-[18px]" /> : null}
-                <span className="truncate text-[8px] font-semibold uppercase tracking-[0.12em] md:text-[9px]">
+                {Icon ? <Icon className="h-[15px] w-[15px] md:h-4 md:w-4" /> : null}
+                <span className="truncate text-[7px] font-semibold uppercase tracking-[0.11em] md:text-[8px]">
                   {label}
                 </span>
               </button>

@@ -11,12 +11,12 @@ function FilterChip({ active, label, onClick, compactMode = false }) {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border font-semibold uppercase transition-all duration-300 ${
-        compactMode ? "px-2.5 py-1 text-[7px] tracking-[0.12em]" : "px-3 py-1.5 text-[8px] tracking-[0.14em]"
+      className={`rounded-full border font-medium uppercase shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-300 ${
+        compactMode ? "px-2 py-1 text-[6.5px] tracking-[0.06em]" : "px-2.5 py-1.5 text-[7px] tracking-[0.08em]"
       } ${
         active
-          ? "border-[#cfd7e5]/50 bg-[#cfd7e5]/16 text-white shadow-[0_8px_18px_rgba(10,14,22,0.2)]"
-          : "border-white/12 bg-white/[0.04] text-white/70 hover:border-white/22 hover:bg-white/[0.08]"
+          ? "border-white/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.08))] text-white shadow-[0_10px_24px_rgba(10,14,22,0.18)]"
+          : "border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] text-white/70 hover:border-white/22 hover:bg-white/[0.08]"
       }`}
     >
       {label}
@@ -29,30 +29,30 @@ function BooleanPill({ active, label, onClick, compactMode = false }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center rounded-full border transition-all duration-300 ${
+      className={`flex items-center rounded-full border shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-300 ${
         compactMode ? "gap-2 px-2.5 py-1" : "gap-2.5 px-3 py-1.5"
       } ${
         active
-          ? "border-[#cfd7e5]/40 bg-[#cfd7e5]/12 shadow-[0_8px_16px_rgba(10,14,22,0.18)]"
-          : "border-white/12 bg-white/[0.04] hover:border-white/22 hover:bg-white/[0.08]"
+          ? "border-white/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.07))] shadow-[0_8px_16px_rgba(10,14,22,0.18)]"
+          : "border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/22 hover:bg-white/[0.08]"
       }`}
     >
-      <span className={`font-semibold uppercase text-white/74 ${compactMode ? "text-[7px] tracking-[0.12em]" : "text-[8px] tracking-[0.14em]"}`}>
+      <span className={`font-medium uppercase text-white/74 ${compactMode ? "text-[6.5px] tracking-[0.06em]" : "text-[7px] tracking-[0.08em]"}`}>
         {label}
       </span>
       <span
         className={`relative inline-flex items-center rounded-full border transition-all duration-300 ${
           compactMode ? "h-4 w-7" : "h-4.5 w-8"
         } ${
-          active ? "border-white/22 bg-white/12" : "border-white/10 bg-white/6"
+          active ? "border-white/18 bg-white/12" : "border-white/10 bg-white/6"
         }`}
       >
         <span
           className={`absolute h-3.5 w-3.5 rounded-full transition-transform duration-300 ${
             active
               ? compactMode
-                ? "translate-x-3 bg-[#dde5f2]"
-                : "translate-x-4 bg-[#dde5f2]"
+                ? "translate-x-3 bg-white/88"
+                : "translate-x-4 bg-white/88"
               : "translate-x-0.5 bg-white/78"
           }`}
         />
@@ -120,9 +120,9 @@ export default function Filters({
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-3 py-1.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-white/70 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white/88"
+              className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] px-3 py-1.5 text-[14px] font-medium uppercase tracking-[0.08em] text-white/70 shadow-[0_10px_24px_rgba(8,12,18,0.14),inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:border-white/24 hover:bg-white/[0.08] hover:text-white/88"
             >
-              <RotateCcw size={11} />
+              <RotateCcw size={14} />
               Reset
             </button>
           ) : null}
@@ -130,7 +130,7 @@ export default function Filters({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-white/[0.04] text-white/64 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white/84"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] text-white/64 shadow-[0_10px_24px_rgba(8,12,18,0.14),inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:border-white/24 hover:bg-white/[0.08] hover:text-white/84"
               aria-label="Close panel"
             >
               <X size={13} />
@@ -211,15 +211,15 @@ export default function Filters({
         <FilterGroup label="Area" compactMode={compactMode}>
           <div className={`flex items-center justify-between gap-3 ${compactMode ? "mb-2" : "mb-2.5"}`}>
             <span className={compactMode ? "text-[8px] text-white/40" : "text-[9px] text-white/40"}>800 sqft</span>
-            <span className={`border border-white/10 bg-white/[0.04] font-semibold uppercase text-white/66 ${compactMode ? "px-2.5 py-1 text-[6.5px] tracking-[0.12em]" : "px-3 py-1 text-[7px] tracking-[0.14em]"}`}>
+            <span className={`rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] font-semibold uppercase text-white/66 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ${compactMode ? "px-2.5 py-1 text-[6.5px] tracking-[0.12em]" : "px-3 py-1 text-[7px] tracking-[0.14em]"}`}>
               {areaRange[0]} to {areaRange[1]} sqft
             </span>
             <span className={compactMode ? "text-[8px] text-white/40" : "text-[9px] text-white/40"}>1600 sqft</span>
           </div>
 
-          <div className="relative h-1 bg-white/10">
+          <div className="relative h-1 rounded-full bg-white/10">
             <div
-              className="absolute h-1 bg-[linear-gradient(90deg,rgba(194,206,225,0.95)_0%,rgba(225,232,243,0.95)_100%)]"
+              className="absolute h-1 rounded-full bg-[linear-gradient(90deg,rgba(210,218,230,0.95)_0%,rgba(240,244,248,0.95)_100%)]"
               style={{
                 left: `${minPercent}%`,
                 width: `${Math.max(maxPercent - minPercent, 2)}%`,
@@ -237,7 +237,7 @@ export default function Filters({
                   areaRange[1],
                 ])
               }
-              className="absolute top-1/2 h-7 w-full -translate-y-1/2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-[#cad4e3] [&::-webkit-slider-thumb]:bg-[#eef2f7] [&::-webkit-slider-thumb]:cursor-pointer"
+              className="absolute top-1/2 h-7 w-full -translate-y-1/2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-white/24 [&::-webkit-slider-thumb]:bg-[#eef2f7] [&::-webkit-slider-thumb]:shadow-[0_8px_18px_rgba(8,12,18,0.22)] [&::-webkit-slider-thumb]:cursor-pointer"
             />
             <input
               type="range"
@@ -251,7 +251,7 @@ export default function Filters({
                   Math.max(Number(event.target.value), areaRange[0] + 10),
                 ])
               }
-              className="absolute top-1/2 h-7 w-full -translate-y-1/2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-[#cad4e3] [&::-webkit-slider-thumb]:bg-[#eef2f7] [&::-webkit-slider-thumb]:cursor-pointer"
+              className="absolute top-1/2 h-7 w-full -translate-y-1/2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-white/24 [&::-webkit-slider-thumb]:bg-[#eef2f7] [&::-webkit-slider-thumb]:shadow-[0_8px_18px_rgba(8,12,18,0.22)] [&::-webkit-slider-thumb]:cursor-pointer"
             />
           </div>
         </FilterGroup>
