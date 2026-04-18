@@ -511,6 +511,7 @@ export default function FlatDetailPage() {
                     muted={muted}
                     playsInline
                     preload="auto"
+                    fetchPriority="high"
                     autoPlay
                     controls={false}
                     disablePictureInPicture
@@ -534,6 +535,7 @@ export default function FlatDetailPage() {
                         muted={muted}
                         playsInline
                         preload="auto"
+                        fetchPriority="low"
                         loop
                         controls={false}
                         disablePictureInPicture
@@ -554,6 +556,7 @@ export default function FlatDetailPage() {
                         muted={muted}
                         playsInline
                         preload="metadata"
+                        fetchPriority="low"
                         controls={false}
                         disablePictureInPicture
                         controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
@@ -567,14 +570,6 @@ export default function FlatDetailPage() {
                 ) : null}
             </div>
 
-            <div
-                className={isTabletOrBelow ? 'absolute inset-x-0 top-0 z-[1] bg-[radial-gradient(circle_at_20%_18%,rgba(201,214,236,0.1),transparent_34%),linear-gradient(90deg,rgba(7,9,14,0.8)_0%,rgba(7,9,14,0.34)_42%,rgba(7,9,14,0.68)_100%)]' : 'absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(201,214,236,0.1),transparent_34%),linear-gradient(90deg,rgba(7,9,14,0.8)_0%,rgba(7,9,14,0.34)_42%,rgba(7,9,14,0.68)_100%)]'}
-                style={isTabletOrBelow ? { height: compactMediaHeight } : undefined}
-            />
-            <div
-                className={isTabletOrBelow ? 'absolute inset-x-0 top-0 z-[1] bg-[linear-gradient(180deg,rgba(7,9,14,0.52)_0%,rgba(7,9,14,0.12)_52%,rgba(7,9,14,0.36)_100%)]' : 'absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,14,0.72)_0%,rgba(7,9,14,0.18)_28%,rgba(7,9,14,0.62)_100%)]'}
-                style={isTabletOrBelow ? { height: compactMediaHeight } : undefined}
-            />
             {isTabletOrBelow ? (
                 <div
                     className="absolute inset-x-0 bottom-0 z-[1] bg-[linear-gradient(180deg,rgba(8,12,18,0.86),rgba(7,10,16,0.96))]"

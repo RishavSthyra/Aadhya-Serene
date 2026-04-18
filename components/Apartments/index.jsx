@@ -12,7 +12,11 @@ import { useApartmentsData } from "../../hooks/useApartmentsData";
 import Filters from "./Filters";
 import ApartmentList from "./ApartmentList";
 import { preloadInteriorStartPano } from "../../lib/interior-panos";
-import { preloadFlatEntryVideo } from "../../lib/flats";
+import {
+  cancelIdleFlatVideoWarmup,
+  preloadFlatEntryVideo,
+  scheduleIdleFlatVideoWarmup,
+} from "../../lib/flats";
 import { isBackgroundTransitionActive } from "../../lib/background-transition";
 import useResponsiveViewport from "../../hooks/useResponsiveViewport";
 
@@ -109,6 +113,26 @@ export default function Apartments() {
   useEffect(() => {
     setIsPanelOpen((current) => (isCompactLayout ? current : true));
   }, [isCompactLayout]);
+
+  const prioritizedWarmupFlatIds = useMemo(
+    () => data.slice(0, 18).map((flat) => flat.id),
+    [data],
+  );
+
+  useEffect(() => {
+    if (pathname !== "/apartments" || !allData?.length) {
+      return undefined;
+    }
+
+    const cancelWarmup = scheduleIdleFlatVideoWarmup({
+      prioritizeFlatIds: prioritizedWarmupFlatIds,
+    });
+
+    return () => {
+      cancelWarmup?.();
+      cancelIdleFlatVideoWarmup();
+    };
+  }, [allData?.length, pathname, prioritizedWarmupFlatIds]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
