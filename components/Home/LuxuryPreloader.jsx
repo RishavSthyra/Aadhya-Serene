@@ -35,7 +35,6 @@ export default function LuxuryPreloader({ onCycleComplete }) {
     <div className={styles.luxuryLoader} aria-label="Loading Aadhya Serene">
       <DotLottieReact
         src={PRELOADER_SRC}
-        loop
         autoplay
         className={styles.luxuryLoaderAnimation}
         dotLottieRefCallback={setDotLottie}

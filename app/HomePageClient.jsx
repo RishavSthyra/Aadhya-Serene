@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import useResponsiveViewport from "@/hooks/useResponsiveViewport";
+import {
+  markHomeRefreshLoaderSeen,
+  setHomePreloaderComplete,
+  shouldShowHomeRefreshLoader,
+} from "@/lib/home-loader";
 import styles from "./home.module.css";
 
 const LuxuryPreloader = dynamic(() => import("@/components/Home/LuxuryPreloader"), {
@@ -31,15 +36,6 @@ const heroRevealVariants = {
   hidden: { opacity: 0, y: 22 },
   visible: { opacity: 1, y: 0 },
 };
-const HOME_REFRESH_LOADER_FLAG = "__aadhyaHomeRefreshLoaderShownInDocument";
-
-function shouldShowHomeRefreshLoader() {
-  if (typeof window === "undefined") {
-    return true;
-  }
-
-  return !window[HOME_REFRESH_LOADER_FLAG];
-}
 
 function AnimatedHeroTitle({ isActive }) {
   return (
@@ -83,7 +79,6 @@ export default function HomePageClient() {
   const isNavigatingRef = useRef(false);
   const [showLoader, setShowLoader] = useState(() => shouldShowHomeRefreshLoader());
   const [loaderCycleComplete, setLoaderCycleComplete] = useState(() => !shouldShowHomeRefreshLoader());
-  const [loaderBackgroundReady, setLoaderBackgroundReady] = useState(() => !shouldShowHomeRefreshLoader());
   const [heroAnimationActive, setHeroAnimationActive] = useState(false);
   const { isTabletOrBelow } = useResponsiveViewport();
 
@@ -92,78 +87,38 @@ export default function HomePageClient() {
       return undefined;
     }
 
-    const shouldUseRefreshLoader = !window[HOME_REFRESH_LOADER_FLAG];
-    window[HOME_REFRESH_LOADER_FLAG] = true;
+    const shouldUseRefreshLoader = shouldShowHomeRefreshLoader();
+    markHomeRefreshLoaderSeen();
 
     if (!shouldUseRefreshLoader) {
+      setHomePreloaderComplete(true);
       setLoaderCycleComplete(true);
-      setLoaderBackgroundReady(true);
       setShowLoader(false);
       return undefined;
     }
 
-    let rafId = 0;
     let safetyTimeoutId = 0;
-    let trackedVideo = null;
+    setHomePreloaderComplete(false);
 
-    const markBackgroundReady = () => {
-      setLoaderBackgroundReady(true);
-    };
-
-    const handleBackgroundStarted = () => {
-      markBackgroundReady();
-    };
-
-    const attachVideoListener = () => {
-      const transitionVideo = document.getElementById("bg-video-transition");
-
-      if (!transitionVideo) {
-        rafId = window.requestAnimationFrame(attachVideoListener);
-        return;
-      }
-
-      trackedVideo = transitionVideo;
-
-      if (!transitionVideo.paused && transitionVideo.readyState >= 2) {
-        markBackgroundReady();
-        return;
-      }
-
-      transitionVideo.addEventListener("playing", markBackgroundReady, { once: true });
-    };
-
-    window.addEventListener("bg-transition-started", handleBackgroundStarted);
-    attachVideoListener();
-
-    // Safety fallback so the page never gets stuck if media startup fails.
+    // Safety fallback so the home screen never gets stuck behind the loader.
     safetyTimeoutId = window.setTimeout(() => {
       setLoaderCycleComplete(true);
-      setLoaderBackgroundReady(true);
+      setHomePreloaderComplete(true);
     }, 12000);
 
     return () => {
-      window.removeEventListener("bg-transition-started", handleBackgroundStarted);
       window.clearTimeout(safetyTimeoutId);
-
-      if (rafId) {
-        window.cancelAnimationFrame(rafId);
-      }
-
-      if (trackedVideo) {
-        trackedVideo.removeEventListener("playing", markBackgroundReady);
-      }
     };
   }, []);
 
   useEffect(() => {
-    if (!showLoader) {
+    if (!showLoader || !loaderCycleComplete) {
       return;
     }
 
-    if (loaderCycleComplete && loaderBackgroundReady) {
-      setShowLoader(false);
-    }
-  }, [loaderBackgroundReady, loaderCycleComplete, showLoader]);
+    setHomePreloaderComplete(true);
+    setShowLoader(false);
+  }, [loaderCycleComplete, showLoader]);
 
   useEffect(() => {
     if (showLoader) {

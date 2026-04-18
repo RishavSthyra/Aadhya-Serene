@@ -2,6 +2,10 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { setBackgroundTransitionState } from '@/lib/background-transition';
+import {
+    HOME_PRELOADER_COMPLETE_EVENT,
+    isHomePreloaderComplete,
+} from '@/lib/home-loader';
 import useResponsiveViewport from '@/hooks/useResponsiveViewport';
 import styles from './background-video.module.css';
 
@@ -302,12 +306,11 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
         video.muted = true;
         video.defaultMuted = true;
-        video.autoplay = true;
+        video.autoplay = false;
         video.playsInline = true;
         video.controls = false;
         video.disablePictureInPicture = true;
         video.setAttribute('muted', '');
-        video.setAttribute('autoplay', '');
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', 'true');
         video.setAttribute('disablepictureinpicture', '');
@@ -442,6 +445,9 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         let secondLoopPrepareFrame = null;
         let deferredLoopPreloadCleanup = null;
         let deferredTransitionStartCleanup = null;
+        let removeHomePreloaderListener = null;
+        let transitionReady = false;
+        let homePreloaderReleased = layout !== 'home' || isHomePreloaderComplete();
 
         const prepareLoopVideo = () => {
             if (cancelled || loopPrepared) return;
@@ -504,6 +510,13 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             }
         };
 
+        const startTransitionWhenAllowed = () => {
+            if (cancelled || !transitionReady) return;
+            if (!homePreloaderReleased) return;
+
+            startTransitionWhenBuffered();
+        };
+
         const startTransitionWhenBuffered = () => {
             if (!shouldWaitForHlsStartupBuffer) {
                 startTransition();
@@ -555,9 +568,22 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             return undefined;
         }
 
+        if (!homePreloaderReleased) {
+            const handleHomePreloaderComplete = () => {
+                homePreloaderReleased = true;
+                startTransitionWhenAllowed();
+            };
+
+            window.addEventListener(HOME_PRELOADER_COMPLETE_EVENT, handleHomePreloaderComplete);
+            removeHomePreloaderListener = () => {
+                window.removeEventListener(HOME_PRELOADER_COMPLETE_EVENT, handleHomePreloaderComplete);
+            };
+        }
+
         const handleTransitionReady = () => {
             transitionVideo.removeEventListener(transitionReadyEvent, handleTransitionReady);
-            startTransitionWhenBuffered();
+            transitionReady = true;
+            startTransitionWhenAllowed();
         };
 
         const handleTransitionError = () => {
@@ -578,7 +604,8 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         transitionVideo.addEventListener('error', handleTransitionError);
 
         if (transitionVideo.readyState >= transitionReadyStateThreshold) {
-            startTransitionWhenBuffered();
+            transitionReady = true;
+            startTransitionWhenAllowed();
         }
 
         return () => {
@@ -591,6 +618,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             }
             deferredLoopPreloadCleanup?.();
             deferredTransitionStartCleanup?.();
+            removeHomePreloaderListener?.();
             transitionVideo.removeEventListener(transitionReadyEvent, handleTransitionReady);
             transitionVideo.removeEventListener('error', handleTransitionError);
         };
@@ -610,6 +638,11 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         const transitionVideo = transitionRef.current;
         const loopVideo = loopRef.current;
         if (!transitionVideo || !loopVideo) return;
+
+        if (layout === 'home' && !showLoop && !isHomePreloaderComplete()) {
+            transitionVideo.pause();
+            return;
+        }
 
         if (playing) {
             const activeVideo = showLoop ? loopVideo : transitionVideo;
@@ -748,7 +781,6 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 }}
                 muted
                 playsInline
-                autoPlay
                 controls={false}
                 disablePictureInPicture
                 controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
@@ -766,7 +798,6 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 }}
                 muted
                 playsInline
-                autoPlay
                 loop
                 controls={false}
                 disablePictureInPicture
