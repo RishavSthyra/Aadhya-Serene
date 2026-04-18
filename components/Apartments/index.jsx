@@ -55,7 +55,7 @@ export default function Apartments() {
   const hasHandledInitialPathRef = useRef(false);
   const isCompactLayout = isTabletOrBelow;
   const compactBottomOffset = "calc(86px + env(safe-area-inset-bottom, 0px))";
-  const compactSheetOverlap = 0;
+  const compactSheetOverlap = isCompactLayout ? 1 : 0;
   const compactMediaHeight = isTabletOrBelow
     ? `${Math.min(
       Math.max(Math.round(width / COMPACT_VIEWER_ASPECT_RATIO), isTablet ? 420 : 220),
@@ -314,7 +314,7 @@ export default function Apartments() {
           onClick={() => setIsPanelOpen(false)}
           className="fixed inset-0 z-[109] bg-[radial-gradient(circle_at_top,rgba(126,146,176,0.16),rgba(6,10,18,0.26))] backdrop-blur-[3px] xl:hidden"
           style={{
-            top: compactMediaHeight,
+            top: `calc(${compactMediaHeight} - ${compactSheetOverlap}px)`,
           }}
         />
       ) : null}
@@ -322,7 +322,7 @@ export default function Apartments() {
       <div
         className="fixed inset-x-0 bottom-0 z-[120] xl:hidden"
         style={{
-          top: compactMediaHeight,
+          top: `calc(${compactMediaHeight} - ${compactSheetOverlap}px)`,
           bottom: compactBottomOffset,
           opacity: 1,
           pointerEvents: isFlatRoutePreparing ? "none" : "auto",

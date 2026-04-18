@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Inter } from 'next/font/google';
-import { ArrowUpRight, CheckCircle2, ChevronLeft, MapPin, Ruler, X } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, CheckCircle2, MapPin, Ruler } from 'lucide-react';
 import useResponsiveViewport from '@/hooks/useResponsiveViewport';
 import { isBackgroundTransitionActive } from '@/lib/background-transition';
 
@@ -330,11 +330,11 @@ function AboutMainCardContent({ navigateTo }) {
 export default function About() {
   const router = useRouter();
   const isNavigatingRef = useRef(false);
-  const [isMobileAboutOpen, setIsMobileAboutOpen] = React.useState(true);
+  const mobileContentRef = useRef(null);
   const [isIntroVideoPlaying, setIsIntroVideoPlaying] = React.useState(() =>
     isBackgroundTransitionActive('about'),
   );
-  const { isTabletOrBelow, isMobile } = useResponsiveViewport();
+  const { isTabletOrBelow } = useResponsiveViewport();
 
   const navigateTo = useCallback(
     (path) => {
@@ -359,14 +359,18 @@ export default function About() {
         document.body.style.transition = 'opacity 0.6s ease';
       }
 
-      window.setTimeout(() => router.push(path), 600);
+      const routePushDelay = path === '/apartments' && isTabletOrBelow ? 0 : 600;
+      window.setTimeout(() => router.push(path), routePushDelay);
     },
-    [router],
+    [isTabletOrBelow, router],
   );
 
-  useEffect(() => {
-    setIsMobileAboutOpen((current) => (isTabletOrBelow ? current : true));
-  }, [isTabletOrBelow]);
+  const scrollToMobileContent = useCallback(() => {
+    mobileContentRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }, []);
 
   useEffect(() => {
     const handleStarted = () => {
@@ -423,85 +427,89 @@ export default function About() {
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(6,8,12,0.04)_0%,rgba(6,8,12,0.08)_42%,rgba(6,8,12,0.72)_100%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_82%,rgba(218,189,133,0.16),transparent_30%),radial-gradient(circle_at_70%_78%,rgba(255,255,255,0.07),transparent_24%)]" />
 
-      <section className="relative z-[1] flex min-h-full items-start px-4 pb-36 pt-[4.5rem] md:px-8 md:pb-36 md:pt-[5.5rem] lg:items-end lg:px-12 lg:pb-16 lg:pt-28 xl:px-16">
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42vh] bg-[linear-gradient(180deg,transparent_0%,rgba(7,8,12,0.1)_16%,rgba(7,8,12,0.94)_100%)]" />
+      {!isTabletOrBelow ? (
+        <section className="relative z-[1] flex min-h-full items-start px-4 pb-36 pt-[4.5rem] md:px-8 md:pb-36 md:pt-[5.5rem] lg:items-end lg:px-12 lg:pb-16 lg:pt-28 xl:px-16">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42vh] bg-[linear-gradient(180deg,transparent_0%,rgba(7,8,12,0.1)_16%,rgba(7,8,12,0.94)_100%)]" />
 
-        <div className="relative z-[1] flex w-full flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
-          <motion.div
-            initial={{ opacity: 0, y: 22 }}
-            animate={{
-              opacity: isIntroVideoPlaying ? 0 : 1,
-              y: isIntroVideoPlaying ? 28 : 0,
-            }}
-            transition={{ duration: 0.52, ease: [0.16, 1, 0.3, 1] }}
-            className={`w-full max-w-[540px] overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-6 py-7 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] md:px-7 md:py-8 ${isTabletOrBelow ? 'hidden' : ''}`}
-            style={{
-              pointerEvents: isIntroVideoPlaying ? 'none' : 'auto',
-            }}
-          >
-            <AboutMainCardContent navigateTo={navigateTo} />
-          </motion.div>
-
-          <motion.aside
-            initial={{ opacity: 0, y: 24 }}
-            animate={{
-              opacity: isIntroVideoPlaying ? 0 : 1,
-              y: isIntroVideoPlaying ? 28 : 0,
-            }}
-            transition={{ duration: 0.52, delay: isIntroVideoPlaying ? 0 : 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="hidden w-full max-w-[350px] self-start overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-5 py-6 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] xl:ml-auto xl:block xl:self-end md:px-6 md:py-7"
-            style={{
-              pointerEvents: isIntroVideoPlaying ? 'none' : 'auto',
-            }}
-          >
-            <ProjectBriefContent />
-          </motion.aside>
-        </div>
-      </section>
-
-      {isTabletOrBelow ? (
-        <>
-          <motion.aside
-            initial={false}
-            animate={{
-              x: isMobileAboutOpen && !isIntroVideoPlaying ? 0 : 'calc(100% + 1.5rem)',
-              opacity: isIntroVideoPlaying ? 0 : 1,
-            }}
-            transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed right-3 top-[max(14px,env(safe-area-inset-top,0px)+10px)] z-[30] w-[min(620px,calc(100vw-24px))] overflow-hidden rounded-[28px] border border-white/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-4 py-5 shadow-[0_24px_60px_rgba(6,10,18,0.22),inset_0_1px_0_rgba(255,255,255,0.24)] backdrop-blur-[30px] md:right-4 md:w-[min(560px,calc(100vw-32px))] md:px-5"
-            style={{
-              pointerEvents: isMobileAboutOpen && !isIntroVideoPlaying ? 'auto' : 'none',
-              maxHeight: isMobile
-                ? 'min(760px, calc(100dvh - max(120px, env(safe-area-inset-bottom, 0px) + 106px)))'
-                : 'min(860px, calc(100dvh - max(126px, env(safe-area-inset-bottom, 0px) + 112px)))',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setIsMobileAboutOpen(false)}
-              aria-label="Hide about panel"
-              className="absolute right-4 top-4 z-[1] inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.26)_0%,rgba(255,255,255,0.12)_100%)] text-white shadow-[0_14px_34px_rgba(6,10,18,0.18)] backdrop-blur-[22px] transition duration-300 hover:bg-white/20"
+          <div className="relative z-[1] flex w-full flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
+            <motion.div
+              initial={{ opacity: 0, y: 22 }}
+              animate={{
+                opacity: isIntroVideoPlaying ? 0 : 1,
+                y: isIntroVideoPlaying ? 28 : 0,
+              }}
+              transition={{ duration: 0.52, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-[540px] overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-6 py-7 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] md:px-7 md:py-8"
+              style={{
+                pointerEvents: isIntroVideoPlaying ? 'none' : 'auto',
+              }}
             >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="max-h-full overflow-y-auto pr-1 pt-1 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/16">
               <AboutMainCardContent navigateTo={navigateTo} />
-            </div>
-          </motion.aside>
+            </motion.div>
 
-          {!isIntroVideoPlaying && !isMobileAboutOpen ? (
-            <button
-              type="button"
-              onClick={() => setIsMobileAboutOpen((current) => !current)}
-              aria-label="Show about panel"
-              className="fixed right-4 top-[max(14px,env(safe-area-inset-top,0px)+10px)] z-[31] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.26)_0%,rgba(255,255,255,0.12)_100%)] text-white shadow-[0_18px_40px_rgba(6,10,18,0.2)] backdrop-blur-[24px] transition duration-300 hover:bg-white/20"
+            <motion.aside
+              initial={{ opacity: 0, y: 24 }}
+              animate={{
+                opacity: isIntroVideoPlaying ? 0 : 1,
+                y: isIntroVideoPlaying ? 28 : 0,
+              }}
+              transition={{ duration: 0.52, delay: isIntroVideoPlaying ? 0 : 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="hidden w-full max-w-[350px] self-start overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-5 py-6 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] xl:ml-auto xl:block xl:self-end md:px-6 md:py-7"
+              style={{
+                pointerEvents: isIntroVideoPlaying ? 'none' : 'auto',
+              }}
             >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-          ) : null}
+              <ProjectBriefContent />
+            </motion.aside>
+          </div>
+        </section>
+      ) : (
+        <>
+          <section className="relative z-[1] min-h-[100dvh] px-4 pb-14 pt-[4.5rem] md:px-8 md:pt-[5.5rem]">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[34vh] bg-[linear-gradient(180deg,transparent_0%,rgba(7,8,12,0.12)_24%,rgba(7,8,12,0.9)_100%)]" />
+
+            {!isIntroVideoPlaying ? (
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute inset-x-0 bottom-[max(22px,env(safe-area-inset-bottom,0px)+14px)] z-[1] flex justify-center"
+              >
+                <button
+                  type="button"
+                  onClick={scrollToMobileContent}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/16 bg-black/18 px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.24em] text-white/68 backdrop-blur-[14px]"
+                >
+                  <span>Scroll Down</span>
+                  <ArrowDown className="h-3.5 w-3.5" />
+                </button>
+              </motion.div>
+            ) : null}
+          </section>
+
+          <section ref={mobileContentRef} className="relative z-[1] px-4 pb-28 md:px-8">
+            <div className="mx-auto flex w-full max-w-[780px] flex-col gap-4 md:gap-5">
+              <motion.article
+                initial={{ opacity: 0, y: 28 }}
+                animate={{ opacity: isIntroVideoPlaying ? 0 : 1, y: isIntroVideoPlaying ? 32 : 0 }}
+                transition={{ duration: 0.56, ease: [0.16, 1, 0.3, 1] }}
+                className="overflow-hidden rounded-[28px] border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.07)_100%)] px-5 py-6 shadow-[0_24px_60px_rgba(6,10,18,0.22),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-[28px] md:px-7 md:py-8"
+              >
+                <AboutMainCardContent navigateTo={navigateTo} />
+              </motion.article>
+
+              <motion.aside
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: isIntroVideoPlaying ? 0 : 1, y: isIntroVideoPlaying ? 34 : 0 }}
+                transition={{ duration: 0.58, delay: isIntroVideoPlaying ? 0 : 0.08, ease: [0.16, 1, 0.3, 1] }}
+                className="overflow-hidden rounded-[28px] border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.07)_100%)] px-5 py-6 shadow-[0_24px_60px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-[28px] md:px-7 md:py-8"
+              >
+                <ProjectBriefContent />
+              </motion.aside>
+            </div>
+          </section>
         </>
-      ) : null}
+      )}
     </main>
   );
 }

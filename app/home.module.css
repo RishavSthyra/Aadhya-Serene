@@ -334,21 +334,216 @@
     position: fixed;
     inset: 0;
     z-index: 9999;
-    display: block;
+    display: grid;
+    place-items: center;
     overflow: hidden;
     background: #000;
     pointer-events: none;
 }
 
-.luxuryLoaderAnimation {
+.luxuryLoaderBackdrop {
+    position: absolute;
+    inset: 0;
+}
+
+.luxuryLoaderBackdrop {
+    background:
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.08), transparent 22%),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.04), transparent 38%);
+    opacity: 1;
+}
+
+.luxuryLoaderInner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    padding: 24px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+}
+
+.luxuryLoaderKicker {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 18px;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+}
+
+.luxuryLoaderWordmarkWrap {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.luxuryLoaderWordmarkBase,
+.luxuryLoaderWordmarkFill,
+.luxuryLoaderWordmarkGlow {
+    grid-area: 1 / 1;
+    width: 100%;
+    max-width: min(100%, 1160px);
+    margin: 0;
     display: block;
-    width: 100vw;
-    height: 100dvh;
-    background: #000;
+    padding: 0;
+    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    font-size: clamp(3rem, 7vw, 6.6rem);
+    font-style: normal;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.luxuryLoaderWordmarkBase {
+    color: rgba(255, 255, 255, 0.16);
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.2);
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.luxuryLoaderWordmarkFill,
+.luxuryLoaderWordmarkGlow {
+    color: transparent;
+    background:
+        linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.7) 36%,
+            rgba(255, 255, 255, 1) 50%,
+            rgba(255, 255, 255, 0.72) 64%,
+            rgba(255, 255, 255, 0.08) 100%
+        );
+    background-size: 160% 100%;
+    background-position: 50% 50%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    clip-path: inset(0 calc(100% - var(--loader-progress, 0%)) 0 0);
+    will-change: clip-path;
+}
+
+.luxuryLoaderWordmarkGlow {
+    filter: blur(10px);
+    opacity: 0.26;
+    animation: luxuryLoaderWordmarkPulse 2.8s ease-in-out infinite;
+}
+
+.luxuryLoaderProgressMeta {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: min(100%, 360px);
+    margin: 30px auto 12px;
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+}
+
+.luxuryLoaderProgressTrack {
+    position: relative;
+    width: min(100%, 360px);
+    z-index: 1;
+    height: 2px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.luxuryLoaderProgressBar {
+    width: var(--loader-progress, 0%);
+    height: 100%;
+    background: #fff;
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.45);
+    transition: width 0.08s linear;
+}
+
+@keyframes luxuryLoaderBackdropDrift {
+    0% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    50% {
+        transform: translate3d(0, 0, 0) scale(1.02);
+    }
+
+    100% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+}
+
+@keyframes luxuryLoaderWordmarkPulse {
+    0% {
+        opacity: 0.16;
+    }
+
+    50% {
+        opacity: 0.32;
+    }
+
+    100% {
+        opacity: 0.16;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .luxuryLoaderAnimation {
-        transform: translateZ(0);
+    .luxuryLoaderBackdrop,
+    .luxuryLoaderWordmarkGlow,
+    .luxuryLoaderWordmarkFill,
+    .luxuryLoaderProgressBar {
+        animation: none;
+        transition: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .luxuryLoaderInner {
+        padding: 22px;
+    }
+
+    .luxuryLoaderWordmarkBase,
+    .luxuryLoaderWordmarkFill,
+    .luxuryLoaderWordmarkGlow {
+        font-size: clamp(2.8rem, 8vw, 5.6rem);
+        letter-spacing: 0.12em;
+    }
+}
+
+@media (max-width: 640px) {
+    .luxuryLoaderKicker {
+        margin-bottom: 14px;
+        font-size: 9px;
+        letter-spacing: 0.24em;
+    }
+
+    .luxuryLoaderWordmarkBase,
+    .luxuryLoaderWordmarkFill,
+    .luxuryLoaderWordmarkGlow {
+        font-size: clamp(2.15rem, 12vw, 3.5rem);
+        letter-spacing: 0.08em;
+        white-space: normal;
+    }
+
+    .luxuryLoaderProgressMeta,
+    .luxuryLoaderProgressTrack {
+        width: min(100%, 290px);
+    }
+
+    .luxuryLoaderProgressMeta {
+        margin-top: 28px;
+        font-size: 9px;
+        letter-spacing: 0.2em;
     }
 }

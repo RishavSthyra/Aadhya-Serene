@@ -46,7 +46,7 @@
         bottom: auto;
         left: 0;
         width: 100vw;
-        height: min(46dvh, 430px);
+        height: clamp(420px, calc(100vw / 1.7777777778), 620px);
         overflow: hidden;
         transform: translateZ(0);
     }
@@ -54,6 +54,6 @@
 
 @media (max-width: 767px) {
     .mediaRoot[data-layout="apartments"] {
-        height: min(38dvh, 320px);
+        height: clamp(220px, calc(100vw / 1.7777777778), 320px);
     }
 }

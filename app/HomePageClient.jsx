@@ -152,11 +152,13 @@ export default function HomePageClient() {
         document.body.style.transition = "opacity 0.6s ease";
       }
 
+      const routePushDelay = path === "/apartments" && isTabletOrBelow ? 0 : 600;
+
       setTimeout(() => {
         router.push(path);
-      }, 600);
+      }, routePushDelay);
     },
-    [router],
+    [isTabletOrBelow, router],
   );
 
   useEffect(() => {

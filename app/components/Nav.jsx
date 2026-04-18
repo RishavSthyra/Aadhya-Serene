@@ -217,9 +217,11 @@ export default function Nav() {
     container.style.opacity = "0";
     container.style.transition = "opacity 0.6s ease";
 
+    const routePushDelay = href === "/apartments" && isTabletOrBelow ? 0 : 600;
+
     window.setTimeout(() => {
       router.push(href);
-    }, 600);
+    }, routePushDelay);
   };
 
   const handleRouteNavigation = (href) => {
