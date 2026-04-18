@@ -8,7 +8,7 @@ import styles from './background-video.module.css';
 const S3_BUCKET = 'https://aadhya-serene-assets-v2.s3.amazonaws.com';
 const HOMEPAGE_VIDEO_CDN = `${S3_BUCKET}/videos/homepage`;
 
-const HOME_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/HLS_1_1/master.m3u8';
+const HOME_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/1-1-Av1.mp4';
 const HOME_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/1-2-Vp9.mp4';
 const ABOUT_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-1-Av1.mp4';
 const ABOUT_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-2-av1.mp4';
@@ -34,8 +34,8 @@ const BACKGROUND_POSTERS = {
 };
 
 const APARTMENTS_LOOP_HOLD_MS = 0;
-const HOME_HLS_MIN_START_BUFFER_AHEAD_SECONDS = 2.4;
-const HOME_HLS_FULLY_BUFFERED_TOLERANCE_SECONDS = 0.15;
+const HLS_MIN_START_BUFFER_AHEAD_SECONDS = 2.4;
+const HLS_FULLY_BUFFERED_TOLERANCE_SECONDS = 0.15;
 const HOME_HLS_CONFIG = {
     enableWorker: true,
     lowLatencyMode: false,
@@ -48,14 +48,6 @@ const HOME_HLS_CONFIG = {
     maxMaxBufferLength: 90,
     backBufferLength: 30,
 };
-const HOME_HLS_PREFETCH_URLS = [
-    HOME_TRANSITION,
-    'https://cdn.sthyra.com/AADHYA%20SERENE/videos/HLS_1_1/init.mp4',
-    'https://cdn.sthyra.com/AADHYA%20SERENE/videos/HLS_1_1/seg_000.m4s',
-    'https://cdn.sthyra.com/AADHYA%20SERENE/videos/HLS_1_1/seg_001.m4s',
-    'https://cdn.sthyra.com/AADHYA%20SERENE/videos/HLS_1_1/seg_002.m4s',
-];
-const STRICT_HOME_HLS = true;
 
 const LAYOUT_CONFIG = {
     home: {
@@ -215,27 +207,6 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     }, [layout, shouldHideBackground]);
 
     useEffect(() => {
-        if (layout !== 'home') return undefined;
-
-        const controller = new AbortController();
-
-        HOME_HLS_PREFETCH_URLS.forEach((url) => {
-            fetch(url, {
-                cache: 'force-cache',
-                credentials: 'omit',
-                mode: 'cors',
-                signal: controller.signal,
-            }).catch(() => {
-                // Best-effort warmup only.
-            });
-        });
-
-        return () => {
-            controller.abort();
-        };
-    }, [layout]);
-
-    useEffect(() => {
         if (typeof window === 'undefined') return undefined;
 
         const reducedMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -262,9 +233,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         };
     }, [isMobile]);
 
-    const getSourceCandidates = useCallback((source, assetId, options = {}) => {
-        const { forceSingleHlsSource = false } = options;
-
+    const getSourceCandidates = useCallback((source, assetId) => {
         if (!source) return [];
 
         const fallbackSource = MOBILE_VIDEO_FALLBACKS[source];
@@ -277,10 +246,6 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             : null;
 
         if (isHlsSource(source)) {
-            if (forceSingleHlsSource) {
-                return [source];
-            }
-
             return uniqueSources([source, preferredMp4Source, fallbackSource]);
         }
 
@@ -315,10 +280,8 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     }, []);
 
     const transitionSources = useMemo(
-        () => getSourceCandidates(config.transition, config.transitionAssetId, {
-            forceSingleHlsSource: STRICT_HOME_HLS && layout === 'home' && isHlsSource(config.transition),
-        }),
-        [config.transition, config.transitionAssetId, getSourceCandidates, layout],
+        () => getSourceCandidates(config.transition, config.transitionAssetId),
+        [config.transition, config.transitionAssetId, getSourceCandidates],
     );
     const transitionSourcesKey = useMemo(
         () => transitionSources.join('|'),
@@ -523,7 +486,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                         ? transitionVideo.duration
                         : 0;
                     const hasNearlyFullBuffer = duration > 0
-                        && bufferedAhead >= Math.max(0, duration - HOME_HLS_FULLY_BUFFERED_TOLERANCE_SECONDS);
+                        && bufferedAhead >= Math.max(0, duration - HLS_FULLY_BUFFERED_TOLERANCE_SECONDS);
 
                     if (hasNearlyFullBuffer) {
                         prepareLoopVideo();
@@ -553,10 +516,10 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                     ? transitionVideo.duration
                     : 0;
                 const hasNearlyFullBuffer = duration > 0
-                    && bufferedAhead >= Math.max(0, duration - HOME_HLS_FULLY_BUFFERED_TOLERANCE_SECONDS);
+                    && bufferedAhead >= Math.max(0, duration - HLS_FULLY_BUFFERED_TOLERANCE_SECONDS);
 
                 if (
-                    bufferedAhead >= HOME_HLS_MIN_START_BUFFER_AHEAD_SECONDS
+                    bufferedAhead >= HLS_MIN_START_BUFFER_AHEAD_SECONDS
                     || hasNearlyFullBuffer
                 ) {
                     deferredTransitionStartCleanup?.();

@@ -329,163 +329,26 @@
     }
 }
 
-/* Minimal home preloader */
+/* Home preloader */
 .luxuryLoader {
     position: fixed;
     inset: 0;
     z-index: 9999;
-    display: grid;
-    place-items: center;
+    display: block;
     overflow: hidden;
-    background:
-        radial-gradient(circle at 50% 44%, rgba(255, 244, 222, 0.06), transparent 16rem),
-        linear-gradient(135deg, #050507 0%, #0b0b0d 48%, #040405 100%);
-    animation: luxuryLoaderExit 0.72s ease 3.08s forwards;
+    background: #000;
     pointer-events: none;
 }
 
-.luxuryLoader::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-        radial-gradient(circle at center, rgba(224, 196, 146, 0.12), transparent 22%),
-        radial-gradient(circle at center, rgba(255, 255, 255, 0.04), transparent 58%);
-    opacity: 0.85;
-}
-
-.minimalLoaderShell {
-    position: relative;
-    z-index: 1;
-    width: clamp(72px, 9vw, 108px);
-    aspect-ratio: 1;
-    display: grid;
-    place-items: center;
-    animation: minimalLoaderReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.minimalLoaderRing {
-    position: absolute;
-    inset: 0;
-    border-radius: 999px;
-}
-
-.minimalLoaderRingOuter {
-    border: 1px solid rgba(255, 245, 226, 0.12);
-    box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.02),
-        inset 0 0 28px rgba(255, 234, 195, 0.04);
-    animation: minimalRingPulse 1.6s ease-in-out infinite;
-}
-
-.minimalLoaderRingMiddle {
-    inset: 16%;
-    border: 1px solid rgba(224, 196, 146, 0.36);
-    mask-image: conic-gradient(from 0deg, transparent 0deg 120deg, black 120deg 260deg, transparent 260deg 360deg);
-    box-shadow: 0 0 26px rgba(224, 196, 146, 0.16);
-    animation: minimalRingSpin 1.35s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-.minimalLoaderCore {
-    width: 24%;
-    aspect-ratio: 1;
-    border-radius: 999px;
-    background: radial-gradient(circle at 35% 35%, rgba(255, 248, 237, 0.98), rgba(224, 196, 146, 0.72) 58%, rgba(224, 196, 146, 0.12) 100%);
-    box-shadow:
-        0 0 24px rgba(224, 196, 146, 0.24),
-        0 0 48px rgba(224, 196, 146, 0.12);
-    animation: minimalCorePulse 1.2s ease-in-out infinite;
-}
-
-.minimalLoaderDot {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 9%;
-    aspect-ratio: 1;
-    margin: calc(clamp(72px, 9vw, 108px) * -0.045);
-    border-radius: 999px;
-    background: #fff7ea;
-    box-shadow: 0 0 18px rgba(255, 245, 226, 0.46);
-    transform-origin: 0 calc(clamp(72px, 9vw, 108px) * -0.235);
-    animation: minimalDotOrbit 1.35s linear infinite;
-}
-
-@keyframes minimalLoaderReveal {
-    from {
-        opacity: 0;
-        transform: scale(0.88);
-        filter: blur(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1);
-        filter: blur(0);
-    }
-}
-
-@keyframes minimalRingSpin {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-@keyframes minimalDotOrbit {
-    from {
-        transform: rotate(0deg) translateY(calc(clamp(72px, 9vw, 108px) * -0.235));
-    }
-
-    to {
-        transform: rotate(360deg) translateY(calc(clamp(72px, 9vw, 108px) * -0.235));
-    }
-}
-
-@keyframes minimalRingPulse {
-    0%,
-    100% {
-        transform: scale(1);
-        opacity: 0.72;
-    }
-
-    50% {
-        transform: scale(1.04);
-        opacity: 1;
-    }
-}
-
-@keyframes minimalCorePulse {
-    0%,
-    100% {
-        transform: scale(0.92);
-        opacity: 0.92;
-    }
-
-    50% {
-        transform: scale(1.06);
-        opacity: 1;
-    }
-}
-
-@keyframes luxuryLoaderExit {
-    to {
-        opacity: 0;
-        visibility: hidden;
-    }
+.luxuryLoaderAnimation {
+    display: block;
+    width: 100vw;
+    height: 100dvh;
+    background: #000;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .luxuryLoader,
-    .minimalLoaderShell,
-    .minimalLoaderRingOuter,
-    .minimalLoaderRingMiddle,
-    .minimalLoaderCore,
-    .minimalLoaderDot {
-        animation-duration: 0.01ms;
-        animation-iteration-count: 1;
+    .luxuryLoaderAnimation {
+        transform: translateZ(0);
     }
 }

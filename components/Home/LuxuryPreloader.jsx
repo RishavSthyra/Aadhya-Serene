@@ -1,17 +1,46 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import styles from '../../app/home.module.css';
 
-export default function LuxuryPreloader() {
+const PRELOADER_SRC = 'https://lottie.host/bd9e38e5-a392-4ce2-aaa8-977831de5904/yOJKXKHlCk.lottie';
+
+export default function LuxuryPreloader({ onCycleComplete }) {
+  const completionReportedRef = useRef(false);
+  const [dotLottie, setDotLottie] = useState(null);
+
+  useEffect(() => {
+    if (!dotLottie) {
+      return undefined;
+    }
+
+    const handleComplete = () => {
+      if (completionReportedRef.current) {
+        return;
+      }
+
+      completionReportedRef.current = true;
+      onCycleComplete?.();
+    };
+
+    dotLottie.addEventListener('complete', handleComplete);
+
+    return () => {
+      dotLottie.removeEventListener('complete', handleComplete);
+    };
+  }, [dotLottie, onCycleComplete]);
+
   return (
     <div className={styles.luxuryLoader} aria-label="Loading Aadhya Serene">
-      <div className={styles.minimalLoaderShell} aria-hidden="true">
-        <span className={`${styles.minimalLoaderRing} ${styles.minimalLoaderRingOuter}`} />
-        <span className={`${styles.minimalLoaderRing} ${styles.minimalLoaderRingMiddle}`} />
-        <span className={styles.minimalLoaderCore} />
-        <span className={styles.minimalLoaderDot} />
-      </div>
+      <DotLottieReact
+        src={PRELOADER_SRC}
+        loop
+        autoplay
+        className={styles.luxuryLoaderAnimation}
+        dotLottieRefCallback={setDotLottie}
+        renderConfig={{ autoResize: true }}
+      />
     </div>
   );
 }

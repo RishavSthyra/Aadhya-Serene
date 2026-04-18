@@ -8,6 +8,7 @@ import { flatViewKeyFromFrame } from '../../lib/flats';
 const TOTAL_FRAMES = 360;
 const SNAP_POINTS = [1, 90, 180, 270, 360];
 const ROT360_CDN_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp';
+//https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_compressed/frame_0001.avif
 //https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp/frame_0001.webp
 const ROT360_FRAME_EXTENSION = ROT360_CDN_BASE.includes('webp') ? 'webp' : 'avif';
 const DRAG_FRAME_STEP = 1;

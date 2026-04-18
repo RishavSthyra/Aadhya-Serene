@@ -31,6 +31,15 @@ const heroRevealVariants = {
   hidden: { opacity: 0, y: 22 },
   visible: { opacity: 1, y: 0 },
 };
+const HOME_REFRESH_LOADER_FLAG = "__aadhyaHomeRefreshLoaderShownInDocument";
+
+function shouldShowHomeRefreshLoader() {
+  if (typeof window === "undefined") {
+    return true;
+  }
+
+  return !window[HOME_REFRESH_LOADER_FLAG];
+}
 
 function AnimatedHeroTitle({ isActive }) {
   return (
@@ -72,28 +81,89 @@ function AnimatedHeroTitle({ isActive }) {
 export default function HomePageClient() {
   const router = useRouter();
   const isNavigatingRef = useRef(false);
-  const [showLoader, setShowLoader] = useState(true);
+  const [showLoader, setShowLoader] = useState(() => shouldShowHomeRefreshLoader());
+  const [loaderCycleComplete, setLoaderCycleComplete] = useState(() => !shouldShowHomeRefreshLoader());
+  const [loaderBackgroundReady, setLoaderBackgroundReady] = useState(() => !shouldShowHomeRefreshLoader());
   const [heroAnimationActive, setHeroAnimationActive] = useState(false);
   const { isTabletOrBelow } = useResponsiveViewport();
 
   useEffect(() => {
-    const hasSeenLoader = sessionStorage.getItem("luxuryHomeLoaderShown");
-    const loaderDurationMs = isTabletOrBelow ? 1600 : 3200;
+    if (typeof window === "undefined") {
+      return undefined;
+    }
 
-    if (hasSeenLoader) {
+    const shouldUseRefreshLoader = !window[HOME_REFRESH_LOADER_FLAG];
+    window[HOME_REFRESH_LOADER_FLAG] = true;
+
+    if (!shouldUseRefreshLoader) {
+      setLoaderCycleComplete(true);
+      setLoaderBackgroundReady(true);
       setShowLoader(false);
+      return undefined;
+    }
+
+    let rafId = 0;
+    let safetyTimeoutId = 0;
+    let trackedVideo = null;
+
+    const markBackgroundReady = () => {
+      setLoaderBackgroundReady(true);
+    };
+
+    const handleBackgroundStarted = () => {
+      markBackgroundReady();
+    };
+
+    const attachVideoListener = () => {
+      const transitionVideo = document.getElementById("bg-video-transition");
+
+      if (!transitionVideo) {
+        rafId = window.requestAnimationFrame(attachVideoListener);
+        return;
+      }
+
+      trackedVideo = transitionVideo;
+
+      if (!transitionVideo.paused && transitionVideo.readyState >= 2) {
+        markBackgroundReady();
+        return;
+      }
+
+      transitionVideo.addEventListener("playing", markBackgroundReady, { once: true });
+    };
+
+    window.addEventListener("bg-transition-started", handleBackgroundStarted);
+    attachVideoListener();
+
+    // Safety fallback so the page never gets stuck if media startup fails.
+    safetyTimeoutId = window.setTimeout(() => {
+      setLoaderCycleComplete(true);
+      setLoaderBackgroundReady(true);
+    }, 12000);
+
+    return () => {
+      window.removeEventListener("bg-transition-started", handleBackgroundStarted);
+      window.clearTimeout(safetyTimeoutId);
+
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
+
+      if (trackedVideo) {
+        trackedVideo.removeEventListener("playing", markBackgroundReady);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showLoader) {
       return;
     }
 
-    const timer = setTimeout(() => {
+    if (loaderCycleComplete && loaderBackgroundReady) {
       setShowLoader(false);
-      sessionStorage.setItem("luxuryHomeLoaderShown", "true");
-    }, loaderDurationMs);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [isTabletOrBelow]);
+    }
+  }, [loaderBackgroundReady, loaderCycleComplete, showLoader]);
 
   useEffect(() => {
     if (showLoader) {
@@ -169,7 +239,7 @@ export default function HomePageClient() {
 
   return (
     <main className={styles.heroSection}>
-      {showLoader && <LuxuryPreloader />}
+      {showLoader && <LuxuryPreloader onCycleComplete={() => setLoaderCycleComplete(true)} />}
 
       <section id="home-inner" className={styles.heroInner}>
         <div className={styles.heroContent}>
