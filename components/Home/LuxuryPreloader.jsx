@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import styles from '../../app/home.module.css';
 
-const PRELOADER_SRC = 'https://lottie.host/bd9e38e5-a392-4ce2-aaa8-977831de5904/yOJKXKHlCk.lottie';
+const PRELOADER_SRC = 'https://lottie.host/7497b625-201f-466d-9410-c4b7c05b5897/mLFBWu3jem.lottie';
 
 export default function LuxuryPreloader({ onCycleComplete }) {
   const completionReportedRef = useRef(false);
