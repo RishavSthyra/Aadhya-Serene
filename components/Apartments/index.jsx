@@ -135,6 +135,30 @@ export default function Apartments() {
   }, [allData?.length, pathname, prioritizedWarmupFlatIds]);
 
   useEffect(() => {
+    if (pathname !== "/apartments") {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let cancelRotatorWarmup = null;
+
+    import("../Apartment360Viewer").then((module) => {
+      if (cancelled) {
+        return;
+      }
+
+      cancelRotatorWarmup = module.scheduleApartment360FrameWarmup?.({
+        isConstrainedDevice: isCompactLayout,
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      cancelRotatorWarmup?.();
+    };
+  }, [isCompactLayout, pathname]);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
       return undefined;
     }
