@@ -7,7 +7,7 @@ import styles from './viewer.module.css';
 
 const TOTAL_FRAMES = 360;
 const SNAP_POINTS = [1, 90, 180, 270, 360];
-const ROT360_CDN_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_compressed';
+const ROT360_CDN_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp';
 const DRAG_FRAME_STEP = 1;
 const PRELOAD_RADIUS = 14;
 const PRELOAD_CONCURRENCY = 8;

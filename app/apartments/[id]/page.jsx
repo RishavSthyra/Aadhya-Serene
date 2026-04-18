@@ -42,6 +42,7 @@ import { skipNextApartmentsReplay } from '../../../lib/background-transition';
 import useResponsiveViewport from '../../../hooks/useResponsiveViewport';
 
 const WHATSAPP_URL = 'https://wa.me/919620993333?text=Hi!%20I%20want%20to%20know%20more%20about%20flat%20';
+const FLAT_VIDEO_POSTER = '/assets/apartments/transition-poster.jpg';
 
 function formatFacing(facing) {
     return facing.charAt(0).toUpperCase() + facing.slice(1);
@@ -139,6 +140,7 @@ export default function FlatDetailPage() {
     const [floorPlanError, setFloorPlanError] = useState(false);
     const [useVideoFallback, setUseVideoFallback] = useState(() => !supportsFlatRenderVideoPlayback());
     const [videoPhase, setVideoPhase] = useState('intro');
+    const [isIntroFrameReady, setIsIntroFrameReady] = useState(false);
     const [isExitTransitionActive, setIsExitTransitionActive] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const { isMobile, isTablet, isTabletOrBelow, width } = useResponsiveViewport();
@@ -166,6 +168,7 @@ export default function FlatDetailPage() {
         clearReverseFallbackTimeout();
         setUseVideoFallback(!supportsFlatRenderVideoPlayback());
         setVideoPhase('intro');
+        setIsIntroFrameReady(false);
         setIsExitTransitionActive(false);
         isNavigatingRef.current = false;
         hasActiveTouchGestureRef.current = false;
@@ -181,6 +184,7 @@ export default function FlatDetailPage() {
         primeInlineVideoElement(reverseVideo);
 
         setVideoPhase('intro');
+        setIsIntroFrameReady(false);
 
         if (introVideo) {
             introVideo.pause();
@@ -459,6 +463,7 @@ export default function FlatDetailPage() {
             ? 'min(40dvh, 340px)'
             : 'min(42dvh, 380px)';
     const compactSheetOverlap = isTablet ? 28 : 24;
+    const shouldShowPosterScrim = hasFlatSpecificVideo && videoPhase === 'intro' && !isIntroFrameReady;
     const detailShellInsetClass = isTabletOrBelow
         ? 'px-0 pb-24 pt-0'
         : 'px-4 pb-24 pt-5 2xl:px-8';
@@ -500,25 +505,57 @@ export default function FlatDetailPage() {
         >
             <div
                 className={isTabletOrBelow ? 'absolute inset-x-0 top-0 z-0 overflow-hidden bg-black' : 'absolute inset-0 bg-black'}
-                style={isTabletOrBelow ? { height: compactMediaHeight } : undefined}
+                style={
+                    isTabletOrBelow
+                        ? {
+                            height: compactMediaHeight,
+                            backgroundImage: `url(${FLAT_VIDEO_POSTER})`,
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundSize: 'cover',
+                        }
+                        : {
+                            backgroundImage: `url(${FLAT_VIDEO_POSTER})`,
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundSize: 'cover',
+                        }
+                }
             >
+                {shouldShowPosterScrim ? (
+                    <div
+                        className="absolute inset-0 z-[2] transition-opacity duration-300"
+                        style={{
+                            backgroundImage: `linear-gradient(180deg,rgba(7,10,15,0.06),rgba(7,10,15,0.18)), url(${FLAT_VIDEO_POSTER})`,
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundSize: 'cover',
+                            opacity: 1,
+                        }}
+                    />
+                ) : null}
                 <video
                     ref={introVideoRef}
                     key={introVideoSrc}
                     src={introVideoSrc}
                     className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-                    style={{ opacity: videoPhase === 'intro' ? 1 : 0, zIndex: videoPhase === 'intro' ? 3 : 1 }}
+                    style={{ opacity: videoPhase === 'intro' && isIntroFrameReady ? 1 : 0, zIndex: videoPhase === 'intro' ? 3 : 1 }}
                     muted={muted}
                     playsInline
                     preload="auto"
                     fetchPriority="high"
                     autoPlay
+                    poster={FLAT_VIDEO_POSTER}
                     controls={false}
                     disablePictureInPicture
                     controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
                     loop={!hasFlatSpecificVideo}
+                    onLoadedData={() => setIsIntroFrameReady(true)}
+                    onCanPlay={() => setIsIntroFrameReady(true)}
+                    onPlaying={() => setIsIntroFrameReady(true)}
                     onEnded={handleIntroEnded}
                     onError={() => {
+                        setIsIntroFrameReady(true);
                         if (hasFlatSpecificVideo) {
                             setVideoPhase('intro');
                             setUseVideoFallback(true);
