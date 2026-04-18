@@ -261,7 +261,7 @@ export default function Nav() {
     <>
       {shouldAutoHideNav ? (
         <div
-          className={`fixed inset-x-0 top-0 z-[490] hidden h-[88px] xl:block ${
+          className={`fixed left-1/2 top-0 z-[490] hidden h-[88px] w-[min(100%,1820px)]  -translate-x-1/2 xl:block ${
             isNavVisible ? "pointer-events-none" : "pointer-events-auto"
           }`}
           onMouseEnter={showNav}
@@ -270,7 +270,7 @@ export default function Nav() {
       ) : null}
 
       <header
-        className={`fixed inset-x-0 top-0 z-[500] hidden will-change-transform transition-[transform,opacity,filter] duration-700 ease-[cubic-bezier(0.19,1,0.22,1)] xl:block ${
+        className={`fixed left-1/2 top-0 z-[500] hidden w-[min(100%,1820px)] -translate-x-1/2 will-change-transform transition-[transform,opacity,filter] duration-700 ease-[cubic-bezier(0.19,1,0.22,1)] xl:block ${
           shouldAutoHideNav && !isNavVisible
             ? "pointer-events-none -translate-y-[calc(100%+14px)] opacity-0 blur-[1px]"
             : "translate-y-0 opacity-100 blur-0"
@@ -281,10 +281,10 @@ export default function Nav() {
           scheduleHideNav();
         }}
       >
-        <div className="mx-auto w-full max-w-[1820px] px-4 pt-4 xl:px-8 xl:pt-5">
+        <div className="relative w-full px-4 pt-4 xl:px-8 xl:pt-5">
           <div
             data-nav-shell
-            className="mx-auto rounded-full border border-white/42 bg-[linear-gradient(180deg,rgba(249,245,236,0.76)_0%,rgba(242,236,226,0.62)_100%)] px-4 py-3 text-[#17191f] shadow-[0_18px_42px_rgba(10,12,18,0.12),inset_0_1px_0_rgba(255,255,255,0.56)] backdrop-blur-[28px] supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(249,245,236,0.64)_0%,rgba(242,236,226,0.48)_100%)] md:px-6 xl:px-8"
+            className="rounded-full border border-white/42 bg-[linear-gradient(180deg,rgba(249,245,236,0.76)_0%,rgba(242,236,226,0.62)_100%)] px-4 py-3 text-[#17191f] shadow-[0_18px_42px_rgba(10,12,18,0.12),inset_0_1px_0_rgba(255,255,255,0.56)] backdrop-blur-[28px] supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(249,245,236,0.64)_0%,rgba(242,236,226,0.48)_100%)] md:px-6 xl:px-8"
           >
             <div className="flex items-center justify-between gap-4">
               <Link
@@ -402,7 +402,7 @@ export default function Nav() {
               duration: 0.3,
               ease: [0.22, 1, 0.36, 1],
             }}
-            className={`mx-auto mt-3 w-full rounded-[30px] border border-white/38 bg-[linear-gradient(180deg,rgba(255,255,255,0.34)_0%,rgba(255,255,255,0.22)_100%)] p-5 shadow-[0_22px_58px_rgba(9,12,20,0.18),inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-[34px] ${
+            className={`absolute inset-x-4 top-full mt-3 rounded-[30px] border border-white/38 bg-[linear-gradient(180deg,rgba(255,255,255,0.34)_0%,rgba(255,255,255,0.22)_100%)] p-5 shadow-[0_22px_58px_rgba(9,12,20,0.18),inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-[34px] xl:inset-x-8 ${
               openMenu === "amenities" ? "pointer-events-auto" : "pointer-events-none"
             }`}
             style={{ transformOrigin: "top center" }}

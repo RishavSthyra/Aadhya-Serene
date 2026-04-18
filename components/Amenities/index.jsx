@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import useResponsiveViewport from '@/hooks/useResponsiveViewport';
 import styles from '../../app/amenities/amenities.module.css';
 
-// Use locally stored 1080p amenity images (downloaded and downscaled via ffmpeg from S3 videos)
-// Served as static assets — no Next.js image optimization
 const AMENITY_POSTERS = {
     rooftopLeisureDeck: '/assets/amenities/rooftopLeisureDeck.jpg',
     childrensPlayArea: '/assets/amenities/childrensPlayArea.jpg',
@@ -20,23 +19,24 @@ const AMENITY_POSTERS = {
 const AMENITY_FALLBACK = '/assets/amenities/rooftopLeisureDeck.jpg';
 
 const AMENITIES_LIST = [
-    { name: "rooftop leisure deck", url: "rooftopLeisureDeck" },
-    { name: "children's play area", url: "childrensPlayArea" },
-    { name: "swimming pool", url: "swimmingPool" },
-    { name: "gymnasium", url: "gymnasium" },
-    { name: "indoor games lounge", url: "indoorGames" },
-    { name: "clubhouse", url: "clubhouse" },
-    { name: "outdoor basketball court", url: "basketball" },
-    { name: "outdoor badminton court", url: "badminton" },
+    { name: 'rooftop leisure deck', url: 'rooftopLeisureDeck' },
+    { name: "children's play area", url: 'childrensPlayArea' },
+    { name: 'swimming pool', url: 'swimmingPool' },
+    { name: 'gymnasium', url: 'gymnasium' },
+    { name: 'indoor games lounge', url: 'indoorGames' },
+    { name: 'clubhouse', url: 'clubhouse' },
+    { name: 'outdoor basketball court', url: 'basketball' },
+    { name: 'outdoor badminton court', url: 'badminton' },
 ];
 
 export default function Amenities({ initialAmenity = null }) {
     const router = useRouter();
+    const { isTabletOrBelow } = useResponsiveViewport();
     const defaultAmenity = 'rooftopLeisureDeck';
     const isValidRequestedAmenity = AMENITIES_LIST.some((item) => item.url === initialAmenity);
     const selectedAmenityFromUrl = isValidRequestedAmenity ? initialAmenity : defaultAmenity;
     const [activeAmenity, setActiveAmenity] = useState(selectedAmenityFromUrl);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         document.body.style.opacity = '1';
@@ -48,6 +48,10 @@ export default function Amenities({ initialAmenity = null }) {
         window.dispatchEvent(new CustomEvent('bg-layout', { detail: `amenities-${selectedAmenityFromUrl}` }));
     }, [selectedAmenityFromUrl]);
 
+    useEffect(() => {
+        setIsSidebarOpen((current) => (isTabletOrBelow ? current : true));
+    }, [isTabletOrBelow]);
+
     const handleAmenityClick = (amenityUrl) => {
         if (activeAmenity === amenityUrl) {
             setActiveAmenity(defaultAmenity);
@@ -58,28 +62,29 @@ export default function Amenities({ initialAmenity = null }) {
             router.replace(`/amenities?amenity=${amenityUrl}`);
             window.dispatchEvent(new CustomEvent('bg-layout', { detail: `amenities-${amenityUrl}` }));
         }
-        setIsMobileOpen(false);
+
+        if (isTabletOrBelow) {
+            setIsSidebarOpen(false);
+        }
     };
 
-    const toggleMobile = () => setIsMobileOpen((prev) => !prev);
+    const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
-    const sidebarClass = `${styles.sidebar} ${isMobileOpen ? styles.mobileOpen : styles.mobileClosed}`;
+    const sidebarClass = `${styles.sidebar} ${isSidebarOpen ? styles.mobileOpen : styles.mobileClosed}`;
 
     return (
         <main className={styles.container}>
-            {/* Mobile backdrop — click to close */}
             <div
-                className={`${styles.mobileBackdrop} ${isMobileOpen ? styles.visible : ''}`}
-                onClick={() => setIsMobileOpen(false)}
+                className={`${styles.mobileBackdrop} ${isSidebarOpen ? styles.visible : ''}`}
+                onClick={() => setIsSidebarOpen(false)}
                 aria-hidden="true"
             />
 
-            {/* Hamburger button for mobile/tablet */}
             <button
-                className={`${styles.hamburgerBtn} ${isMobileOpen ? styles.open : ''}`}
-                onClick={toggleMobile}
+                className={`${styles.hamburgerBtn} ${isSidebarOpen ? styles.open : ''}`}
+                onClick={toggleSidebar}
                 aria-label="Toggle amenities sidebar"
-                aria-expanded={isMobileOpen}
+                aria-expanded={isSidebarOpen}
                 aria-controls="amenities-sidebar"
                 type="button"
             >

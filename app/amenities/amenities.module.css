@@ -9,11 +9,11 @@
 
 /* === Hamburger === */
 .hamburgerBtn {
-    display: none;
+    display: flex;
     position: fixed;
-    top: max(14px, calc(env(safe-area-inset-top, 0px) + 10px));
+    top: max(174px, calc(env(safe-area-inset-top, 0px) + 96px));
     left: 14px;
-    z-index: 155;
+    z-index: 560;
     width: 48px;
     height: 48px;
     border-radius: 14px;
@@ -70,7 +70,8 @@
     top: 50%;
     transform: translateY(-50%);
     width: 380px;
-    max-height: calc(100vh - 120px);
+    height: min(60vh, 860px);
+    max-height: min(60vh, 860px);
     display: flex;
     flex-direction: column;
     background: rgba(10, 14, 22, 0.62);
@@ -79,11 +80,26 @@
     border: 1px solid rgba(255, 255, 255, 0.11);
     border-radius: 20px;
     pointer-events: auto;
-    z-index: 125;
+    z-index: 540;
     box-shadow:
         0 24px 48px rgba(0, 0, 0, 0.5),
         inset 0 1px 0 rgba(255, 255, 255, 0.06);
     overflow: hidden;
+    transition: opacity 0.32s ease, transform 0.32s ease, filter 0.32s ease;
+}
+
+.sidebar.mobileOpen {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(-50%);
+    filter: blur(0px);
+}
+
+.sidebar.mobileClosed {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(calc(-100% - 18px), -50%);
+    filter: blur(2px);
 }
 
 /* === Header === */
@@ -295,7 +311,7 @@
     display: none;
     position: fixed;
     inset: 0;
-    z-index: 120;
+    z-index: 520;
     pointer-events: none;
     background: linear-gradient(180deg, rgba(4, 7, 12, 0.28) 0%, rgba(4, 7, 12, 0.56) 100%);
     backdrop-filter: blur(4px);
@@ -319,7 +335,7 @@
 /* === Responsive === */
 @media (max-width: 1279px) {
     .hamburgerBtn {
-        display: flex;
+        top: max(14px, calc(env(safe-area-inset-top, 0px) + 10px));
         left: 18px;
     }
 
@@ -330,6 +346,7 @@
         right: auto;
         width: min(390px, calc(100vw - 36px));
         max-width: none;
+        height: auto;
         max-height: min(78dvh, calc(100vh - 120px));
         transform: translateX(0);
         opacity: 0;
@@ -383,6 +400,7 @@
         left: 12px;
         right: 12px;
         width: auto;
+        height: auto;
         max-height: calc(100svh - 112px);
         opacity: 0;
         pointer-events: none;
