@@ -622,6 +622,7 @@ export default function FlatDetailPage() {
     const dockButtonClass = isCompactDesktop
         ? 'px-3 py-2 text-[10px] tracking-[0.16em]'
         : 'px-4 py-2.5 text-[10px] tracking-[0.17em] 2xl:text-[11px]';
+    const glassScrollbarClass = 'glass-scrollbar';
     const heroTitleClass = isTabletOrBelow
         ? 'text-[30px] sm:text-[34px]'
         : isCompactDesktop
@@ -853,7 +854,7 @@ export default function FlatDetailPage() {
                             >
                                 <div
                                     ref={mainPanelRef}
-                                    className="flex min-h-0 flex-col gap-4 lg:h-full lg:overflow-y-auto lg:pr-1"
+                                    className={`flex min-h-0 flex-col gap-4 lg:h-full lg:overflow-y-auto lg:pr-1 ${glassScrollbarClass}`}
                                 >
                                     <div className={`flex shrink-0 flex-col p-4 ${insetSurfaceClass}`}>
                                         <div className="flex flex-wrap items-center gap-2">
@@ -999,7 +1000,7 @@ export default function FlatDetailPage() {
                         >
                             <div
                                 ref={sidebarPanelRef}
-                                className={`${cardSurfaceClass} p-3 sm:p-4 lg:overflow-y-auto`}
+                                className={`${cardSurfaceClass} p-3 sm:p-4 lg:overflow-y-auto ${glassScrollbarClass}`}
                                 style={!isTabletOrBelow ? { maxHeight: desktopSidebarHeight } : undefined}
                             >
                                 {renderSupportCards(false)}
@@ -1008,6 +1009,53 @@ export default function FlatDetailPage() {
                     </div>
                 </div>
             </div>
+
+            <style jsx global>{`
+                .glass-scrollbar {
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(232, 238, 248, 0.42) rgba(255, 255, 255, 0.05);
+                }
+
+                .glass-scrollbar::-webkit-scrollbar {
+                    width: 10px;
+                }
+
+                .glass-scrollbar::-webkit-scrollbar-track {
+                    background: linear-gradient(
+                        180deg,
+                        rgba(255, 255, 255, 0.06),
+                        rgba(255, 255, 255, 0.02)
+                    );
+                    border-radius: 999px;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    box-shadow:
+                        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                        0 8px 18px rgba(7, 10, 18, 0.16);
+                    backdrop-filter: blur(10px) saturate(1.2);
+                }
+
+                .glass-scrollbar::-webkit-scrollbar-thumb {
+                    background: linear-gradient(
+                        180deg,
+                        rgba(248, 250, 255, 0.46),
+                        rgba(214, 223, 238, 0.26)
+                    );
+                    border-radius: 999px;
+                    border: 1px solid rgba(255, 255, 255, 0.18);
+                    box-shadow:
+                        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+                        0 10px 18px rgba(6, 10, 18, 0.18);
+                    backdrop-filter: blur(12px) saturate(1.25);
+                }
+
+                .glass-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: linear-gradient(
+                        180deg,
+                        rgba(252, 253, 255, 0.58),
+                        rgba(225, 232, 244, 0.34)
+                    );
+                }
+            `}</style>
         </div>
     );
 }

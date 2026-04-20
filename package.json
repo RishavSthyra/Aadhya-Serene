@@ -23,6 +23,7 @@
     "maplibre-gl": "^5.22.0",
     "marzipano": "^0.10.2",
     "next": "^15.1.11",
+    "nodemailer": "^8.0.5",
     "postcss": "^8.5.8",
     "react": "19.0.0",
     "react-dom": "19.0.0",
