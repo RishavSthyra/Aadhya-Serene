@@ -6,7 +6,7 @@ import {
     HOME_PRELOADER_COMPLETE_EVENT,
     isHomePreloaderComplete,
 } from '@/lib/home-loader';
-import useResponsiveViewport from '@/hooks/useResponsiveViewport';
+import usePerformanceProfile from '@/hooks/usePerformanceProfile';
 import styles from './background-video.module.css';
 
 const S3_BUCKET = 'https://aadhya-serene-assets-v2.s3.amazonaws.com';
@@ -174,7 +174,15 @@ function getBufferedAhead(video) {
 }
 
 export default function BackgroundVideo({ layout = 'home', playing = true, replayKey = 0 }) {
-    const { isMobile, isTablet, isSafari, isIOS } = useResponsiveViewport();
+    const {
+        isMobile,
+        isTablet,
+        isSafari,
+        isIOS,
+        isConstrainedDevice,
+        shouldConserveData,
+        preferredVideoQuality,
+    } = usePerformanceProfile();
     const transitionRef = useRef(null);
     const loopRef = useRef(null);
     const transitionHlsRef = useRef(null);
@@ -185,7 +193,6 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const transitionSourceIndexRef = useRef(0);
     const loopSourceIndexRef = useRef(0);
     const [showLoop, setShowLoop] = useState(false);
-    const [shouldConserveData, setShouldConserveData] = useState(false);
 
     const config = LAYOUT_CONFIG[layout] ?? DEFAULT_CONFIG;
     const transitionPreloadMode = 'auto';
@@ -209,33 +216,6 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         window.dispatchEvent(new CustomEvent('bg-transition-ended'));
     }, [layout, shouldHideBackground]);
 
-    useEffect(() => {
-        if (typeof window === 'undefined') return undefined;
-
-        const reducedMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
-        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-
-        const updatePreference = () => {
-            const shouldAvoidHeavyPlayback = connection?.saveData
-                || /(^|slow-)?2g|3g/.test(connection?.effectiveType ?? '');
-
-            setShouldConserveData(
-                isMobile
-                || reducedMotionMedia.matches
-                || shouldAvoidHeavyPlayback
-            );
-        };
-
-        updatePreference();
-        reducedMotionMedia.addEventListener('change', updatePreference);
-        connection?.addEventListener?.('change', updatePreference);
-
-        return () => {
-            reducedMotionMedia.removeEventListener('change', updatePreference);
-            connection?.removeEventListener?.('change', updatePreference);
-        };
-    }, [isMobile]);
-
     const getSourceCandidates = useCallback((source, assetId) => {
         if (!source) return [];
 
@@ -243,7 +223,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         const preferredMp4Source = assetId
             ? buildHomepageVideoUrl(
                 assetId,
-                isTablet ? '1440p' : isMobile ? '1080p' : '1440p',
+                preferredVideoQuality,
                 'h264',
             )
             : null;
@@ -256,12 +236,12 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             return uniqueSources([fallbackSource, preferredMp4Source, source]);
         }
 
-        if ((isTablet || isSafari || isIOS) && preferredMp4Source) {
+        if ((isTablet || isSafari || isIOS || isConstrainedDevice) && preferredMp4Source) {
             return uniqueSources([preferredMp4Source, source]);
         }
 
         return [source];
-    }, [isIOS, isSafari, isTablet, shouldConserveData]);
+    }, [isConstrainedDevice, isIOS, isSafari, isTablet, preferredVideoQuality, shouldConserveData]);
 
     const getHlsModule = useCallback(() => {
         if (!hlsModulePromiseRef.current) {
@@ -359,6 +339,13 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
                     const hls = new Hls({
                         ...HOME_HLS_CONFIG,
+                        ...(isConstrainedDevice
+                            ? {
+                                maxBufferLength: 20,
+                                maxMaxBufferLength: 36,
+                                backBufferLength: 12,
+                            }
+                            : {}),
                     });
 
                     const hlsRef = target === 'loop' ? loopHlsRef : transitionHlsRef;
@@ -399,7 +386,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         video.load();
 
         return true;
-    }, [destroyHlsInstance, getHlsModule, layout, primeVideoElement]);
+    }, [destroyHlsInstance, getHlsModule, isConstrainedDevice, layout, primeVideoElement]);
 
     useEffect(() => () => {
         destroyHlsInstance('transition');

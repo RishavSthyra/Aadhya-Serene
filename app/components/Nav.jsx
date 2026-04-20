@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import useResponsiveViewport from "@/hooks/useResponsiveViewport";
+import usePerformanceProfile from "@/hooks/usePerformanceProfile";
 import {
   Building2,
   ChevronDown,
@@ -97,7 +97,7 @@ function getContainerId(pathname) {
 export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isTabletOrBelow } = useResponsiveViewport();
+  const { isTabletOrBelow, isConstrainedDevice, shouldReduceMotion } = usePerformanceProfile();
   const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
   const [openMenu, setOpenMenu] = useState(null);
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -393,13 +393,13 @@ export default function Nav() {
                   }
                 : {
                     opacity: 0,
-                    y: -12,
-                    scale: 0.992,
-                    filter: "blur(3px)",
+                    y: isConstrainedDevice ? -6 : -12,
+                    scale: isConstrainedDevice ? 1 : 0.992,
+                    filter: shouldReduceMotion ? "blur(0px)" : "blur(3px)",
                   }
             }
             transition={{
-              duration: 0.3,
+              duration: isConstrainedDevice ? 0.18 : 0.3,
               ease: [0.22, 1, 0.36, 1],
             }}
             className={`absolute inset-x-4 top-full mt-0.5 rounded-[30px] border border-white/38 bg-[linear-gradient(180deg,rgba(255,255,255,0.34)_0%,rgba(255,255,255,0.22)_100%)] p-5 shadow-[0_22px_58px_rgba(9,12,20,0.18),inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-[34px] xl:inset-x-8 ${
@@ -478,6 +478,9 @@ export default function Nav() {
                                 src={item.image}
                                 alt={item.label}
                                 className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                                loading="lazy"
+                                decoding="async"
+                                fetchPriority="low"
                               />
                               <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,transparent_0%,rgba(12,14,18,0.92)_100%)] px-3.5 pb-3.5 pt-14">
                                 <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/58">

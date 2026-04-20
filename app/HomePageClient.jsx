@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-import useResponsiveViewport from "@/hooks/useResponsiveViewport";
+import usePerformanceProfile from "@/hooks/usePerformanceProfile";
 import {
   markHomeRefreshLoaderSeen,
   setHomePreloaderComplete,
@@ -37,7 +37,19 @@ const heroRevealVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-function AnimatedHeroTitle({ isActive }) {
+function AnimatedHeroTitle({ isActive, disableAnimation = false }) {
+  if (disableAnimation) {
+    return (
+      <span className={styles.heroTitleStack} aria-label={HERO_TITLE_LINES.join(" ")}>
+        {HERO_TITLE_LINES.map((line) => (
+          <span key={line} className={styles.heroTitleLine}>
+            <span className={styles.heroTitleLetter}>{line}</span>
+          </span>
+        ))}
+      </span>
+    );
+  }
+
   return (
     <span className={styles.heroTitleStack} aria-label={HERO_TITLE_LINES.join(" ")}>
       {HERO_TITLE_LINES.map((line, lineIndex) => (
@@ -80,7 +92,8 @@ export default function HomePageClient() {
   const [showLoader, setShowLoader] = useState(() => shouldShowHomeRefreshLoader());
   const [loaderCycleComplete, setLoaderCycleComplete] = useState(() => !shouldShowHomeRefreshLoader());
   const [heroAnimationActive, setHeroAnimationActive] = useState(false);
-  const { isTabletOrBelow } = useResponsiveViewport();
+  const { isTabletOrBelow, isConstrainedDevice, shouldReduceMotion } = usePerformanceProfile();
+  const shouldUseLightMotion = isConstrainedDevice || shouldReduceMotion;
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -126,6 +139,11 @@ export default function HomePageClient() {
       return undefined;
     }
 
+    if (shouldUseLightMotion) {
+      setHeroAnimationActive(true);
+      return undefined;
+    }
+
     const frameId = window.requestAnimationFrame(() => {
       setHeroAnimationActive(true);
     });
@@ -133,7 +151,7 @@ export default function HomePageClient() {
     return () => {
       window.cancelAnimationFrame(frameId);
     };
-  }, [showLoader]);
+  }, [shouldUseLightMotion, showLoader]);
 
   const navigateTo = useCallback(
     (path) => {
@@ -212,7 +230,10 @@ export default function HomePageClient() {
           </motion.div>
 
           <h1 className={styles.heroTitle}>
-            <AnimatedHeroTitle isActive={heroAnimationActive} />
+            <AnimatedHeroTitle
+              isActive={heroAnimationActive}
+              disableAnimation={shouldUseLightMotion}
+            />
           </h1>
 
           <motion.p
@@ -276,7 +297,9 @@ export default function HomePageClient() {
           </motion.div>
         </div>
       </section>
-      {!isTabletOrBelow ? <HomeScrollLottie className={styles.heroLottie} /> : null}
+      {!isTabletOrBelow && !shouldUseLightMotion ? (
+        <HomeScrollLottie className={styles.heroLottie} />
+      ) : null}
     </main>
   );
 }

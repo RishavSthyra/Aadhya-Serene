@@ -42,6 +42,15 @@ const MAX_PITCH = Math.PI / 2 - 0.08;
 const INTERIOR_SPHERE_RESOLUTION = 128;
 const INTERIOR_MIN_FOV = 36;
 const INTERIOR_MAX_FOV = 74;
+const INTERIOR_MINIMAP_IMAGE_URL = "/assets/glb%20aadhyaserene.avif";
+const INTERIOR_MINIMAP_BOUNDS = {
+  bottomLeft: { x: 3297, y: -619 },
+  topRight: { x: 4318, y: 362 },
+};
+const INTERIOR_MINIMAP_FLIP_X = true;
+const INTERIOR_MINIMAP_FLIP_Y = false;
+const MOBILE_VIEWPORT_QUERY = "(max-width: 767px)";
+const TABLET_VIEWPORT_QUERY = "(max-width: 1023px)";
 
 type InteriorPanoWalkthroughProps = {
   initialNodeId?: string;
@@ -68,6 +77,15 @@ type RoomTab = {
   featured: boolean;
 };
 
+type ViewportTier = "mobile" | "tablet" | "desktop";
+
+type InteriorMinimapProps = {
+  nodes: ExteriorTourNode[];
+  activeNodeId: string;
+  currentLabel: string;
+  disabled?: boolean;
+  onNavigate: (nodeId: string) => void;
+};
 
 const INTERIOR_PANO_DETAILS: Record<string, { label: string; featured?: boolean }> = {
   Bp_panoPath_interiorBP_panoPath4interior_F0000: { label: "Entrance", featured: true },
@@ -97,6 +115,22 @@ function isFeaturedRoomTab(nodeId: string) {
   return Boolean(INTERIOR_PANO_DETAILS[nodeId]?.featured);
 }
 
+function getViewportTier() {
+  if (typeof window === "undefined") {
+    return "desktop" as ViewportTier;
+  }
+
+  if (window.matchMedia(MOBILE_VIEWPORT_QUERY).matches) {
+    return "mobile" as ViewportTier;
+  }
+
+  if (window.matchMedia(TABLET_VIEWPORT_QUERY).matches) {
+    return "tablet" as ViewportTier;
+  }
+
+  return "desktop" as ViewportTier;
+}
+
 function isAbortLikeError(error: unknown) {
   if (!error) {
     return false;
@@ -119,6 +153,100 @@ function isAbortLikeError(error: unknown) {
   return false;
 }
 
+function InteriorMinimap({
+  nodes,
+  activeNodeId,
+  currentLabel,
+  disabled = false,
+  onNavigate,
+}: InteriorMinimapProps) {
+  const [aspectRatio, setAspectRatio] = useState(1);
+
+  useEffect(() => {
+    const image = new Image();
+    image.decoding = "async";
+    image.loading = "eager";
+    image.src = INTERIOR_MINIMAP_IMAGE_URL;
+    image.onload = () => {
+      const width = image.naturalWidth || image.width;
+      const height = image.naturalHeight || image.height;
+      if (width > 0 && height > 0) {
+        setAspectRatio(width / height);
+      }
+    };
+  }, []);
+
+  const projectedNodes = useMemo(
+    () =>
+      nodes.map((node) => {
+        const baseXProgress = clamp(
+          (node.rawPosition.x - INTERIOR_MINIMAP_BOUNDS.bottomLeft.x)
+            / (INTERIOR_MINIMAP_BOUNDS.topRight.x - INTERIOR_MINIMAP_BOUNDS.bottomLeft.x),
+          0,
+          1,
+        );
+        const baseYProgress = clamp(
+          (INTERIOR_MINIMAP_BOUNDS.topRight.y - node.rawPosition.y)
+            / (INTERIOR_MINIMAP_BOUNDS.topRight.y - INTERIOR_MINIMAP_BOUNDS.bottomLeft.y),
+          0,
+          1,
+        );
+        const xProgress = INTERIOR_MINIMAP_FLIP_X ? 1 - baseXProgress : baseXProgress;
+        const yProgress = INTERIOR_MINIMAP_FLIP_Y ? 1 - baseYProgress : baseYProgress;
+
+        return {
+          id: node.id,
+          label: formatRoomLabel(node.id, node.imageFilename),
+          left: xProgress * 100,
+          top: yProgress * 100,
+          isActive: node.id === activeNodeId,
+        };
+      }),
+    [activeNodeId, nodes],
+  );
+
+  return (
+    <div className="pointer-events-auto absolute bottom-4 right-4 z-30 w-[42vw] min-w-[9.75rem] max-w-[13rem] sm:w-[11.5rem] sm:max-w-[14rem] md:w-[13.5rem] lg:w-[15.5rem]">
+      <div className="overflow-hidden ">
+        <div
+          className="relative w-full overflow-hidden "
+          style={{ aspectRatio }}
+        >
+          <img
+            src={INTERIOR_MINIMAP_IMAGE_URL}
+            alt="Interior minimap"
+            className="absolute inset-0 h-full w-full object-cover"
+            draggable={false}
+          />
+
+          {projectedNodes.map((node) => (
+            <button
+              key={node.id}
+              type="button"
+              aria-label={`Open ${node.label}`}
+              title={node.label}
+              disabled={disabled}
+              onClick={() => onNavigate(node.id)}
+              className={`absolute rounded-full border transition duration-200 ${
+                node.isActive
+                  ? "h-2.5 w-2.5 border-[#d9f7ff] bg-[#6ee7ff] shadow-[0_0_0_3px_rgba(77,234,255,0.18),0_0_14px_rgba(77,234,255,0.6)]"
+                  : "h-1.5 w-1.5 border-[#baf4ff] bg-[#32dfff] shadow-[0_0_8px_rgba(50,223,255,0.7)] hover:scale-110 hover:border-[#e8fcff] hover:bg-[#7cebff]"
+              } ${disabled ? "cursor-not-allowed opacity-70" : ""}`}
+              style={{
+                left: `${node.left}%`,
+                top: `${node.top}%`,
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              <span className="sr-only">{node.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ArrowButton({
   icon: Icon,
   label,
@@ -136,9 +264,9 @@ function ArrowButton({
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
-      className="group flex h-12 w-12 items-center justify-center rounded-[1.15rem] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.36),rgba(235,240,245,0.14))] text-white shadow-[0_20px_46px_rgba(8,12,20,0.26),inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(255,255,255,0.08)] backdrop-blur-[26px] saturate-[180%] transition duration-200 hover:-translate-y-0.5 hover:border-white/50 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.44),rgba(238,243,247,0.2))] disabled:cursor-not-allowed disabled:opacity-30"
+      className="group flex h-9 w-9 items-center justify-center rounded-[0.95rem] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.36),rgba(235,240,245,0.14))] text-white shadow-[0_16px_34px_rgba(8,12,20,0.24),inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl saturate-[180%] transition duration-200 hover:-translate-y-0.5 hover:border-white/50 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.44),rgba(238,243,247,0.2))] disabled:cursor-not-allowed disabled:opacity-30 sm:h-10 sm:w-10 md:h-11 md:w-11 lg:h-12 lg:w-12"
     >
-      <Icon className="h-5 w-5 transition duration-200 group-hover:scale-110" />
+      <Icon className="h-4 w-4 transition duration-200 group-hover:scale-110 sm:h-[1.05rem] sm:w-[1.05rem] md:h-[1.15rem] md:w-[1.15rem]" />
     </button>
   );
 }
@@ -261,6 +389,9 @@ export default function InteriorPanoWalkthrough({
   const currentNodeIdRef = useRef("");
   const cacheRef = useRef(new Map<string, ResolvedPano>());
   const transitionLockRef = useRef(false);
+  const committedYawRef = useRef(0);
+  const pendingYawRef = useRef(0);
+  const yawFrameRef = useRef<number | null>(null);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -269,6 +400,11 @@ export default function InteriorPanoWalkthrough({
   const [activeNodeId, setActiveNodeId] = useState("");
   const [isSlowNetwork, setIsSlowNetwork] = useState(false);
   const [availableNodeIds, setAvailableNodeIds] = useState<Set<string> | null>(null);
+  const [viewportTier, setViewportTier] = useState<ViewportTier>("desktop");
+
+  const isMobileViewport = viewportTier === "mobile";
+  const isTabletViewport = viewportTier === "tablet";
+  const isTabletOrBelow = viewportTier !== "desktop";
 
   const allNodes = useMemo(
     () => navData as ExteriorPanoNodeSource[],
@@ -287,6 +423,24 @@ export default function InteriorPanoWalkthrough({
   }, [allNodes, availableNodeIds]);
 
   const graph = useMemo(() => buildExteriorTourGraph(availableNodes), [availableNodes]);
+  const viewerTuning = useMemo(() => {
+    const sphereResolution = isMobileViewport
+      ? 64
+      : isTabletOrBelow
+        ? 96
+        : INTERIOR_SPHERE_RESOLUTION;
+
+    return {
+      sphereResolution,
+      antialias: !isMobileViewport && !isSlowNetwork,
+      baseBlur: !isMobileViewport,
+      moveSpeed: isMobileViewport ? 1.45 : isTabletViewport ? 1.7 : isSlowNetwork ? 1.8 : 2.2,
+      moveInertia: isMobileViewport ? 0.72 : isTabletViewport ? 0.8 : isSlowNetwork ? 0.86 : 0.92,
+      transitionSpeed: isMobileViewport ? 280 : isTabletViewport ? 320 : 380,
+      yawUpdateThreshold: isMobileViewport ? 0.11 : isTabletViewport ? 0.075 : 0.04,
+      powerPreference: isTabletOrBelow ? "default" : "high-performance",
+    } as const;
+  }, [isMobileViewport, isSlowNetwork, isTabletOrBelow, isTabletViewport]);
 
   const currentNodeId =
     (activeNodeId && graph.byId[activeNodeId] ? activeNodeId : "") ||
@@ -327,6 +481,9 @@ export default function InteriorPanoWalkthrough({
 
     return featuredTabs;
   }, [currentNodeId, roomTabs]);
+  const currentRoomLabel = activeNode
+    ? formatRoomLabel(activeNode.id, activeNode.imageFilename)
+    : "Interior Walkthrough";
 
   const walkthroughContext = useMemo(
     () => ({
@@ -455,7 +612,7 @@ export default function InteriorPanoWalkthrough({
         const completed = await bindings.virtualTour.setCurrentNode(targetId, {
           effect: "none",
           showLoader: false,
-          speed: 380,
+          speed: viewerTuning.transitionSpeed,
           rotation: false,
         });
 
@@ -470,7 +627,7 @@ export default function InteriorPanoWalkthrough({
         transitionLockRef.current = false;
       }
     },
-    [buildTourNode, graph.byId, isTransitioning],
+    [buildTourNode, graph.byId, isTransitioning, viewerTuning.transitionSpeed],
   );
 
   const navigateToDirection = useCallback(
@@ -489,6 +646,27 @@ export default function InteriorPanoWalkthrough({
   useEffect(() => {
     currentNodeIdRef.current = currentNodeId;
   }, [currentNodeId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const mobileQuery = window.matchMedia(MOBILE_VIEWPORT_QUERY);
+    const tabletQuery = window.matchMedia(TABLET_VIEWPORT_QUERY);
+    const syncViewportTier = () => {
+      setViewportTier(getViewportTier());
+    };
+
+    syncViewportTier();
+    mobileQuery.addEventListener("change", syncViewportTier);
+    tabletQuery.addEventListener("change", syncViewportTier);
+
+    return () => {
+      mobileQuery.removeEventListener("change", syncViewportTier);
+      tabletQuery.removeEventListener("change", syncViewportTier);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof navigator === "undefined") {
@@ -522,6 +700,30 @@ export default function InteriorPanoWalkthrough({
       connection.removeEventListener?.("change", updateSlowNetworkState);
     };
   }, []);
+
+  const commitViewYaw = useCallback(
+    (nextYaw: number, force = false) => {
+      pendingYawRef.current = nextYaw;
+
+      if (
+        !force
+        && Math.abs(wrapAngleRad(nextYaw - committedYawRef.current)) < viewerTuning.yawUpdateThreshold
+      ) {
+        return;
+      }
+
+      if (yawFrameRef.current !== null) {
+        return;
+      }
+
+      yawFrameRef.current = globalThis.requestAnimationFrame(() => {
+        yawFrameRef.current = null;
+        committedYawRef.current = pendingYawRef.current;
+        setViewYaw(pendingYawRef.current);
+      });
+    },
+    [viewerTuning.yawUpdateThreshold],
+  );
 
   useEffect(() => {
     if (!viewerHostRef.current || !graph.nodes.length || !currentNodeId || availableNodeIds === null) {
@@ -683,11 +885,11 @@ export default function InteriorPanoWalkthrough({
 
   const backHref = "/apartments";
   const glassButtonClass =
-    "border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.36),rgba(235,240,245,0.14))] text-white shadow-[0_20px_46px_rgba(8,12,20,0.26),inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(255,255,255,0.08)] backdrop-blur-[26px] saturate-[180%] transition duration-200 hover:-translate-y-0.5 hover:border-white/50 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.44),rgba(238,243,247,0.2))]";
+    "border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.36),rgba(235,240,245,0.14))] text-white shadow-[0_16px_34px_rgba(8,12,20,0.24),inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl saturate-[180%] transition duration-200 hover:-translate-y-0.5 hover:border-white/50 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.44),rgba(238,243,247,0.2))]";
 
   return (
     <section
-      className={`relative isolate h-full w-full overflow-hidden rounded-[2.25rem] border border-white/10 bg-[#050608] text-white ${className ?? ""}`}
+      className={`relative isolate h-full w-full overflow-hidden rounded-[1.4rem] border border-white/10 bg-[#050608] text-white sm:rounded-[1.8rem] lg:rounded-[2.25rem] ${className ?? ""}`}
     >
       <div className="absolute inset-0">
         <div ref={viewerHostRef} className="h-full w-full" />
@@ -707,12 +909,12 @@ export default function InteriorPanoWalkthrough({
         <button
           type="button"
           onClick={() => setIsMenuOpen(true)}
-          className={`flex h-12 w-12 items-center justify-center rounded-[1.1rem] ${glassButtonClass} ${
+          className={`flex h-10 w-10 items-center justify-center rounded-[1rem] sm:h-11 sm:w-11 sm:rounded-[1.1rem] ${glassButtonClass} ${
             isMenuOpen ? "pointer-events-none" : "pointer-events-auto"
           }`}
           aria-label="Open pano list"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
         </button>
       </div>
 
@@ -720,9 +922,9 @@ export default function InteriorPanoWalkthrough({
         <button
           type="button"
           onClick={() => router.push(backHref)}
-          className={`pointer-events-auto inline-flex items-center gap-2 rounded-full px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] ${glassButtonClass}`}
+          className={`pointer-events-auto inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] sm:gap-2 sm:px-4 sm:py-3 sm:text-[11px] ${glassButtonClass}`}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           Back
         </button>
       </div>
@@ -760,14 +962,14 @@ export default function InteriorPanoWalkthrough({
             className="absolute inset-0 bg-[rgba(10,14,20,0.48)]"
           />
 
-          <div className="relative flex h-full w-full items-start md:p-0 lg:p-6">
-            <div className="relative flex h-full w-full max-w-[26rem] flex-col border-r border-white/22 bg-[linear-gradient(180deg,rgba(42,39,31,0.34),rgba(26,24,20,0.42)_32%,rgba(18,17,15,0.56)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-[28px] saturate-[160%] md:rounded-none lg:h-auto lg:max-h-[50vh] lg:rounded-[2rem] lg:border lg:border-white/20">
+          <div className="relative flex h-full w-full items-end p-3 sm:p-4 md:items-start md:p-0 lg:p-6">
+            <div className="relative flex h-auto max-h-[72vh] w-full flex-col overflow-hidden rounded-[1.6rem] border border-white/20 bg-[linear-gradient(180deg,rgba(42,39,31,0.34),rgba(26,24,20,0.42)_32%,rgba(18,17,15,0.56)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-xl saturate-[160%] md:h-full md:max-h-none md:max-w-[24rem] md:rounded-none md:border-r md:border-t-0 md:border-l-0 md:border-b-0 lg:h-auto lg:max-h-[50vh] lg:max-w-[26rem] lg:rounded-[2rem] lg:border lg:border-white/20">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.3em] text-white/50">
                   Furnished
                 </div>
-                <div className="mt-2 text-[1.9rem] font-medium leading-none text-white">
+                <div className="mt-2 text-[1.4rem] font-medium leading-none text-white sm:text-[1.7rem] lg:text-[1.9rem]">
                   Room Index
                 </div>
               </div>
@@ -776,9 +978,9 @@ export default function InteriorPanoWalkthrough({
                 type="button"
                 aria-label="Close pano list"
                 onClick={() => setIsMenuOpen(false)}
-                className={`flex h-11 w-11 items-center justify-center rounded-[1rem] ${glassButtonClass}`}
+                className={`flex h-10 w-10 items-center justify-center rounded-[0.95rem] sm:h-11 sm:w-11 sm:rounded-[1rem] ${glassButtonClass}`}
               >
-                <X className="h-4.5 w-4.5" />
+                <X className="h-4 w-4 sm:h-[1.1rem] sm:w-[1.1rem]" />
               </button>
             </div>
 
@@ -806,11 +1008,13 @@ export default function InteriorPanoWalkthrough({
                         alt={tab.label}
                         className="h-full w-full object-cover object-center transition duration-300 group-hover:scale-[1.03]"
                         draggable={false}
+                        loading="lazy"
+                        decoding="async"
                       />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-[15px] font-semibold text-white">{tab.label}</div>
-                      <div className="mt-1 text-sm leading-5 text-white/72">
+                      <div className="text-sm font-semibold text-white sm:text-[15px]">{tab.label}</div>
+                      <div className="mt-1 text-[13px] leading-5 text-white/72 sm:text-sm">
                         {isActive
                           ? "You are currently inside this room."
                           : "Tap to switch the panorama view to this room."}
@@ -828,8 +1032,18 @@ export default function InteriorPanoWalkthrough({
         </div>
       ) : null}
 
-      <div className="pointer-events-auto absolute right-5 top-[56%] z-30 -translate-y-1/2">
-        <div className="flex flex-col items-center gap-3 rounded-[1.8rem] border border-white/34 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(230,237,244,0.12))] px-4 py-5 shadow-[0_22px_52px_rgba(8,12,20,0.24),inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(255,255,255,0.08)] backdrop-blur-[28px] saturate-[180%]">
+      <InteriorMinimap
+        nodes={graph.nodes}
+        activeNodeId={currentNodeId}
+        currentLabel={currentRoomLabel}
+        disabled={isTransitioning}
+        onNavigate={(nodeId) => {
+          void goToNode(nodeId);
+        }}
+      />
+
+      <div className="pointer-events-auto absolute right-4 top-[56%] z-30 -translate-y-1/2">
+        <div className="flex flex-col items-center gap-1.5 rounded-[1.35rem] border border-white/34 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(230,237,244,0.12))] px-2.5 py-3 shadow-[0_20px_42px_rgba(8,12,20,0.22),inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl saturate-[180%] sm:gap-2 sm:px-3 sm:py-4 md:rounded-[1.7rem] md:px-4 md:py-5">
           <ArrowButton
             icon={ArrowUp}
             label="Move forward"

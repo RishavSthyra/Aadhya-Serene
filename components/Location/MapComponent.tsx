@@ -545,6 +545,8 @@ const PoiMarker = memo(function PoiMarker({
                 src={poi.image}
                 alt={poi.name}
                 className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           ) : (
@@ -1132,7 +1134,12 @@ export function CustomStyleExample() {
               {/* <div className="absolute size-8 rounded-full bg-cyan-400/15 blur-md" /> */}
               {/* <FaMapMarkerAlt className="size-8 text-red-600 opacity-90 drop-shadow-[0_8px_16px_rgba(34,211,238,0.22)]" /> */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={projectCard.image} alt={projectCard.title} />
+              <img
+                src={projectCard.image}
+                alt={projectCard.title}
+                loading="lazy"
+                decoding="async"
+              />
             </button>
           </MarkerContent>
 
@@ -1146,6 +1153,8 @@ export function CustomStyleExample() {
                   src={projectCard.image}
                   alt={projectCard.title}
                   className="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
 

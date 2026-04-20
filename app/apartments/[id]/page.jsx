@@ -140,6 +140,8 @@ function FloorPlanCard({
                         alt={`Floor plan of apartment ${flat.flat}`}
                         className={`${imageHeightClass} w-full object-cover transition duration-500 hover:scale-[1.02]`}
                         draggable={false}
+                        loading="lazy"
+                        decoding="async"
                         onError={onFloorPlanError}
                     />
                 ) : (
@@ -208,6 +210,8 @@ function WalkthroughPreviewCard({
                         alt="Interior walkthrough"
                         className={`${imageHeightClass} w-full object-cover transition duration-500 group-hover:scale-[1.03]`}
                         draggable={false}
+                        loading="lazy"
+                        decoding="async"
                         onError={(event) => {
                             event.currentTarget.style.opacity = '0.3';
                         }}
@@ -607,6 +611,8 @@ export default function FlatDetailPage() {
         : 'min(42dvh, 380px)';
     const compactSheetOverlap = isTablet ? 28 : 24;
     const shouldShowPosterScrim = hasFlatSpecificVideo && videoPhase === 'intro' && !isIntroFrameReady;
+    const shouldFadeDetailPanels = !shouldShowDetailPanels || (!isTabletOrBelow && isExitTransitionActive);
+    const shouldDisableDetailPanelInteraction = isExitTransitionActive || !shouldShowDetailPanels;
     const detailShellInsetClass = isTabletOrBelow
         ? 'px-0 pb-24 pt-0'
         : 'px-4 pb-24 pt-5 2xl:px-8';
@@ -781,50 +787,58 @@ export default function FlatDetailPage() {
 
             <div
                 className={`relative z-10 min-h-screen transition-opacity duration-500 ${detailShellInsetClass} ${
-                    isExitTransitionActive || !shouldShowDetailPanels
-                        ? 'pointer-events-none opacity-0'
+                    shouldDisableDetailPanelInteraction
+                        ? 'pointer-events-none'
                         : 'opacity-100'
                 }`}
                 style={
                     isTabletOrBelow
-                        ? { paddingTop: `calc(${compactMediaHeight} - ${compactSheetOverlap}px)` }
-                        : { paddingTop: desktopTopInset }
+                        ? {
+                            paddingTop: `calc(${compactMediaHeight} - ${compactSheetOverlap}px)`,
+                            opacity: shouldFadeDetailPanels ? 0 : 1,
+                        }
+                        : {
+                            paddingTop: desktopTopInset,
+                            opacity: shouldFadeDetailPanels ? 0 : 1,
+                        }
                 }
             >
                 <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-none flex-col">
-                    <div className="fixed inset-x-0 bottom-4 z-20 flex justify-center px-4 lg:bottom-5">
-                        <div className={`flex flex-wrap items-center justify-center rounded-[22px] border border-white/12 bg-[linear-gradient(160deg,rgba(255,255,255,0.12),rgba(33,42,55,0.16)_42%,rgba(8,12,18,0.42)_100%)] shadow-[0_18px_46px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[28px] ${dockShellClass}`}>
-                            <button
-                                type="button"
-                                onClick={toggleMute}
-                                className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] font-semibold uppercase text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08] ${dockButtonClass}`}
-                            >
-                                {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
-                                {muted ? 'Muted' : 'Audio On'}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    void goFullscreen();
-                                }}
-                                className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] font-semibold uppercase text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08] ${dockButtonClass}`}
-                            >
-                                <Maximize2 className="h-3.5 w-3.5" />
-                                {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-                            </button>
-                            <a
-                                href={`${WHATSAPP_URL}${flat.flat}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06))] font-semibold uppercase text-white/88 shadow-[0_12px_26px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.1)] transition hover:border-white/24 hover:bg-white/[0.1] ${dockButtonClass} ${isCompactDesktop ? 'px-3.5' : 'px-4 2xl:px-5'}`}
-                            >
-                                <MessageCircle className="h-3.5 w-3.5" />
-                                Enquire
-                            </a>
+                    {!isMobile ? (
+                        <div className="fixed inset-x-0 bottom-4 z-20 flex justify-center px-4 lg:bottom-5">
+                            <div className={`flex flex-wrap items-center justify-center rounded-[22px] border border-white/12 bg-[linear-gradient(160deg,rgba(255,255,255,0.12),rgba(33,42,55,0.16)_42%,rgba(8,12,18,0.42)_100%)] shadow-[0_18px_46px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[28px] ${dockShellClass}`}>
+                                <button
+                                    type="button"
+                                    onClick={toggleMute}
+                                    className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] font-semibold uppercase text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08] ${dockButtonClass}`}
+                                >
+                                    {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+                                    {muted ? 'Muted' : 'Audio On'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        void goFullscreen();
+                                    }}
+                                    className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] font-semibold uppercase text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08] ${dockButtonClass}`}
+                                >
+                                    <Maximize2 className="h-3.5 w-3.5" />
+                                    {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                                </button>
+                                <a
+                                    href={`${WHATSAPP_URL}${flat.flat}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06))] font-semibold uppercase text-white/88 shadow-[0_12px_26px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.1)] transition hover:border-white/24 hover:bg-white/[0.1] ${dockButtonClass} ${isCompactDesktop ? 'px-3.5' : 'px-4 2xl:px-5'}`}
+                                >
+                                    <MessageCircle className="h-3.5 w-3.5" />
+                                    Enquire
+                                </a>
+                            </div>
                         </div>
-                    </div>
+                    ) : null}
 
                     <div
                         className={isTabletOrBelow

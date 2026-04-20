@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Inter } from 'next/font/google';
 import { ArrowDown, ArrowUpRight, CheckCircle2, MapPin, Ruler } from 'lucide-react';
-import useResponsiveViewport from '@/hooks/useResponsiveViewport';
+import usePerformanceProfile from '@/hooks/usePerformanceProfile';
 import { isBackgroundTransitionActive } from '@/lib/background-transition';
 
 const titleFont = Inter({
@@ -128,7 +128,12 @@ function AnimatedLine({
   className = '',
   containerVariants = titleContainer,
   characterVariants = titleCharacter,
+  disableAnimation = false,
 }) {
+  if (disableAnimation) {
+    return <span className={`block ${className}`}>{text}</span>;
+  }
+
   return (
     <motion.span
       variants={containerVariants}
@@ -154,10 +159,15 @@ function AnimatedLine({
   );
 }
 
-function CountUpStat({ end, label, format, decimals = 0, delay = 0 }) {
+function CountUpStat({ end, label, format, decimals = 0, delay = 0, disableAnimation = false }) {
   const [value, setValue] = React.useState(0);
 
   useEffect(() => {
+    if (disableAnimation) {
+      setValue(end);
+      return undefined;
+    }
+
     let frameId;
     let timeoutId;
     const duration = 1500;
@@ -188,7 +198,7 @@ function CountUpStat({ end, label, format, decimals = 0, delay = 0 }) {
         window.cancelAnimationFrame(frameId);
       }
     };
-  }, [delay, end]);
+  }, [delay, disableAnimation, end]);
 
   const renderedValue = format ? format(value) : value.toFixed(decimals);
 
@@ -204,7 +214,7 @@ function CountUpStat({ end, label, format, decimals = 0, delay = 0 }) {
   );
 }
 
-function ProjectBriefContent() {
+function ProjectBriefContent({ disableAnimation = false }) {
   return (
     <>
       <div className="flex items-center gap-4">
@@ -228,6 +238,7 @@ function ProjectBriefContent() {
             format={stat.format}
             decimals={stat.decimals}
             delay={860 + index * 110}
+            disableAnimation={disableAnimation}
           />
         ))}
       </div>
@@ -235,7 +246,7 @@ function ProjectBriefContent() {
   );
 }
 
-function AboutMainCardContent({ navigateTo }) {
+function AboutMainCardContent({ navigateTo, disableAnimation = false }) {
   return (
     <>
       <div className="flex items-center gap-4">
@@ -250,6 +261,7 @@ function AboutMainCardContent({ navigateTo }) {
           <AnimatedLine
             key={line}
             text={line}
+            disableAnimation={disableAnimation}
             className={`${titleFont.className} text-[clamp(1.72rem,3.2vw,3.45rem)] font-light leading-[1.03] tracking-[-0.04em] text-[#f7f7fa] [text-shadow:0_12px_34px_rgba(0,0,0,0.18)] md:whitespace-nowrap`}
           />
         ))}
@@ -258,6 +270,7 @@ function AboutMainCardContent({ navigateTo }) {
       <motion.p className="mt-5 max-w-[405px] text-[13.5px] leading-[1.82] text-white/80 md:text-[14px]">
         <AnimatedLine
           text="Aadhya Serene is crafted for those who value clean architecture, generous light, and a more composed living experience in North Bengaluru. Every detail is shaped to feel elevated, elegant, and effortlessly comfortable."
+          disableAnimation={disableAnimation}
           containerVariants={paragraphContainer}
           characterVariants={paragraphCharacter}
           className="max-w-[405px]"
@@ -334,7 +347,8 @@ export default function About() {
   const [isIntroVideoPlaying, setIsIntroVideoPlaying] = React.useState(() =>
     isBackgroundTransitionActive('about'),
   );
-  const { isTabletOrBelow } = useResponsiveViewport();
+  const { isTabletOrBelow, isConstrainedDevice, shouldReduceMotion } = usePerformanceProfile();
+  const shouldUseLightMotion = isConstrainedDevice || shouldReduceMotion;
 
   const navigateTo = useCallback(
     (path) => {
@@ -444,7 +458,10 @@ export default function About() {
                 pointerEvents: isIntroVideoPlaying ? 'none' : 'auto',
               }}
             >
-              <AboutMainCardContent navigateTo={navigateTo} />
+              <AboutMainCardContent
+                navigateTo={navigateTo}
+                disableAnimation={shouldUseLightMotion}
+              />
             </motion.div>
 
             <motion.aside
@@ -459,7 +476,7 @@ export default function About() {
                 pointerEvents: isIntroVideoPlaying ? 'none' : 'auto',
               }}
             >
-              <ProjectBriefContent />
+              <ProjectBriefContent disableAnimation={shouldUseLightMotion} />
             </motion.aside>
           </div>
         </section>
@@ -495,7 +512,10 @@ export default function About() {
                 transition={{ duration: 0.56, ease: [0.16, 1, 0.3, 1] }}
                 className="overflow-hidden rounded-[28px] border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.07)_100%)] px-5 py-6 shadow-[0_24px_60px_rgba(6,10,18,0.22),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-[28px] md:px-7 md:py-8"
               >
-                <AboutMainCardContent navigateTo={navigateTo} />
+                <AboutMainCardContent
+                  navigateTo={navigateTo}
+                  disableAnimation={shouldUseLightMotion}
+                />
               </motion.article>
 
               <motion.aside
@@ -504,7 +524,7 @@ export default function About() {
                 transition={{ duration: 0.58, delay: isIntroVideoPlaying ? 0 : 0.08, ease: [0.16, 1, 0.3, 1] }}
                 className="overflow-hidden rounded-[28px] border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.07)_100%)] px-5 py-6 shadow-[0_24px_60px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-[28px] md:px-7 md:py-8"
               >
-                <ProjectBriefContent />
+                <ProjectBriefContent disableAnimation={shouldUseLightMotion} />
               </motion.aside>
             </div>
           </section>

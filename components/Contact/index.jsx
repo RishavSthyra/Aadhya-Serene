@@ -94,7 +94,12 @@ export default function Contact() {
 
                         <div className={styles.footerPoweredBy}>
                             <a href="https://sthyra.com" target="_blank" rel="noreferrer">
-                                <img src="https://aadhya-serene-assets-v2.s3.amazonaws.com/sthyra.png" alt="Sthyra Logo" />
+                                <img
+                                    src="https://aadhya-serene-assets-v2.s3.amazonaws.com/sthyra.png"
+                                    alt="Sthyra Logo"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
                             </a>
                         </div>
                     </div>
