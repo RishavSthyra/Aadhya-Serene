@@ -344,9 +344,11 @@ export default function About() {
   const router = useRouter();
   const isNavigatingRef = useRef(false);
   const mobileContentRef = useRef(null);
+  const mainContainerRef = useRef(null);
   const [isIntroVideoPlaying, setIsIntroVideoPlaying] = React.useState(() =>
     isBackgroundTransitionActive('about'),
   );
+  const [showMobileScrollHint, setShowMobileScrollHint] = React.useState(true);
   const { isTabletOrBelow, isConstrainedDevice, shouldReduceMotion } = usePerformanceProfile();
   const shouldUseLightMotion = isConstrainedDevice || shouldReduceMotion;
 
@@ -436,10 +438,75 @@ export default function About() {
     };
   }, [navigateTo]);
 
+  useEffect(() => {
+    if (!isTabletOrBelow) {
+      return undefined;
+    }
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    const onTouchStart = (event) => {
+      const touch = event.touches?.[0];
+      if (!touch) return;
+
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    };
+
+    const onTouchEnd = (event) => {
+      const touch = event.changedTouches?.[0];
+      if (!touch || isNavigatingRef.current) return;
+
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      const isHorizontalSwipe = Math.abs(deltaX) > 70 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2;
+
+      if (isHorizontalSwipe && deltaX > 0) {
+        navigateTo('/apartments');
+      }
+    };
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isTabletOrBelow, navigateTo]);
+
+  useEffect(() => {
+    if (!isTabletOrBelow) {
+      setShowMobileScrollHint(false);
+      return undefined;
+    }
+
+    const container = mainContainerRef.current;
+    if (!container) {
+      return undefined;
+    }
+
+    const syncHintVisibility = () => {
+      setShowMobileScrollHint(container.scrollTop <= 6);
+    };
+
+    syncHintVisibility();
+    container.addEventListener('scroll', syncHintVisibility, { passive: true });
+
+    return () => {
+      container.removeEventListener('scroll', syncHintVisibility);
+    };
+  }, [isTabletOrBelow]);
+
   return (
-    <main id="about-container" className="fixed inset-0 z-10 overflow-y-auto overflow-x-hidden lg:overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(6,8,12,0.04)_0%,rgba(6,8,12,0.08)_42%,rgba(6,8,12,0.72)_100%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_82%,rgba(218,189,133,0.16),transparent_30%),radial-gradient(circle_at_70%_78%,rgba(255,255,255,0.07),transparent_24%)]" />
+    <main
+      id="about-container"
+      ref={mainContainerRef}
+      className="fixed inset-0 z-10 overflow-y-auto overflow-x-hidden lg:overflow-hidden"
+    >
+      {/* <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(6,8,12,0.04)_0%,rgba(6,8,12,0.08)_42%,rgba(6,8,12,0.72)_100%)]" /> */}
+      {/* <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_82%,rgba(218,189,133,0.16),transparent_30%),radial-gradient(circle_at_70%_78%,rgba(255,255,255,0.07),transparent_24%)]" /> */}
 
       {!isTabletOrBelow ? (
         <section className="relative z-[1] flex min-h-full items-start px-4 pb-36 pt-[4.5rem] md:px-8 md:pb-36 md:pt-[5.5rem] lg:items-end lg:px-12 lg:pb-16 lg:pt-28 xl:px-16">
@@ -482,23 +549,35 @@ export default function About() {
         </section>
       ) : (
         <>
-          <section className="relative z-[1] min-h-[100dvh] px-4 pb-14 pt-[4.5rem] md:px-8 md:pt-[5.5rem]">
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[34vh] bg-[linear-gradient(180deg,transparent_0%,rgba(7,8,12,0.12)_24%,rgba(7,8,12,0.9)_100%)]" />
-
-            {!isIntroVideoPlaying ? (
+          <section className="relative z-[2] min-h-[100dvh] overflow-hidden px-4 pb-14 pt-[4.5rem] md:px-8 md:pt-[5.5rem]">
+            {!isIntroVideoPlaying && showMobileScrollHint ? (
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute inset-x-0 bottom-[max(22px,env(safe-area-inset-bottom,0px)+14px)] z-[1] flex justify-center"
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.28, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute inset-x-0 bottom-[max(92px,env(safe-area-inset-bottom,0px)+82px)] z-[4] flex justify-center"
               >
                 <button
                   type="button"
                   onClick={scrollToMobileContent}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/16 bg-black/18 px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.24em] text-white/68 backdrop-blur-[14px]"
+                  className="inline-flex items-center gap-1.5 px-0 py-0 leading-none text-white/72"
+                  style={{
+                    fontSize: '0.42rem',
+                    letterSpacing: '0.18em',
+                    textShadow: '0 2px 10px rgba(0,0,0,0.28)',
+                  }}
                 >
-                  <span>Scroll Down</span>
-                  <ArrowDown className="h-3.5 w-3.5" />
+                  <span
+                    style={{
+                      fontSize: '0.42rem',
+                      letterSpacing: '0.18em',
+                      lineHeight: 1,
+                    }}
+                  >
+                    SCROLL DOWN
+                  </span>
+                  <ArrowDown className="h-2.5 w-2.5 md:h-3 md:w-3" />
                 </button>
               </motion.div>
             ) : null}
