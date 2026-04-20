@@ -40,7 +40,12 @@ const MOBILE_INITIAL_WARMUP_DELAY_MS = 420;
 const INITIAL_WARMUP_TIMEOUT_MS = 800;
 const MOBILE_INITIAL_WARMUP_TIMEOUT_MS = 1200;
 const INITIAL_WARMUP_SNAP_RADIUS = 1;
+const INITIAL_INTERACTION_PRIME_RADIUS = 14;
+const MOBILE_INITIAL_INTERACTION_PRIME_RADIUS = 6;
+const INITIAL_INTERACTION_PRIME_CONCURRENCY = 5;
+const MOBILE_INITIAL_INTERACTION_PRIME_CONCURRENCY = 2;
 const warmedStartupFrames = new Set();
+const warmedStartupImages = new Map();
 const startupWarmPromises = new Map();
 let startupWarmQueue = [];
 let startupWarmActiveLoads = 0;
@@ -158,6 +163,7 @@ function warmStartupFrame(frameNumber, timeoutMs) {
         image.fetchPriority = normalizedFrame === 1 ? 'high' : 'low';
         image.onload = () => {
             window.clearTimeout(timeoutId);
+            warmedStartupImages.set(normalizedFrame, image);
             finish(true);
         };
         image.onerror = () => {
@@ -169,6 +175,28 @@ function warmStartupFrame(frameNumber, timeoutMs) {
 
     startupWarmPromises.set(normalizedFrame, warmPromise);
     return warmPromise;
+}
+
+function getInteractionPrimeSequence(isConstrainedDevice) {
+    return getPreloadSequence(
+        1,
+        isConstrainedDevice ? MOBILE_INITIAL_INTERACTION_PRIME_RADIUS : INITIAL_INTERACTION_PRIME_RADIUS,
+    );
+}
+
+async function warmFramesWithConcurrency(frameNumbers, { concurrency, timeoutMs }) {
+    const queue = [...new Set(frameNumbers.map((frameNumber) => normalizeFrame(frameNumber)))];
+    let index = 0;
+
+    const workers = Array.from({ length: Math.max(1, concurrency) }, async () => {
+        while (index < queue.length) {
+            const nextIndex = index;
+            index += 1;
+            await warmStartupFrame(queue[nextIndex], timeoutMs);
+        }
+    });
+
+    await Promise.all(workers);
 }
 
 function pumpStartupWarmQueue(runId, options) {
@@ -274,6 +302,7 @@ export default function Apartment360Viewer({
     const [isDraggingState, setIsDraggingState] = useState(false);
     const [isConstrainedDevice, setIsConstrainedDevice] = useState(false);
     const [zoom, setZoom] = useState(MIN_ZOOM);
+    const [isStartupPrimed, setIsStartupPrimed] = useState(false);
 
     const canvasRef = useRef(null);
     const canvasContextRef = useRef(null);
@@ -312,6 +341,22 @@ export default function Apartment360Viewer({
     const dragPreloadRadius = isConstrainedDevice ? MOBILE_DRAG_PRELOAD_RADIUS : DRAG_PRELOAD_RADIUS;
     const dragPreloadStride = isConstrainedDevice ? MOBILE_DRAG_PRELOAD_STRIDE : DRAG_PRELOAD_STRIDE;
     const snapAnimationDuration = isConstrainedDevice ? MOBILE_SNAP_ANIMATION_DURATION_MS : SNAP_ANIMATION_DURATION_MS;
+    const viewerInteractionLocked = interactionLocked || !isStartupPrimed;
+
+    const hydrateWarmFrame = useCallback((frameNumber) => {
+        const normalizedFrame = normalizeFrame(frameNumber);
+        const warmedImage = warmedStartupImages.get(normalizedFrame);
+
+        if (!warmedImage) {
+            return false;
+        }
+
+        imageCacheRef.current.delete(normalizedFrame);
+        imageCacheRef.current.set(normalizedFrame, warmedImage);
+        loadedFramesRef.current.add(normalizedFrame);
+        failedFramesRef.current.delete(normalizedFrame);
+        return true;
+    }, []);
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -490,6 +535,17 @@ export default function Apartment360Viewer({
                 continue;
             }
 
+            if (hydrateWarmFrame(nextFrame)) {
+                trimCache();
+
+                if (latestRequestedFrameRef.current === nextFrame) {
+                    displayFrameRef.current = nextFrame;
+                    drawFrame(nextFrame);
+                }
+
+                continue;
+            }
+
             activeLoadsRef.current += 1;
 
             const promise = new Promise((resolve, reject) => {
@@ -524,7 +580,7 @@ export default function Apartment360Viewer({
 
             loadingPromisesRef.current.set(nextFrame, promise);
         }
-    }, [drawFrame, preloadConcurrency, trimCache]);
+    }, [drawFrame, hydrateWarmFrame, preloadConcurrency, trimCache]);
 
     const enqueueFrames = useCallback((frameNumbers) => {
         const normalizedFrames = frameNumbers.map((frameNumber) => normalizeFrame(frameNumber));
@@ -549,8 +605,12 @@ export default function Apartment360Viewer({
             return;
         }
 
+        if (hydrateWarmFrame(normalizedFrame)) {
+            return;
+        }
+
         enqueueFrames([normalizedFrame]);
-    }, [enqueueFrames]);
+    }, [enqueueFrames, hydrateWarmFrame]);
 
     const preloadAroundFrame = useCallback((frameNumber, radius = preloadRadius) => {
         enqueueFrames(getPreloadSequence(frameNumber, radius));
@@ -651,6 +711,45 @@ export default function Apartment360Viewer({
     }, [requestFrame]);
 
     useEffect(() => {
+        let cancelled = false;
+
+        const primeInitialInteraction = async () => {
+            const criticalFrames = getInteractionPrimeSequence(isConstrainedDevice);
+
+            await warmFramesWithConcurrency(criticalFrames, {
+                concurrency: isConstrainedDevice
+                    ? MOBILE_INITIAL_INTERACTION_PRIME_CONCURRENCY
+                    : INITIAL_INTERACTION_PRIME_CONCURRENCY,
+                timeoutMs: isConstrainedDevice
+                    ? MOBILE_INITIAL_WARMUP_TIMEOUT_MS
+                    : INITIAL_WARMUP_TIMEOUT_MS,
+            });
+
+            if (cancelled) {
+                return;
+            }
+
+            criticalFrames.forEach((frameNumber) => {
+                hydrateWarmFrame(frameNumber);
+            });
+
+            trimCache();
+            requestFrame(currentFrameRef.current, {
+                preload: true,
+                preloadRadius: preloadRadius,
+            });
+            setIsStartupPrimed(true);
+        };
+
+        setIsStartupPrimed(false);
+        void primeInitialInteraction();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [hydrateWarmFrame, isConstrainedDevice, preloadRadius, requestFrame, trimCache]);
+
+    useEffect(() => {
         const snapFrameSet = new Set();
 
         SNAP_POINTS.slice(0, -1).forEach((frame) => {
@@ -687,7 +786,7 @@ export default function Apartment360Viewer({
     }, [cancelSnapAnimation]);
 
     const handlePointerDown = (e) => {
-        if (interactionLocked) {
+        if (viewerInteractionLocked) {
             return;
         }
 
@@ -714,7 +813,7 @@ export default function Apartment360Viewer({
     };
 
     const handlePointerMove = (e) => {
-        if (interactionLocked) return;
+        if (viewerInteractionLocked) return;
         if (!activePointersRef.current.has(e.pointerId)) return;
 
         activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -859,8 +958,8 @@ export default function Apartment360Viewer({
     };
 
     const shouldAllowFlatClick = useCallback(() => {
-        return !interactionLocked && !isDragging.current && Date.now() >= suppressFlatClickUntilRef.current;
-    }, [interactionLocked]);
+        return !viewerInteractionLocked && !isDragging.current && Date.now() >= suppressFlatClickUntilRef.current;
+    }, [viewerInteractionLocked]);
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -885,7 +984,7 @@ export default function Apartment360Viewer({
     }, [redrawBestAvailableFrame]);
 
     useEffect(() => {
-        if (!interactionLocked) {
+        if (!viewerInteractionLocked) {
             return;
         }
 
@@ -894,7 +993,7 @@ export default function Apartment360Viewer({
         isDragging.current = false;
         didDragRef.current = false;
         setIsDraggingState(false);
-    }, [interactionLocked]);
+    }, [viewerInteractionLocked]);
 
     useEffect(() => {
         if (typeof document === 'undefined') {
@@ -921,13 +1020,13 @@ export default function Apartment360Viewer({
     }, [redrawBestAvailableFrame]);
 
     const handleWheel = useCallback((event) => {
-        if (interactionLocked) {
+        if (viewerInteractionLocked) {
             return;
         }
 
         event.preventDefault();
         setZoom((currentZoom) => clampZoom(currentZoom - event.deltaY * 0.0015));
-    }, [interactionLocked]);
+    }, [viewerInteractionLocked]);
 
     const handleModelFlatClick = useCallback((flatId) => {
         if (!flatId) {
@@ -961,7 +1060,7 @@ export default function Apartment360Viewer({
                     className={styles.canvasOverlay}
                     style={{
                         opacity: 1,
-                        pointerEvents: isSettled && !isDraggingState && !interactionLocked ? 'auto' : 'none'
+                        pointerEvents: isSettled && !isDraggingState && !viewerInteractionLocked ? 'auto' : 'none'
                     }}
                 >
                     <BuildingModel
@@ -971,7 +1070,7 @@ export default function Apartment360Viewer({
                         onFlatHoverStart={onFlatHoverStart}
                         shouldAllowFlatClick={shouldAllowFlatClick}
                         isConstrainedDevice={isConstrainedDevice}
-                        meshInteractionEnabled={isSettled && !isDraggingState && !interactionLocked}
+                        meshInteractionEnabled={isSettled && !isDraggingState && !viewerInteractionLocked}
                     />
                 </div>
             </div>
@@ -988,7 +1087,7 @@ export default function Apartment360Viewer({
                     className={styles.hotspotButton}
                     onClick={() => moveToHotspot(-1)}
                     aria-label="Previous apartment view"
-                    disabled={interactionLocked}
+                    disabled={viewerInteractionLocked}
                 >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M14.6 6.4 9 12l5.6 5.6-1.4 1.4L6.2 12l7-7z" />
@@ -999,7 +1098,7 @@ export default function Apartment360Viewer({
                     className={styles.hotspotButton}
                     onClick={() => moveToHotspot(1)}
                     aria-label="Next apartment view"
-                    disabled={interactionLocked}
+                    disabled={viewerInteractionLocked}
                 >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="m9.4 17.6 5.6-5.6-5.6-5.6L10.8 5l7 7-7 7z" />
