@@ -140,6 +140,7 @@ export default function Amenities({ initialAmenity = null }) {
                                                 alt={item.name}
                                                 className={styles.amenityImage}
                                                 loading="lazy"
+                                                decoding="async"
                                                 onError={(e) => {
                                                     e.currentTarget.src = AMENITY_FALLBACK;
                                                 }}

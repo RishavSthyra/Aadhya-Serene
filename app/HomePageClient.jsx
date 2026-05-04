@@ -92,11 +92,19 @@ export default function HomePageClient() {
   const [showLoader, setShowLoader] = useState(() => shouldShowHomeRefreshLoader());
   const [loaderCycleComplete, setLoaderCycleComplete] = useState(() => !shouldShowHomeRefreshLoader());
   const [heroAnimationActive, setHeroAnimationActive] = useState(false);
-  const { isTabletOrBelow, isConstrainedDevice, shouldReduceMotion } = usePerformanceProfile();
-  const shouldUseLightMotion = isConstrainedDevice || shouldReduceMotion;
+  const { isTabletOrBelow, preferLightExperience } = usePerformanceProfile();
+  const shouldUseLightMotion = preferLightExperience;
 
   useEffect(() => {
     if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    if (shouldUseLightMotion) {
+      markHomeRefreshLoaderSeen();
+      setHomePreloaderComplete(true);
+      setLoaderCycleComplete(true);
+      setShowLoader(false);
       return undefined;
     }
 
@@ -117,12 +125,12 @@ export default function HomePageClient() {
     safetyTimeoutId = window.setTimeout(() => {
       setLoaderCycleComplete(true);
       setHomePreloaderComplete(true);
-    }, 12000);
+    }, 4000);
 
     return () => {
       window.clearTimeout(safetyTimeoutId);
     };
-  }, []);
+  }, [shouldUseLightMotion]);
 
   useEffect(() => {
     if (!showLoader || !loaderCycleComplete) {
@@ -170,7 +178,7 @@ export default function HomePageClient() {
         document.body.style.transition = "opacity 0.6s ease";
       }
 
-      const routePushDelay = path === "/apartments" && isTabletOrBelow ? 0 : 600;
+      const routePushDelay = path === "/apartments" && isTabletOrBelow ? 0 : 220;
 
       setTimeout(() => {
         router.push(path);

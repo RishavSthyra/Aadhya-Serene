@@ -139,6 +139,18 @@ function buildHomepageVideoUrl(assetId, quality = '1080p', codec = 'h264') {
     return `${HOMEPAGE_VIDEO_CDN}/${assetId}/${quality}/${assetId}-${codec}.mp4`;
 }
 
+function buildResolutionVariantUrl(source, quality) {
+    if (typeof source !== 'string' || !quality) {
+        return null;
+    }
+
+    if (!/\/(2160p|1440p|1080p|720p)\//.test(source)) {
+        return null;
+    }
+
+    return source.replace(/\/(2160p|1440p|1080p|720p)\//, `/${quality}/`);
+}
+
 function uniqueSources(sources) {
     return [...new Set(sources.filter(Boolean))];
 }
@@ -195,8 +207,8 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const [showLoop, setShowLoop] = useState(false);
 
     const config = LAYOUT_CONFIG[layout] ?? DEFAULT_CONFIG;
-    const transitionPreloadMode = 'auto';
-    const loopPreloadMode = shouldConserveData ? 'metadata' : 'auto';
+    const transitionPreloadMode = layout === 'home' && !shouldConserveData ? 'auto' : 'metadata';
+    const loopPreloadMode = 'metadata';
     const transitionIsHls = isHlsSource(config.transition);
     const shouldWaitForHlsStartupBuffer = transitionIsHls && layout === 'home';
     const shouldEagerlyPrepareLoop = !shouldConserveData && !transitionIsHls;
@@ -226,7 +238,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 preferredVideoQuality,
                 'h264',
             )
-            : null;
+            : buildResolutionVariantUrl(source, preferredVideoQuality);
 
         if (isHlsSource(source)) {
             return uniqueSources([source, preferredMp4Source, fallbackSource]);
@@ -279,6 +291,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         () => loopSources.join('|'),
         [loopSources],
     );
+    const hasDistinctLoopAsset = transitionSourcesKey !== loopSourcesKey;
 
     const primeVideoElement = useCallback((video) => {
         if (!video) return;
@@ -412,12 +425,16 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         const loopVideo = loopRef.current;
         loopSourceIndexRef.current = index;
 
+        if (!hasDistinctLoopAsset) {
+            return false;
+        }
+
         return loadVideoCandidate(loopVideo, loopSources, index, {
             shouldLoop: true,
             preload: loopPreloadMode,
             target: 'loop',
         });
-    }, [loadVideoCandidate, loopPreloadMode, loopSources]);
+    }, [hasDistinctLoopAsset, loadVideoCandidate, loopPreloadMode, loopSources]);
 
     useEffect(() => {
         const transitionVideo = transitionRef.current;
@@ -441,7 +458,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             deferredLoopPreloadCleanup?.();
             deferredLoopPreloadCleanup = null;
 
-            if (loopSources.length > 0) {
+            if (hasDistinctLoopAsset && loopSources.length > 0) {
                 loadLoopCandidate(0);
             } else {
                 loopVideo.pause();
@@ -610,6 +627,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         };
     }, [
         config.loopHoldMs,
+        hasDistinctLoopAsset,
         layout,
         loopSourcesKey,
         playing,
@@ -645,7 +663,11 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         const loopVideo = loopRef.current;
         if (!transitionVideo) return;
 
-        if (!loopVideo || loopSources.length === 0) {
+        if (!hasDistinctLoopAsset || !loopVideo || loopSources.length === 0) {
+            transitionVideo.currentTime = 0;
+            transitionVideo.loop = true;
+            transitionVideo.play().catch(() => { });
+            setShowLoop(false);
             setBackgroundTransitionState(layout, false);
             window.dispatchEvent(new CustomEvent('bg-transition-ended'));
             return;

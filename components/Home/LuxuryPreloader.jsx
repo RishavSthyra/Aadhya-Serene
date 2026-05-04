@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styles from '../../app/home.module.css';
 
-const PRELOADER_DURATION_MS = 4200;
+const PRELOADER_DURATION_MS = 1600;
 const EASE_OUT_CUBIC = (value) => 1 - ((1 - value) ** 3);
 const WORDMARK = 'AADHYA SERENE';
 

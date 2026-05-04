@@ -17,7 +17,7 @@ export default function ApartmentList({ apartments, onSelect, compactMode = fals
     }
 
     return (
-        <div className={compactMode ? "space-y-1.5" : "space-y-2"}>
+        <div className={compactMode ? "space-y-1.5" : "space-y-1.5"}>
             {apartments.map((apartment) => (
                 <ApartmentCard
                     key={apartment.id}

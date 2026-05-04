@@ -55,6 +55,13 @@ export default function usePerformanceProfile() {
         const slowNetwork = /(^|slow-)?2g|3g/.test(signals.effectiveType);
         const lowMemory = signals.deviceMemory <= 4;
         const lowCpu = signals.hardwareConcurrency <= 4;
+        const veryHighCapabilityDesktop =
+            viewport.isDesktop
+            && !signals.shouldReduceMotion
+            && !signals.saveData
+            && !slowNetwork
+            && signals.deviceMemory >= 8
+            && signals.hardwareConcurrency >= 8;
         const isConstrainedDevice =
             viewport.isTabletOrBelow
             || signals.shouldReduceMotion
@@ -69,10 +76,12 @@ export default function usePerformanceProfile() {
             slowNetwork,
             lowMemory,
             lowCpu,
+            veryHighCapabilityDesktop,
             isConstrainedDevice,
             shouldConserveData: signals.saveData || slowNetwork || lowMemory || viewport.isMobile,
             allowAdvancedEffects: !isConstrainedDevice,
-            preferredVideoQuality: isConstrainedDevice ? '1080p' : '1440p',
+            preferLightExperience: !veryHighCapabilityDesktop,
+            preferredVideoQuality: veryHighCapabilityDesktop ? '1080p' : '720p',
         };
     }, [signals, viewport]);
 }

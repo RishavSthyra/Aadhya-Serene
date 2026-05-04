@@ -349,8 +349,8 @@ export default function About() {
     isBackgroundTransitionActive('about'),
   );
   const [showMobileScrollHint, setShowMobileScrollHint] = React.useState(true);
-  const { isTabletOrBelow, isConstrainedDevice, shouldReduceMotion } = usePerformanceProfile();
-  const shouldUseLightMotion = isConstrainedDevice || shouldReduceMotion;
+  const { isTabletOrBelow, preferLightExperience } = usePerformanceProfile();
+  const shouldUseLightMotion = preferLightExperience;
 
   const navigateTo = useCallback(
     (path) => {
@@ -375,7 +375,7 @@ export default function About() {
         document.body.style.transition = 'opacity 0.6s ease';
       }
 
-      const routePushDelay = path === '/apartments' && isTabletOrBelow ? 0 : 600;
+      const routePushDelay = path === '/apartments' && isTabletOrBelow ? 0 : 220;
       window.setTimeout(() => router.push(path), routePushDelay);
     },
     [isTabletOrBelow, router],

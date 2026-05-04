@@ -20,7 +20,7 @@ import {
 import { isBackgroundTransitionActive } from "../../lib/background-transition";
 import useResponsiveViewport from "../../hooks/useResponsiveViewport";
 
-const DESKTOP_PANEL_WIDTH = 392;
+const DESKTOP_PANEL_WIDTH = 356;
 const COMPACT_VIEWER_ASPECT_RATIO = 16 / 9;
 const Apartment360Viewer = dynamic(() => import("../Apartment360Viewer"), {
   ssr: false,
@@ -45,7 +45,6 @@ export default function Apartments() {
   const { isMobile, isTablet, isTabletOrBelow, width } = useResponsiveViewport();
 
   const [isPanelOpen, setIsPanelOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState("filters");
   const [isVideoPlaying, setIsVideoPlaying] = useState(() => isBackgroundTransitionActive("apartments"));
   const [viewerVersion, setViewerVersion] = useState(0);
   const [shouldMountViewer, setShouldMountViewer] = useState(false);
@@ -63,6 +62,13 @@ export default function Apartments() {
     )}px`
     : "min(42dvh, 380px)";
   const isFlatRoutePreparing = pendingFlatId !== null;
+  const sharedScrollStyles = {
+    scrollbarWidth: "thin",
+    scrollbarColor: "rgba(255,255,255,0.14) transparent",
+    scrollBehavior: "smooth",
+    WebkitOverflowScrolling: "touch",
+    overscrollBehavior: "contain",
+  };
 
   const resetApartmentsExperience = useCallback((remountViewer = false) => {
     document.body.style.opacity = "1";
@@ -117,7 +123,7 @@ export default function Apartments() {
   }, [isCompactLayout]);
 
   const prioritizedWarmupFlatIds = useMemo(
-    () => data.slice(0, 18).map((flat) => flat.id),
+    () => data.slice(0, 8).map((flat) => flat.id),
     [data],
   );
 
@@ -126,15 +132,17 @@ export default function Apartments() {
       return undefined;
     }
 
-    const cancelWarmup = scheduleIdleFlatVideoWarmup({
-      prioritizeFlatIds: prioritizedWarmupFlatIds,
-    });
+    const timeoutId = window.setTimeout(() => {
+      scheduleIdleFlatVideoWarmup({
+        prioritizeFlatIds: prioritizedWarmupFlatIds,
+      });
+    }, isCompactLayout ? 1200 : 700);
 
     return () => {
-      cancelWarmup?.();
+      window.clearTimeout(timeoutId);
       cancelIdleFlatVideoWarmup();
     };
-  }, [allData?.length, pathname, prioritizedWarmupFlatIds]);
+  }, [allData?.length, isCompactLayout, pathname, prioritizedWarmupFlatIds]);
 
   useEffect(() => {
     if (pathname !== "/apartments") {
@@ -149,9 +157,21 @@ export default function Apartments() {
         return;
       }
 
-      cancelRotatorWarmup = module.scheduleApartment360FrameWarmup?.({
-        isConstrainedDevice: isCompactLayout,
-      });
+      const startWarmup = () => {
+        if (cancelled) {
+          return;
+        }
+
+        cancelRotatorWarmup = module.scheduleApartment360FrameWarmup?.({
+          isConstrainedDevice: isCompactLayout,
+        });
+      };
+
+      if (typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(startWarmup, { timeout: isCompactLayout ? 1200 : 800 });
+      } else {
+        window.setTimeout(startWarmup, isCompactLayout ? 1000 : 600);
+      }
     });
 
     return () => {
@@ -169,14 +189,32 @@ export default function Apartments() {
       return undefined;
     }
 
-    const rafId = window.requestAnimationFrame(() => {
-      setShouldMountViewer(true);
-    });
+    let rafId = 0;
+    let timeoutId = 0;
+    let idleId = null;
+
+    const mountViewer = () => {
+      rafId = window.requestAnimationFrame(() => {
+        setShouldMountViewer(true);
+      });
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(mountViewer, {
+        timeout: isCompactLayout ? 1200 : 700,
+      });
+    } else {
+      timeoutId = window.setTimeout(mountViewer, isCompactLayout ? 900 : 500);
+    }
 
     return () => {
+      if (idleId !== null && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idleId);
+      }
+      window.clearTimeout(timeoutId);
       window.cancelAnimationFrame(rafId);
     };
-  }, [shouldMountViewer, viewerVersion]);
+  }, [isCompactLayout, shouldMountViewer, viewerVersion]);
 
   const shouldRevealViewer = shouldMountViewer && isViewerReady && !isVideoPlaying;
 
@@ -209,10 +247,10 @@ export default function Apartments() {
         await Promise.race([
           preloadFlatEntryVideo(flatId, {
             aggressive: true,
-            timeoutMs: isTabletOrBelow ? 2200 : 3200,
+            timeoutMs: isTabletOrBelow ? 900 : 1400,
           }),
           new Promise((resolve) => {
-            window.setTimeout(resolve, isTabletOrBelow ? 1800 : 2400);
+            window.setTimeout(resolve, isTabletOrBelow ? 450 : 700);
           }),
         ]);
       } finally {
@@ -239,7 +277,7 @@ export default function Apartments() {
   );
 
   const renderListContent = (
-    <div className={`space-y-2 ${isCompactLayout ? "px-0 pb-20 pt-0" : "mt-2 px-3 pb-5"}`}>
+    <div className={`space-y-2 ${isCompactLayout ? "px-0 pb-1 pt-0" : "px-0 pb-2 pt-0"}`}>
       {loading ? (
         <div className="border border-white/18 bg-[linear-gradient(145deg,rgba(9,14,22,0.76),rgba(7,12,19,0.46)_52%,rgba(5,9,14,0.32))] px-6 py-8 text-center text-xs text-white/68 backdrop-blur-[20px]">
           Loading...
@@ -268,39 +306,60 @@ export default function Apartments() {
         transition: "transform 420ms cubic-bezier(0.22,1,0.36,1), opacity 280ms ease",
       }}
     >
-      <aside className="relative mr-4 flex h-[calc(100dvh-120px)] max-h-[calc(100dvh-120px)] w-[392px] flex-col overflow-hidden rounded-[26px] border border-white/16 bg-[linear-gradient(165deg,rgba(30,38,50,0.56)_0%,rgba(13,18,26,0.72)_46%,rgba(8,11,17,0.82)_100%)] shadow-[-14px_0_58px_rgba(8,12,18,0.28),inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-[28px] saturate-[150%]">
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02)_18%,rgba(12,15,21,0.12)_100%)]" />
-        <div
-          className="relative flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-thin"
-          style={{
-            scrollbarWidth: "thin",
-            scrollbarColor: "rgba(255,255,255,0.12) transparent",
-          }}
-        >
-          <style>{`
-            .scrollbar-thin::-webkit-scrollbar { width: 3px; }
-            .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-            .scrollbar-thin::-webkit-scrollbar-thumb {
-              background: rgba(255,255,255,0.12);
-              border-radius: 2px;
-            }
-            .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-              background: rgba(182,196,221,0.35);
-            }
-          `}</style>
+      <aside className="mr-4 flex h-[calc(100dvh-120px)] max-h-[calc(100dvh-120px)] w-[356px] flex-col gap-3">
+        <style>{`
+          .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+          .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+          .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.14);
+            border-radius: 999px;
+          }
+          .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: rgba(182,196,221,0.32);
+          }
+        `}</style>
 
-          <Filters
-            filters={filters}
-            onToggle={toggleFilter}
-            onSetRange={setAreaRange}
-            onToggleBoolean={toggleBoolean}
-            onClose={() => setIsPanelOpen(false)}
-            onReset={resetFilters}
-            resultCount={data.length}
-            totalCount={allData?.length ?? data.length}
-          />
-          {renderListContent}
-        </div>
+        <section className="relative shrink-0 overflow-hidden rounded-[28px] border border-white/12 bg-[linear-gradient(180deg,rgba(28,36,48,0.7)_0%,rgba(18,24,34,0.74)_55%,rgba(12,17,25,0.8)_100%)] shadow-[-14px_0_58px_rgba(4,8,14,0.28),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-[28px]">
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_24%,rgba(5,8,14,0.14)_100%)]" />
+          <div
+            className="relative max-h-[52dvh] overflow-y-auto scrollbar-thin"
+            style={sharedScrollStyles}
+          >
+            <Filters
+              filters={filters}
+              onToggle={toggleFilter}
+              onSetRange={setAreaRange}
+              onToggleBoolean={toggleBoolean}
+              onClose={() => setIsPanelOpen(false)}
+              onReset={resetFilters}
+              resultCount={data.length}
+              totalCount={allData?.length ?? data.length}
+            />
+          </div>
+        </section>
+
+        <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-white/12 bg-[linear-gradient(180deg,rgba(30,38,46,0.74)_0%,rgba(20,26,34,0.78)_58%,rgba(14,18,24,0.84)_100%)] shadow-[-14px_0_58px_rgba(4,8,14,0.28),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[28px]">
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02)_24%,rgba(5,8,14,0.12)_100%)]" />
+          <div className="relative flex items-start justify-between gap-3 border-b border-white/12 px-4 pb-3 pt-3.5">
+            <div className="min-w-0">
+              <h3 className="text-[1.7rem] font-semibold leading-none tracking-[-0.02em] text-white/92">
+                Matching Flats
+              </h3>
+              <p className="mt-1 text-[12px] leading-4 text-white/56">
+                View apartments matching your current filters.
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] px-2.5 py-1 text-[10.5px] font-semibold text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              {data.length} units
+            </span>
+          </div>
+          <div
+            className="relative min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-2 scrollbar-thin"
+            style={sharedScrollStyles}
+          >
+            {renderListContent}
+          </div>
+        </section>
       </aside>
     </div>
   );
@@ -339,10 +398,10 @@ export default function Apartments() {
               <div className="h-1.5 w-14 rounded-full bg-white/14" />
             </div>
             <div className="min-w-0">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/74">
+              <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-white/74">
                 Residence Atelier
               </p>
-              <p className="mt-1 text-[12px] text-white/60 md:text-[13px]">
+              <p className="mt-1 text-[11px] text-white/60 md:text-[12px]">
                 {data.length} matches from {allData?.length ?? data.length} homes
               </p>
             </div>
@@ -366,65 +425,52 @@ export default function Apartments() {
             </div>
           </div>
 
-          <>
-            <div className="relative border-b border-white/10 px-3 py-2.5">
-              <div className="grid grid-cols-2 gap-2 rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab("filters");
-                    setIsPanelOpen(true);
-                  }}
-                  className={`rounded-[14px] px-4 py-2.5 text-[9px] font-medium uppercase tracking-[0.1em] transition md:text-[10px] ${
-                    activeTab === "filters"
-                      ? "border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.08))] text-white shadow-[0_10px_28px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.12)]"
-                      : "text-white/54 hover:text-white/76"
-                  }`}
-                >
-                  Filters
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab("list");
-                    setIsPanelOpen(true);
-                  }}
-                  className={`rounded-[14px] px-4 py-2.5 text-[9px] font-medium uppercase tracking-[0.1em] transition md:text-[10px] ${
-                    activeTab === "list"
-                      ? "border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.08))] text-white shadow-[0_10px_28px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.12)]"
-                      : "text-white/54 hover:text-white/76"
-                  }`}
-                >
-                  Apartments
-                </button>
-              </div>
-            </div>
+          <div
+            className="min-h-0 flex-1 overflow-y-auto px-3 pb-5 pt-3 scrollbar-thin"
+            style={sharedScrollStyles}
+          >
+            <div className="space-y-3">
+              <section className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(28,36,48,0.72)_0%,rgba(18,24,34,0.76)_58%,rgba(12,17,25,0.82)_100%)] shadow-[0_18px_46px_rgba(4,8,14,0.24),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[24px]">
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02)_26%,rgba(5,8,14,0.12)_100%)]" />
+                <div className="relative">
+                  <Filters
+                    filters={filters}
+                    onToggle={toggleFilter}
+                    onSetRange={setAreaRange}
+                    onToggleBoolean={toggleBoolean}
+                    onClose={() => setIsPanelOpen(false)}
+                    onReset={resetFilters}
+                    resultCount={data.length}
+                    totalCount={allData?.length ?? data.length}
+                    showCloseButton={false}
+                    compactMode
+                  />
+                </div>
+              </section>
 
-            <div
-              className="min-h-0 flex-1 overflow-y-auto scrollbar-thin"
-              style={{
-                scrollbarWidth: "thin",
-                scrollbarColor: "rgba(255,255,255,0.12) transparent",
-              }}
-            >
-              {activeTab === "filters" ? (
-                <Filters
-                  filters={filters}
-                  onToggle={toggleFilter}
-                  onSetRange={setAreaRange}
-                  onToggleBoolean={toggleBoolean}
-                  onClose={() => setIsPanelOpen(false)}
-                  onReset={resetFilters}
-                  resultCount={data.length}
-                  totalCount={allData?.length ?? data.length}
-                  showCloseButton={false}
-                  compactMode
-                />
-              ) : (
-                renderListContent
-              )}
+              <section className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(30,38,46,0.76)_0%,rgba(20,26,34,0.8)_58%,rgba(14,18,24,0.86)_100%)] shadow-[0_18px_46px_rgba(4,8,14,0.24),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[24px]">
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02)_26%,rgba(5,8,14,0.12)_100%)]" />
+                <div className="relative border-b border-white/10 px-4 pb-3 pt-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-[20px] font-semibold leading-none tracking-[-0.02em] text-white/92">
+                        Matching Flats
+                      </h3>
+                      <p className="mt-1 text-[11px] leading-4 text-white/56">
+                        View apartments matching your filters.
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] px-2.5 py-1 text-[10px] font-semibold text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                      {data.length} units
+                    </span>
+                  </div>
+                </div>
+                <div className="relative px-3 pb-3 pt-2">
+                  {renderListContent}
+                </div>
+              </section>
             </div>
-          </>
+          </div>
         </aside>
       </div>
     </>

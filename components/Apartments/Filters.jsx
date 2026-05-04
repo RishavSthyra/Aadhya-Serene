@@ -1,25 +1,34 @@
 import React from "react";
-import { RotateCcw, X } from "lucide-react";
+import { RotateCcw, SlidersHorizontal, X } from "lucide-react";
 
 const TYPE_OPTIONS = ["2 BHK", "3 BHK"];
 const FACING_OPTIONS = ["east", "west", "north"];
 const FLOOR_OPTIONS = ["G", "1", "2", "3", "4", "5", "6"];
 const BALCONY_OPTIONS = ["1", "2", "3"];
 
+function getChipTextStyle(compactMode) {
+  return {
+    fontSize: compactMode ? "13px" : "12.5px",
+    letterSpacing: compactMode ? "0.1em" : "0.12em",
+    lineHeight: 1,
+  };
+}
+
 function FilterChip({ active, label, onClick, compactMode = false }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border font-medium uppercase shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-300 ${
-        compactMode ? "px-2 py-1 text-[6.5px] tracking-[0.06em]" : "px-2.5 py-1.5 text-[7px] tracking-[0.08em]"
+      className={`rounded-full border font-semibold uppercase shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-300 ${
+        compactMode ? "px-2.5 py-1.5" : "px-3 py-1.5"
       } ${
         active
-          ? "border-white/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.08))] text-white shadow-[0_10px_24px_rgba(10,14,22,0.18)]"
-          : "border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] text-white/70 hover:border-white/22 hover:bg-white/[0.08]"
+          ? "border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.05))] text-white/92 shadow-[0_12px_24px_rgba(4,8,14,0.22)]"
+          : "border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.015))] text-white/74 hover:border-white/14 hover:bg-white/[0.05] hover:text-white/90"
       }`}
+      style={getChipTextStyle(compactMode)}
     >
-      {label}
+      <span style={getChipTextStyle(compactMode)}>{label}</span>
     </button>
   );
 }
@@ -30,29 +39,32 @@ function BooleanPill({ active, label, onClick, compactMode = false }) {
       type="button"
       onClick={onClick}
       className={`flex items-center rounded-full border shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-300 ${
-        compactMode ? "gap-2 px-2.5 py-1" : "gap-2.5 px-3 py-1.5"
+        compactMode ? "gap-2 px-2.5 py-1.5" : "gap-2 px-3 py-1.5"
       } ${
         active
-          ? "border-white/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.07))] shadow-[0_8px_16px_rgba(10,14,22,0.18)]"
-          : "border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/22 hover:bg-white/[0.08]"
+          ? "border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.04))] shadow-[0_10px_20px_rgba(4,8,14,0.18)]"
+          : "border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.015))] hover:border-white/14 hover:bg-white/[0.05]"
       }`}
     >
-      <span className={`font-medium uppercase text-white/74 ${compactMode ? "text-[6.5px] tracking-[0.06em]" : "text-[7px] tracking-[0.08em]"}`}>
+      <span
+        className="font-semibold uppercase text-white/76"
+        style={getChipTextStyle(compactMode)}
+      >
         {label}
       </span>
       <span
         className={`relative inline-flex items-center rounded-full border transition-all duration-300 ${
-          compactMode ? "h-4 w-7" : "h-4.5 w-8"
+          compactMode ? "h-4.5 w-8" : "h-5 w-9"
         } ${
-          active ? "border-white/18 bg-white/12" : "border-white/10 bg-white/6"
+          active ? "border-white/18 bg-white/14" : "border-white/10 bg-white/6"
         }`}
       >
         <span
-          className={`absolute h-3.5 w-3.5 rounded-full transition-transform duration-300 ${
+          className={`absolute h-4 w-4 rounded-full transition-transform duration-300 ${
             active
               ? compactMode
-                ? "translate-x-3 bg-white/88"
-                : "translate-x-4 bg-white/88"
+                ? "translate-x-3.5 bg-white/92"
+                : "translate-x-4 bg-white/92"
               : "translate-x-0.5 bg-white/78"
           }`}
         />
@@ -64,7 +76,7 @@ function BooleanPill({ active, label, onClick, compactMode = false }) {
 function FilterGroup({ label, children, compactMode = false }) {
   return (
     <div>
-      <p className={`font-semibold uppercase text-white/36 ${compactMode ? "mb-1.5 text-[7px] tracking-[0.16em]" : "mb-2 text-[8px] tracking-[0.2em]"}`}>
+      <p className={`font-semibold text-white/68 ${compactMode ? "mb-1.5 text-[11.5px]" : "mb-2 text-[12px]"}`}>
         {label}
       </p>
       {children}
@@ -98,21 +110,20 @@ export default function Filters({
   const maxPercent = ((areaRange[1] - 800) / (1600 - 800)) * 100;
 
   return (
-    <section className={compactMode ? "px-3 pb-4 pt-3 md:px-4" : "px-4 pb-4 pt-4"}>
-      <div className={`flex items-start justify-between gap-4 ${compactMode ? "mb-3" : "mb-4"}`}>
-        <div className={compactMode ? "max-w-[220px]" : "max-w-[240px]"}>
-          <p className={`font-semibold uppercase text-white/40 ${compactMode ? "text-[7px] tracking-[0.2em]" : "text-[8px] tracking-[0.22em]"}`}>
-            Apartment Curation
-          </p>
-          <h2 className={`font-medium leading-[1.04] tracking-[0.03em] text-white/94 ${compactMode ? "mt-1.5 text-[16px]" : "mt-2 text-[20px]"}`}>
-            Refine your residence
-          </h2>
-          {!compactMode ? (
-            <p className="mt-2 max-w-[220px] text-[10px] leading-5 text-white/46">
-              Filter by layout, level, outlook, and size to reveal the homes
-              that suit your pace of living.
+    <section className={compactMode ? "px-3.5 pb-3.5 pt-3.5 md:px-4" : "px-4 pb-4 pt-4"}>
+      <div className={`flex items-start justify-between gap-3 ${compactMode ? "mb-3.5" : "mb-4"}`}>
+        <div className="flex min-w-0 items-start gap-2.5">
+          <div className={`flex shrink-0 items-center justify-center rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.03))] text-white/84 shadow-[0_12px_28px_rgba(8,12,18,0.18),inset_0_1px_0_rgba(255,255,255,0.1)] ${compactMode ? "h-8.5 w-8.5" : "h-9 w-9"}`}>
+            <SlidersHorizontal size={compactMode ? 14 : 15} />
+          </div>
+          <div className="min-w-0">
+            <h2 className={`font-semibold leading-none tracking-[-0.02em] text-white/94 ${compactMode ? "text-[19px]" : "text-[21px]"}`}>
+              Filters
+            </h2>
+            <p className={`mt-1 text-white/56 ${compactMode ? "text-[11px] leading-4" : "text-[11.5px] leading-4"}`}>
+              Refine available homes in real time.
             </p>
-          ) : null}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -120,9 +131,9 @@ export default function Filters({
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] px-3 py-1.5 text-[14px] font-medium uppercase tracking-[0.08em] text-white/70 shadow-[0_10px_24px_rgba(8,12,18,0.14),inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:border-white/24 hover:bg-white/[0.08] hover:text-white/88"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.03))] px-3 py-1.5 text-[11px] font-semibold text-white/78 shadow-[0_10px_24px_rgba(8,12,18,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
             >
-              <RotateCcw size={14} />
+              <RotateCcw size={12} />
               Reset
             </button>
           ) : null}
@@ -130,7 +141,7 @@ export default function Filters({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] text-white/64 shadow-[0_10px_24px_rgba(8,12,18,0.14),inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:border-white/24 hover:bg-white/[0.08] hover:text-white/84"
+              className="flex h-8.5 w-8.5 items-center justify-center rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.03))] text-white/70 shadow-[0_10px_24px_rgba(8,12,18,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
               aria-label="Close panel"
             >
               <X size={13} />
@@ -139,19 +150,23 @@ export default function Filters({
         </div>
       </div>
 
-      <div className={`border-b border-white/8 ${compactMode ? "mb-3 pb-2.5" : "mb-4 pb-3"}`}>
-        <p className={compactMode ? "text-[9px] leading-[1.1rem] text-white/52" : "text-[10px] leading-5 text-white/54"}>
-          <span className="font-semibold text-white/90">{resultCount}</span> matches
-          {typeof totalCount === "number" ? (
-            <>
-              {" "}
-              from <span className="text-white/78">{totalCount}</span> homes
-            </>
-          ) : null}
-        </p>
+      <div className={`mb-4 flex items-center justify-between gap-3 rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.015))] ${compactMode ? "px-3 py-2.5" : "px-3.5 py-3"} shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]`}>
+        <div>
+          <p className={`font-semibold uppercase tracking-[0.12em] text-white/48 ${compactMode ? "text-[8px]" : "text-[8.5px]"}`}>
+            Live Inventory
+          </p>
+          <p className={`mt-1 text-white/76 ${compactMode ? "text-[11px]" : "text-[11.5px]"}`}>
+            {resultCount} matching homes
+          </p>
+        </div>
+        {typeof totalCount === "number" ? (
+          <span className={`rounded-full border border-white/10 bg-white/[0.04] font-semibold text-white/74 ${compactMode ? "px-2 py-1 text-[9.5px]" : "px-2.5 py-1 text-[10px]"}`}>
+            {totalCount} total
+          </span>
+        ) : null}
       </div>
 
-      <div className={compactMode ? "space-y-3" : "space-y-3.5"}>
+      <div className={compactMode ? "space-y-4" : "space-y-4.5"}>
         <FilterGroup label="Type" compactMode={compactMode}>
           <div className="flex flex-wrap gap-2">
             {TYPE_OPTIONS.map((value) => (
@@ -209,17 +224,21 @@ export default function Filters({
         </FilterGroup>
 
         <FilterGroup label="Area" compactMode={compactMode}>
-          <div className={`flex items-center justify-between gap-3 ${compactMode ? "mb-2" : "mb-2.5"}`}>
-            <span className={compactMode ? "text-[8px] text-white/40" : "text-[9px] text-white/40"}>800 sqft</span>
-            <span className={`rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] font-semibold uppercase text-white/66 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ${compactMode ? "px-2.5 py-1 text-[6.5px] tracking-[0.12em]" : "px-3 py-1 text-[7px] tracking-[0.14em]"}`}>
-              {areaRange[0]} to {areaRange[1]} sqft
-            </span>
-            <span className={compactMode ? "text-[8px] text-white/40" : "text-[9px] text-white/40"}>1600 sqft</span>
+          <div className={`flex items-center justify-between gap-3 ${compactMode ? "mb-2.5" : "mb-3"}`}>
+            <div>
+              <p className={`font-semibold text-white/82 ${compactMode ? "text-[11.5px]" : "text-[12px]"}`}>
+                {areaRange[0]} to {areaRange[1]} sqft
+              </p>
+              <p className={`mt-0.5 text-white/44 ${compactMode ? "text-[9.5px]" : "text-[10px]"}`}>
+                Drag both ends to refine the size range.
+              </p>
+            </div>
           </div>
 
-          <div className="relative h-1 rounded-full bg-white/10">
+          <div className="relative">
+            <div className="h-2 rounded-full bg-white/10" />
             <div
-              className="absolute h-1 rounded-full bg-[linear-gradient(90deg,rgba(210,218,230,0.95)_0%,rgba(240,244,248,0.95)_100%)]"
+              className="absolute top-0 h-2 rounded-full bg-[linear-gradient(90deg,rgba(239,243,248,0.94)_0%,rgba(255,255,255,0.88)_100%)]"
               style={{
                 left: `${minPercent}%`,
                 width: `${Math.max(maxPercent - minPercent, 2)}%`,
@@ -237,7 +256,7 @@ export default function Filters({
                   areaRange[1],
                 ])
               }
-              className="absolute top-1/2 h-7 w-full -translate-y-1/2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-white/24 [&::-webkit-slider-thumb]:bg-[#eef2f7] [&::-webkit-slider-thumb]:shadow-[0_8px_18px_rgba(8,12,18,0.22)] [&::-webkit-slider-thumb]:cursor-pointer"
+              className="absolute top-1/2 h-8 w-full -translate-y-1/2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4.5 [&::-webkit-slider-thumb]:w-4.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-white/24 [&::-webkit-slider-thumb]:bg-[#eef2f7] [&::-webkit-slider-thumb]:shadow-[0_10px_18px_rgba(8,12,18,0.24)] [&::-webkit-slider-thumb]:cursor-pointer"
             />
             <input
               type="range"
@@ -251,8 +270,13 @@ export default function Filters({
                   Math.max(Number(event.target.value), areaRange[0] + 10),
                 ])
               }
-              className="absolute top-1/2 h-7 w-full -translate-y-1/2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-white/24 [&::-webkit-slider-thumb]:bg-[#eef2f7] [&::-webkit-slider-thumb]:shadow-[0_8px_18px_rgba(8,12,18,0.22)] [&::-webkit-slider-thumb]:cursor-pointer"
+              className="absolute top-1/2 h-8 w-full -translate-y-1/2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4.5 [&::-webkit-slider-thumb]:w-4.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-white/24 [&::-webkit-slider-thumb]:bg-[#eef2f7] [&::-webkit-slider-thumb]:shadow-[0_10px_18px_rgba(8,12,18,0.24)] [&::-webkit-slider-thumb]:cursor-pointer"
             />
+          </div>
+
+          <div className={`mt-2 flex items-center justify-between text-white/44 ${compactMode ? "text-[9.5px]" : "text-[10px]"}`}>
+            <span>800 sqft</span>
+            <span>1600 sqft</span>
           </div>
         </FilterGroup>
 
