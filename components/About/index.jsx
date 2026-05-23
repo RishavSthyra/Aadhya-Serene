@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Inter } from 'next/font/google';
 import { ArrowDown, ArrowUpRight, CheckCircle2, MapPin, Ruler } from 'lucide-react';
 import usePerformanceProfile from '@/hooks/usePerformanceProfile';
+import { warmApartment360Frames } from '@/lib/apartment360Warmup';
 import { isBackgroundTransitionActive } from '@/lib/background-transition';
 
 const titleFont = Inter({
@@ -246,7 +247,7 @@ function ProjectBriefContent({ disableAnimation = false }) {
   );
 }
 
-function AboutMainCardContent({ navigateTo, disableAnimation = false }) {
+function AboutMainCardContent({ navigateTo, primeApartmentsRoute, disableAnimation = false }) {
   return (
     <>
       <div className="flex items-center gap-4">
@@ -330,6 +331,8 @@ function AboutMainCardContent({ navigateTo, disableAnimation = false }) {
         <button
           type="button"
           onClick={() => navigateTo('/apartments')}
+          onMouseEnter={primeApartmentsRoute}
+          onTouchStart={primeApartmentsRoute}
           className="inline-flex min-h-[48px] items-center gap-2 rounded-full border border-white/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(241,244,248,0.84)_100%)] px-6 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#101114] shadow-[0_12px_30px_rgba(0,0,0,0.16)] transition duration-300 hover:-translate-y-0.5"
         >
           Explore Apartments
@@ -352,6 +355,12 @@ export default function About() {
   const { isTabletOrBelow, preferLightExperience } = usePerformanceProfile();
   const shouldUseLightMotion = preferLightExperience;
 
+  const primeApartmentsRoute = useCallback(() => {
+    void warmApartment360Frames({
+      isConstrainedDevice: isTabletOrBelow,
+    });
+  }, [isTabletOrBelow]);
+
   const navigateTo = useCallback(
     (path) => {
       if (isNavigatingRef.current) return;
@@ -360,6 +369,7 @@ export default function About() {
       if (path === '/') {
         window.dispatchEvent(new CustomEvent('bg-layout', { detail: 'home' }));
       } else if (path === '/apartments') {
+        primeApartmentsRoute();
         window.dispatchEvent(
           new CustomEvent('bg-layout', { detail: 'apartments' }),
         );
@@ -378,7 +388,7 @@ export default function About() {
       const routePushDelay = path === '/apartments' && isTabletOrBelow ? 0 : 220;
       window.setTimeout(() => router.push(path), routePushDelay);
     },
-    [isTabletOrBelow, router],
+    [isTabletOrBelow, primeApartmentsRoute, router],
   );
 
   const scrollToMobileContent = useCallback(() => {
@@ -527,6 +537,7 @@ export default function About() {
             >
               <AboutMainCardContent
                 navigateTo={navigateTo}
+                primeApartmentsRoute={primeApartmentsRoute}
                 disableAnimation={shouldUseLightMotion}
               />
             </motion.div>
@@ -593,6 +604,7 @@ export default function About() {
               >
                 <AboutMainCardContent
                   navigateTo={navigateTo}
+                  primeApartmentsRoute={primeApartmentsRoute}
                   disableAnimation={shouldUseLightMotion}
                 />
               </motion.article>

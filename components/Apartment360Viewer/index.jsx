@@ -1,7 +1,7 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import BuildingModel from './BuildingModel';
 import styles from './viewer.module.css';
 import { flatViewKeyFromFrame } from '../../lib/flats';
 
@@ -13,13 +13,13 @@ const ROT360_CDN_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_we
 const ROT360_FRAME_EXTENSION = ROT360_CDN_BASE.includes('webp') ? 'webp' : 'avif';
 const DRAG_FRAME_STEP = 1;
 const MOBILE_DRAG_FRAME_STEP = 1;
-const PRELOAD_RADIUS = 12;
-const PRELOAD_CONCURRENCY = 6;
-const MAX_CACHE_SIZE = 56;
+const PRELOAD_RADIUS = 20;
+const PRELOAD_CONCURRENCY = 8;
+const MAX_CACHE_SIZE = 120;
 const DRAG_SENSITIVITY = 0.28;
 const MOBILE_PRELOAD_RADIUS = 4;
 const MOBILE_PRELOAD_CONCURRENCY = 2;
-const MOBILE_MAX_CACHE_SIZE = 16;
+const MOBILE_MAX_CACHE_SIZE = 28;
 const MOBILE_DPR_CAP = 1;
 const DESKTOP_DPR_CAP = 1.6;
 const MIN_ZOOM = 1;
@@ -27,23 +27,27 @@ const MAX_ZOOM = 2.25;
 const DRAG_START_THRESHOLD = 6;
 const SNAP_ANIMATION_DURATION_MS = 300;
 const MOBILE_SNAP_ANIMATION_DURATION_MS = 240;
-const DRAG_PRELOAD_RADIUS = 3;
+const DRAG_PRELOAD_RADIUS = 8;
 const MOBILE_DRAG_PRELOAD_RADIUS = 1;
-const DRAG_PRELOAD_STRIDE = 5;
+const DRAG_PRELOAD_STRIDE = 3;
 const MOBILE_DRAG_PRELOAD_STRIDE = 10;
-const INITIAL_WARMUP_RADIUS = 10;
-const MOBILE_INITIAL_WARMUP_RADIUS = 4;
-const INITIAL_WARMUP_CONCURRENCY = 3;
-const MOBILE_INITIAL_WARMUP_CONCURRENCY = 1;
-const INITIAL_WARMUP_DELAY_MS = 180;
-const MOBILE_INITIAL_WARMUP_DELAY_MS = 420;
+const INITIAL_WARMUP_RADIUS = 30;
+const MOBILE_INITIAL_WARMUP_RADIUS = 6;
+const INITIAL_WARMUP_CONCURRENCY = 8;
+const MOBILE_INITIAL_WARMUP_CONCURRENCY = 2;
+const INITIAL_WARMUP_DELAY_MS = 0;
+const MOBILE_INITIAL_WARMUP_DELAY_MS = 120;
 const INITIAL_WARMUP_TIMEOUT_MS = 800;
 const MOBILE_INITIAL_WARMUP_TIMEOUT_MS = 1200;
 const INITIAL_WARMUP_SNAP_RADIUS = 1;
-const INITIAL_INTERACTION_PRIME_RADIUS = 14;
-const MOBILE_INITIAL_INTERACTION_PRIME_RADIUS = 6;
-const INITIAL_INTERACTION_PRIME_CONCURRENCY = 5;
+const INITIAL_INTERACTION_PRIME_RADIUS = 45;
+const MOBILE_INITIAL_INTERACTION_PRIME_RADIUS = 8;
+const INITIAL_INTERACTION_SNAP_RADIUS = 3;
+const MOBILE_INITIAL_INTERACTION_SNAP_RADIUS = 1;
+const INITIAL_INTERACTION_PRIME_CONCURRENCY = 8;
 const MOBILE_INITIAL_INTERACTION_PRIME_CONCURRENCY = 2;
+const INITIAL_INTERACTION_UNLOCK_COUNT = 15;
+const MOBILE_INITIAL_INTERACTION_UNLOCK_COUNT = 9;
 const warmedStartupFrames = new Set();
 const warmedStartupImages = new Map();
 const startupWarmPromises = new Map();
@@ -52,6 +56,11 @@ let startupWarmActiveLoads = 0;
 let startupWarmIdleHandle = null;
 let startupWarmTimeoutHandle = null;
 let startupWarmRunId = 0;
+
+const BuildingModel = dynamic(() => import('./BuildingModel'), {
+    ssr: false,
+    loading: () => null,
+});
 
 function getFrameUrl(frameNumber) {
     return `${ROT360_CDN_BASE}/frame_${String(frameNumber).padStart(4, '0')}.${ROT360_FRAME_EXTENSION}`;
@@ -161,7 +170,15 @@ function warmStartupFrame(frameNumber, timeoutMs) {
 
         image.decoding = 'async';
         image.fetchPriority = normalizedFrame === 1 ? 'high' : 'low';
-        image.onload = () => {
+        image.onload = async () => {
+            try {
+                if (typeof image.decode === 'function') {
+                    await image.decode();
+                }
+            } catch {
+                // Some browsers can still draw the frame even if decode rejects.
+            }
+
             window.clearTimeout(timeoutId);
             warmedStartupImages.set(normalizedFrame, image);
             finish(true);
@@ -178,10 +195,28 @@ function warmStartupFrame(frameNumber, timeoutMs) {
 }
 
 function getInteractionPrimeSequence(isConstrainedDevice) {
-    return getPreloadSequence(
+    const radius = isConstrainedDevice
+        ? MOBILE_INITIAL_INTERACTION_PRIME_RADIUS
+        : INITIAL_INTERACTION_PRIME_RADIUS;
+    const snapRadius = isConstrainedDevice
+        ? MOBILE_INITIAL_INTERACTION_SNAP_RADIUS
+        : INITIAL_INTERACTION_SNAP_RADIUS;
+    const orderedFrames = getPreloadSequence(
         1,
-        isConstrainedDevice ? MOBILE_INITIAL_INTERACTION_PRIME_RADIUS : INITIAL_INTERACTION_PRIME_RADIUS,
+        radius,
     );
+    const seen = new Set(orderedFrames);
+
+    SNAP_POINTS.slice(0, -1).forEach((snapFrame) => {
+        getPreloadSequence(snapFrame, snapRadius).forEach((frameNumber) => {
+            if (!seen.has(frameNumber)) {
+                seen.add(frameNumber);
+                orderedFrames.push(frameNumber);
+            }
+        });
+    });
+
+    return orderedFrames;
 }
 
 async function warmFramesWithConcurrency(frameNumbers, { concurrency, timeoutMs }) {
@@ -475,7 +510,9 @@ export default function Apartment360Viewer({
             context.fillStyle = '#0b1018';
             context.fillRect(0, 0, canvasWidth, canvasHeight);
             context.imageSmoothingEnabled = true;
-            context.imageSmoothingQuality = canvasRatio > imageRatio ? 'high' : 'medium';
+            context.imageSmoothingQuality = isDragging.current
+                ? 'low'
+                : (canvasRatio > imageRatio ? 'high' : 'medium');
             context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
             lastDrawnFrameRef.current = frameNumber;
 
@@ -553,7 +590,17 @@ export default function Apartment360Viewer({
                 image.decoding = 'async';
                 image.fetchPriority = nextFrame === latestRequestedFrameRef.current ? 'high' : 'low';
 
-                image.onload = () => resolve(image);
+                image.onload = async () => {
+                    try {
+                        if (typeof image.decode === 'function') {
+                            await image.decode();
+                        }
+                    } catch {
+                        // Some browsers can still draw the frame even if decode rejects.
+                    }
+
+                    resolve(image);
+                };
                 image.onerror = () => reject(new Error(`Failed to load frame ${nextFrame}`));
                 image.src = getFrameUrl(nextFrame);
             })
@@ -715,8 +762,13 @@ export default function Apartment360Viewer({
 
         const primeInitialInteraction = async () => {
             const criticalFrames = getInteractionPrimeSequence(isConstrainedDevice);
+            const unlockCount = isConstrainedDevice
+                ? MOBILE_INITIAL_INTERACTION_UNLOCK_COUNT
+                : INITIAL_INTERACTION_UNLOCK_COUNT;
+            const instantFrames = criticalFrames.slice(0, unlockCount);
+            const backgroundFrames = criticalFrames.slice(unlockCount);
 
-            await warmFramesWithConcurrency(criticalFrames, {
+            await warmFramesWithConcurrency(instantFrames, {
                 concurrency: isConstrainedDevice
                     ? MOBILE_INITIAL_INTERACTION_PRIME_CONCURRENCY
                     : INITIAL_INTERACTION_PRIME_CONCURRENCY,
@@ -729,7 +781,7 @@ export default function Apartment360Viewer({
                 return;
             }
 
-            criticalFrames.forEach((frameNumber) => {
+            instantFrames.forEach((frameNumber) => {
                 hydrateWarmFrame(frameNumber);
             });
 
@@ -739,6 +791,29 @@ export default function Apartment360Viewer({
                 preloadRadius: preloadRadius,
             });
             setIsStartupPrimed(true);
+
+            if (!backgroundFrames.length) {
+                return;
+            }
+
+            void warmFramesWithConcurrency(backgroundFrames, {
+                concurrency: isConstrainedDevice
+                    ? MOBILE_INITIAL_INTERACTION_PRIME_CONCURRENCY
+                    : Math.max(4, INITIAL_INTERACTION_PRIME_CONCURRENCY - 2),
+                timeoutMs: isConstrainedDevice
+                    ? MOBILE_INITIAL_WARMUP_TIMEOUT_MS
+                    : INITIAL_WARMUP_TIMEOUT_MS,
+            }).then(() => {
+                if (cancelled) {
+                    return;
+                }
+
+                backgroundFrames.forEach((frameNumber) => {
+                    hydrateWarmFrame(frameNumber);
+                });
+
+                trimCache();
+            });
         };
 
         setIsStartupPrimed(false);
@@ -1056,23 +1131,25 @@ export default function Apartment360Viewer({
             >
                 <canvas ref={canvasRef} className={styles.backgroundCanvas} />
 
-                <div
-                    className={styles.canvasOverlay}
-                    style={{
-                        opacity: 1,
-                        pointerEvents: isSettled && !isDraggingState && !viewerInteractionLocked ? 'auto' : 'none'
-                    }}
-                >
-                    <BuildingModel
-                        currentFrame={snappedFrame}
-                        filteredFlatIds={filteredFlatIds}
-                        onFlatClick={handleModelFlatClick}
-                        onFlatHoverStart={onFlatHoverStart}
-                        shouldAllowFlatClick={shouldAllowFlatClick}
-                        isConstrainedDevice={isConstrainedDevice}
-                        meshInteractionEnabled={isSettled && !isDraggingState && !viewerInteractionLocked}
-                    />
-                </div>
+                {isStartupPrimed ? (
+                    <div
+                        className={styles.canvasOverlay}
+                        style={{
+                            opacity: 1,
+                            pointerEvents: isSettled && !isDraggingState && !viewerInteractionLocked ? 'auto' : 'none'
+                        }}
+                    >
+                        <BuildingModel
+                            currentFrame={snappedFrame}
+                            filteredFlatIds={filteredFlatIds}
+                            onFlatClick={handleModelFlatClick}
+                            onFlatHoverStart={onFlatHoverStart}
+                            shouldAllowFlatClick={shouldAllowFlatClick}
+                            isConstrainedDevice={isConstrainedDevice}
+                            meshInteractionEnabled={isSettled && !isDraggingState && !viewerInteractionLocked}
+                        />
+                    </div>
+                ) : null}
             </div>
 
             <div

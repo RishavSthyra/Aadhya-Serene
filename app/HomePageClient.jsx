@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import usePerformanceProfile from "@/hooks/usePerformanceProfile";
+import { warmApartment360Frames } from "@/lib/apartment360Warmup";
 import {
   markHomeRefreshLoaderSeen,
   setHomePreloaderComplete,
@@ -95,6 +96,12 @@ export default function HomePageClient() {
   const { isTabletOrBelow, preferLightExperience } = usePerformanceProfile();
   const shouldUseLightMotion = preferLightExperience;
 
+  const primeApartmentsRoute = useCallback(() => {
+    void warmApartment360Frames({
+      isConstrainedDevice: isTabletOrBelow,
+    });
+  }, [isTabletOrBelow]);
+
   useEffect(() => {
     if (typeof window === "undefined") {
       return undefined;
@@ -169,6 +176,10 @@ export default function HomePageClient() {
       const targetLayout = path === "/apartments" ? "apartments" : "about";
       window.dispatchEvent(new CustomEvent("bg-layout", { detail: targetLayout }));
 
+      if (path === "/apartments") {
+        primeApartmentsRoute();
+      }
+
       const heroInner = document.getElementById("home-inner");
       if (heroInner) {
         heroInner.style.opacity = "0";
@@ -184,7 +195,7 @@ export default function HomePageClient() {
         router.push(path);
       }, routePushDelay);
     },
-    [isTabletOrBelow, router],
+    [isTabletOrBelow, primeApartmentsRoute, router],
   );
 
   useEffect(() => {
@@ -279,6 +290,8 @@ export default function HomePageClient() {
             <button
               type="button"
               onClick={() => navigateTo("/apartments")}
+              onMouseEnter={primeApartmentsRoute}
+              onTouchStart={primeApartmentsRoute}
               className={styles.heroPrimaryCta}
             >
               <span>Explore Residences</span>

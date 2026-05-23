@@ -12,6 +12,7 @@ import { useApartmentsData } from "../../hooks/useApartmentsData";
 import Filters from "./Filters";
 import ApartmentList from "./ApartmentList";
 import { preloadInteriorStartPano } from "../../lib/interior-panos";
+import { warmApartment360Frames } from "../../lib/apartment360Warmup";
 import {
   cancelIdleFlatVideoWarmup,
   preloadFlatEntryVideo,
@@ -123,7 +124,7 @@ export default function Apartments() {
   }, [isCompactLayout]);
 
   const prioritizedWarmupFlatIds = useMemo(
-    () => data.slice(0, 8).map((flat) => flat.id),
+    () => data.slice(0, 18).map((flat) => flat.id),
     [data],
   );
 
@@ -136,7 +137,7 @@ export default function Apartments() {
       scheduleIdleFlatVideoWarmup({
         prioritizeFlatIds: prioritizedWarmupFlatIds,
       });
-    }, isCompactLayout ? 1200 : 700);
+    }, isCompactLayout ? 300 : 80);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -152,26 +153,15 @@ export default function Apartments() {
     let cancelled = false;
     let cancelRotatorWarmup = null;
 
-    import("../Apartment360Viewer").then((module) => {
+    void warmApartment360Frames({
+      isConstrainedDevice: isCompactLayout,
+    }).then((cleanup) => {
       if (cancelled) {
+        cleanup?.();
         return;
       }
 
-      const startWarmup = () => {
-        if (cancelled) {
-          return;
-        }
-
-        cancelRotatorWarmup = module.scheduleApartment360FrameWarmup?.({
-          isConstrainedDevice: isCompactLayout,
-        });
-      };
-
-      if (typeof window.requestIdleCallback === "function") {
-        window.requestIdleCallback(startWarmup, { timeout: isCompactLayout ? 1200 : 800 });
-      } else {
-        window.setTimeout(startWarmup, isCompactLayout ? 1000 : 600);
-      }
+      cancelRotatorWarmup = cleanup;
     });
 
     return () => {
@@ -189,32 +179,14 @@ export default function Apartments() {
       return undefined;
     }
 
-    let rafId = 0;
-    let timeoutId = 0;
-    let idleId = null;
-
-    const mountViewer = () => {
-      rafId = window.requestAnimationFrame(() => {
-        setShouldMountViewer(true);
-      });
-    };
-
-    if (typeof window.requestIdleCallback === "function") {
-      idleId = window.requestIdleCallback(mountViewer, {
-        timeout: isCompactLayout ? 1200 : 700,
-      });
-    } else {
-      timeoutId = window.setTimeout(mountViewer, isCompactLayout ? 900 : 500);
-    }
+    const rafId = window.requestAnimationFrame(() => {
+      setShouldMountViewer(true);
+    });
 
     return () => {
-      if (idleId !== null && typeof window.cancelIdleCallback === "function") {
-        window.cancelIdleCallback(idleId);
-      }
-      window.clearTimeout(timeoutId);
       window.cancelAnimationFrame(rafId);
     };
-  }, [isCompactLayout, shouldMountViewer, viewerVersion]);
+  }, [shouldMountViewer, viewerVersion]);
 
   const shouldRevealViewer = shouldMountViewer && isViewerReady && !isVideoPlaying;
 
