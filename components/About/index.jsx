@@ -8,6 +8,7 @@ import { ArrowDown, ArrowUpRight, CheckCircle2, MapPin, Ruler } from 'lucide-rea
 import usePerformanceProfile from '@/hooks/usePerformanceProfile';
 import { warmApartment360Frames } from '@/lib/apartment360Warmup';
 import { isBackgroundTransitionActive } from '@/lib/background-transition';
+import responsiveStyles from './about.module.css';
 
 const titleFont = Inter({
   subsets: ['latin'],
@@ -21,6 +22,7 @@ const FEATURE_PILLS = [
   'Contemporary Architecture',
   'Landscaped Open Surroundings',
 ];
+const WHEEL_NAV_THRESHOLD = 4;
 
 const PROJECT_STATS = [
   {
@@ -204,11 +206,11 @@ function CountUpStat({ end, label, format, decimals = 0, delay = 0, disableAnima
   const renderedValue = format ? format(value) : value.toFixed(decimals);
 
   return (
-    <article className="h-full rounded-[22px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.1)_100%)] px-4 py-4 shadow-[0_20px_40px_rgba(6,10,18,0.16),inset_0_1px_0_rgba(255,255,255,0.22)] backdrop-blur-[24px] md:px-4 md:py-4">
-      <div className="text-[1.85rem] font-light leading-none tracking-[-0.05em] text-[#f7f8fb] md:text-[1.95rem]">
+    <article className={`${responsiveStyles.statCard} h-full rounded-[22px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.1)_100%)] px-4 py-4 shadow-[0_20px_40px_rgba(6,10,18,0.16),inset_0_1px_0_rgba(255,255,255,0.22)] backdrop-blur-[24px] md:px-4 md:py-4`}>
+      <div className={`${responsiveStyles.statValue} text-[1.85rem] font-light leading-none tracking-[-0.05em] text-[#f7f8fb] md:text-[1.95rem]`}>
         {renderedValue}
       </div>
-      <p className="mt-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/62 md:text-[9.5px]">
+      <p className={`${responsiveStyles.statLabel} mt-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/62 md:text-[9.5px]`}>
         {label}
       </p>
     </article>
@@ -225,12 +227,12 @@ function ProjectBriefContent({ disableAnimation = false }) {
         <span className="h-px flex-1 bg-white/18" />
       </div>
 
-      <p className="mt-4 max-w-[28ch] text-[14px] leading-[1.8] text-white/72">
+      <p className={`${responsiveStyles.briefCopy} mt-4 max-w-[28ch] text-[14px] leading-[1.8] text-white/72`}>
         Essential details with a quieter, more luxurious finish and a more
         composed residential rhythm.
       </p>
 
-      <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5">
+      <div className={`${responsiveStyles.statsGrid} mt-6 grid grid-cols-2 gap-x-4 gap-y-5`}>
         {PROJECT_STATS.map((stat, index) => (
           <CountUpStat
             key={stat.label}
@@ -257,18 +259,18 @@ function AboutMainCardContent({ navigateTo, primeApartmentsRoute, disableAnimati
         <span className="h-px flex-1 bg-white/18" />
       </div>
 
-      <div className="mt-5 space-y-1">
+      <div className={`${responsiveStyles.titleBlock} mt-5 space-y-1`}>
         {TITLE_LINES.map((line) => (
           <AnimatedLine
             key={line}
             text={line}
             disableAnimation={disableAnimation}
-            className={`${titleFont.className} text-[clamp(1.72rem,3.2vw,3.45rem)] font-light leading-[1.03] tracking-[-0.04em] text-[#f7f7fa] [text-shadow:0_12px_34px_rgba(0,0,0,0.18)] md:whitespace-nowrap`}
+            className={`${responsiveStyles.titleLine} ${titleFont.className} text-[clamp(1.72rem,3.2vw,3.45rem)] font-light leading-[1.03] tracking-[-0.04em] text-[#f7f7fa] [text-shadow:0_12px_34px_rgba(0,0,0,0.18)] md:whitespace-nowrap`}
           />
         ))}
       </div>
 
-      <motion.p className="mt-5 max-w-[405px] text-[13.5px] leading-[1.82] text-white/80 md:text-[14px]">
+      <motion.p className={`${responsiveStyles.introCopy} mt-5 max-w-[405px] text-[13.5px] leading-[1.82] text-white/80 md:text-[14px]`}>
         <AnimatedLine
           text="Aadhya Serene is crafted for those who value clean architecture, generous light, and a more composed living experience in North Bengaluru. Every detail is shaped to feel elevated, elegant, and effortlessly comfortable."
           disableAnimation={disableAnimation}
@@ -282,12 +284,12 @@ function AboutMainCardContent({ navigateTo, primeApartmentsRoute, disableAnimati
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.78, delay: 0.98, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-6 flex flex-wrap gap-2.5"
+        className={`${responsiveStyles.pills} mt-6 flex flex-wrap gap-2.5`}
       >
         {FEATURE_PILLS.map((pill) => (
           <span
             key={pill}
-            className="inline-flex min-h-[38px] items-center rounded-full border border-white/18 bg-white/8 px-4 text-[10px] font-medium uppercase tracking-[0.14em] text-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-[18px]"
+            className={`${responsiveStyles.pill} inline-flex min-h-[38px] items-center rounded-full border border-white/18 bg-white/8 px-4 text-[10px] font-medium uppercase tracking-[0.14em] text-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-[18px]`}
           >
             {pill}
           </span>
@@ -298,23 +300,23 @@ function AboutMainCardContent({ navigateTo, primeApartmentsRoute, disableAnimati
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.82, delay: 1.1, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-7 space-y-0"
+        className={`${responsiveStyles.detailRows} mt-7 space-y-0`}
       >
         {DETAIL_ROWS.map(({ icon: Icon, title, description }, index) => (
           <div
             key={title}
-            className={`flex items-start gap-4 py-5 ${
+            className={`${responsiveStyles.detailRow} flex items-start gap-4 py-5 ${
               index !== DETAIL_ROWS.length - 1 ? 'border-b border-white/12' : ''
             }`}
           >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/18 bg-white/8 text-white/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-[18px]">
+            <div className={`${responsiveStyles.detailIcon} flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/18 bg-white/8 text-white/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-[18px]`}>
               <Icon className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="m-0 text-[1.05rem] font-medium tracking-[-0.02em] text-[#f4f5f8]">
+              <h3 className={`${responsiveStyles.detailTitle} m-0 text-[1.05rem] font-medium tracking-[-0.02em] text-[#f4f5f8]`}>
                 {title}
               </h3>
-              <p className="mt-2 text-[13px] leading-[1.75] text-white/62">
+              <p className={`${responsiveStyles.detailDescription} mt-2 text-[13px] leading-[1.75] text-white/62`}>
                 {description}
               </p>
             </div>
@@ -326,7 +328,7 @@ function AboutMainCardContent({ navigateTo, primeApartmentsRoute, disableAnimati
         initial={{ opacity: 0, y: 22 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.84, delay: 1.18, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-6"
+        className={`${responsiveStyles.ctaWrap} mt-6`}
       >
         <button
           type="button"
@@ -361,6 +363,11 @@ export default function About() {
     });
   }, [isTabletOrBelow]);
 
+  useEffect(() => {
+    router.prefetch('/');
+    router.prefetch('/apartments');
+  }, [router]);
+
   const navigateTo = useCallback(
     (path) => {
       if (isNavigatingRef.current) return;
@@ -379,13 +386,13 @@ export default function About() {
 
       if (container) {
         container.style.opacity = '0';
-        container.style.transition = 'opacity 0.6s ease';
+        container.style.transition = 'opacity 0.42s cubic-bezier(0.22,1,0.36,1)';
       } else {
         document.body.style.opacity = '0';
-        document.body.style.transition = 'opacity 0.6s ease';
+        document.body.style.transition = 'opacity 0.42s cubic-bezier(0.22,1,0.36,1)';
       }
 
-      const routePushDelay = path === '/apartments' && isTabletOrBelow ? 0 : 220;
+      const routePushDelay = path === '/apartments' && isTabletOrBelow ? 180 : 260;
       window.setTimeout(() => router.push(path), routePushDelay);
     },
     [isTabletOrBelow, primeApartmentsRoute, router],
@@ -430,11 +437,27 @@ export default function About() {
 
     const canWheelNavigate = window.matchMedia('(pointer: fine)').matches;
 
+    let accumulatedWheelY = 0;
+    let wheelResetTimeoutId = 0;
+
     const onWheel = (event) => {
       if (isNavigatingRef.current) return;
 
-      if (event.deltaY > 36) navigateTo('/apartments');
-      if (event.deltaY < -36) navigateTo('/');
+      accumulatedWheelY += event.deltaY;
+      window.clearTimeout(wheelResetTimeoutId);
+      wheelResetTimeoutId = window.setTimeout(() => {
+        accumulatedWheelY = 0;
+      }, 120);
+
+      if (accumulatedWheelY > WHEEL_NAV_THRESHOLD) {
+        accumulatedWheelY = 0;
+        navigateTo('/apartments');
+      }
+
+      if (accumulatedWheelY < -WHEEL_NAV_THRESHOLD) {
+        accumulatedWheelY = 0;
+        navigateTo('/');
+      }
     };
 
     if (canWheelNavigate) {
@@ -445,6 +468,7 @@ export default function About() {
       if (canWheelNavigate) {
         window.removeEventListener('wheel', onWheel);
       }
+      window.clearTimeout(wheelResetTimeoutId);
     };
   }, [navigateTo]);
 
@@ -519,10 +543,10 @@ export default function About() {
       {/* <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_82%,rgba(218,189,133,0.16),transparent_30%),radial-gradient(circle_at_70%_78%,rgba(255,255,255,0.07),transparent_24%)]" /> */}
 
       {!isTabletOrBelow ? (
-        <section className="relative z-[1] flex min-h-full items-start px-4 pb-36 pt-[4.5rem] md:px-8 md:pb-36 md:pt-[5.5rem] lg:items-end lg:px-12 lg:pb-16 lg:pt-28 xl:px-16">
+        <section className={`${responsiveStyles.desktopStage} relative z-[1] flex min-h-full items-start px-4 pb-36 pt-[4.5rem] md:px-8 md:pb-36 md:pt-[5.5rem] lg:items-end lg:px-12 lg:pb-16 lg:pt-28 xl:px-16`}>
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42vh] bg-[linear-gradient(180deg,transparent_0%,rgba(7,8,12,0.1)_16%,rgba(7,8,12,0.94)_100%)]" />
 
-          <div className="relative z-[1] flex w-full flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
+          <div className={`${responsiveStyles.desktopLayout} relative z-[1] flex w-full flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-8`}>
             <motion.div
               initial={{ opacity: 0, y: 22 }}
               animate={{
@@ -530,7 +554,7 @@ export default function About() {
                 y: isIntroVideoPlaying ? 28 : 0,
               }}
               transition={{ duration: 0.52, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-[540px] overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-6 py-7 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] md:px-7 md:py-8"
+              className={`${responsiveStyles.mainCard} w-full max-w-[540px] overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-6 py-7 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] md:px-7 md:py-8`}
               style={{
                 pointerEvents: isIntroVideoPlaying ? 'none' : 'auto',
               }}
@@ -549,7 +573,7 @@ export default function About() {
                 y: isIntroVideoPlaying ? 28 : 0,
               }}
               transition={{ duration: 0.52, delay: isIntroVideoPlaying ? 0 : 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="hidden w-full max-w-[350px] self-start overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-5 py-6 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] xl:ml-auto xl:block xl:self-end md:px-6 md:py-7"
+              className={`${responsiveStyles.briefCard} hidden w-full max-w-[350px] self-start overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-5 py-6 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] xl:ml-auto xl:block xl:self-end md:px-6 md:py-7`}
               style={{
                 pointerEvents: isIntroVideoPlaying ? 'none' : 'auto',
               }}

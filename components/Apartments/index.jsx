@@ -43,7 +43,7 @@ export default function Apartments() {
 
   const router = useRouter();
   const pathname = usePathname();
-  const { isMobile, isTablet, isTabletOrBelow, width } = useResponsiveViewport();
+  const { isMobile, isTablet, isTabletOrBelow, width, height } = useResponsiveViewport();
 
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [isVideoPlaying, setIsVideoPlaying] = useState(() => isBackgroundTransitionActive("apartments"));
@@ -58,8 +58,12 @@ export default function Apartments() {
   const compactSheetOverlap = isCompactLayout ? 1 : 0;
   const compactMediaHeight = isTabletOrBelow
     ? `${Math.min(
-      Math.max(Math.round(width / COMPACT_VIEWER_ASPECT_RATIO), isTablet ? 420 : 220),
-      isTablet ? 620 : 320,
+      Math.max(
+        Math.round(width / COMPACT_VIEWER_ASPECT_RATIO),
+        isTablet ? 360 : 220,
+      ),
+      Math.round(height * (isTablet ? 0.54 : 0.46)),
+      isTablet ? 600 : 320,
     )}px`
     : "min(42dvh, 380px)";
   const isFlatRoutePreparing = pendingFlatId !== null;

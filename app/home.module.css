@@ -225,6 +225,49 @@
     opacity: 0.92;
 }
 
+.heroScrollCue {
+    position: absolute;
+    left: 50%;
+    bottom: 26px;
+    z-index: 2;
+    width: 22px;
+    height: 38px;
+    border: 1px solid rgba(255, 255, 255, 0.48);
+    border-radius: 999px;
+    transform: translateX(-50%);
+    pointer-events: none;
+    opacity: 0.72;
+}
+
+.heroScrollCue::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    width: 4px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    transform: translateX(-50%);
+    animation: heroScrollCue 1.45s ease-in-out infinite;
+}
+
+@keyframes heroScrollCue {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 0);
+    }
+
+    30% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, 14px);
+    }
+}
+
 @media (max-width: 900px) {
     .heroTitle {
         width: 100%;
@@ -326,6 +369,10 @@
         bottom: calc(82px + env(safe-area-inset-bottom, 0px));
         width: 36px;
         height: 62px;
+    }
+
+    .heroScrollCue {
+        display: none;
     }
 }
 
@@ -505,6 +552,11 @@
     .luxuryLoaderProgressBar {
         animation: none;
         transition: none;
+    }
+
+    .heroScrollCue::after {
+        animation: none;
+        opacity: 1;
     }
 }
 

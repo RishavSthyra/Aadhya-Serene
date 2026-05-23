@@ -20,6 +20,7 @@ function detectResponsiveViewport() {
     }
 
     const width = window.innerWidth;
+    const height = window.innerHeight;
     const userAgent = navigator.userAgent || '';
     const platform = navigator.platform || '';
     const maxTouchPoints = navigator.maxTouchPoints || 0;
@@ -35,6 +36,7 @@ function detectResponsiveViewport() {
 
     return {
         width,
+        height,
         isMobile,
         isTablet,
         isTabletOrBelow: isMobile || isTablet,

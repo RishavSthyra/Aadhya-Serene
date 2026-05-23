@@ -13,13 +13,13 @@ const ROT360_CDN_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_we
 const ROT360_FRAME_EXTENSION = ROT360_CDN_BASE.includes('webp') ? 'webp' : 'avif';
 const DRAG_FRAME_STEP = 1;
 const MOBILE_DRAG_FRAME_STEP = 1;
-const PRELOAD_RADIUS = 20;
-const PRELOAD_CONCURRENCY = 8;
-const MAX_CACHE_SIZE = 120;
+const PRELOAD_RADIUS = 40;
+const PRELOAD_CONCURRENCY = 6;
+const MAX_CACHE_SIZE = 220;
 const DRAG_SENSITIVITY = 0.28;
-const MOBILE_PRELOAD_RADIUS = 4;
-const MOBILE_PRELOAD_CONCURRENCY = 2;
-const MOBILE_MAX_CACHE_SIZE = 28;
+const MOBILE_PRELOAD_RADIUS = 7;
+const MOBILE_PRELOAD_CONCURRENCY = 3;
+const MOBILE_MAX_CACHE_SIZE = 48;
 const MOBILE_DPR_CAP = 1;
 const DESKTOP_DPR_CAP = 1.6;
 const MIN_ZOOM = 1;
@@ -27,10 +27,10 @@ const MAX_ZOOM = 2.25;
 const DRAG_START_THRESHOLD = 6;
 const SNAP_ANIMATION_DURATION_MS = 300;
 const MOBILE_SNAP_ANIMATION_DURATION_MS = 240;
-const DRAG_PRELOAD_RADIUS = 8;
-const MOBILE_DRAG_PRELOAD_RADIUS = 1;
-const DRAG_PRELOAD_STRIDE = 3;
-const MOBILE_DRAG_PRELOAD_STRIDE = 10;
+const DRAG_PRELOAD_RADIUS = 20;
+const MOBILE_DRAG_PRELOAD_RADIUS = 4;
+const DRAG_PRELOAD_STRIDE = 1;
+const MOBILE_DRAG_PRELOAD_STRIDE = 4;
 const INITIAL_WARMUP_RADIUS = 30;
 const MOBILE_INITIAL_WARMUP_RADIUS = 6;
 const INITIAL_WARMUP_CONCURRENCY = 8;
@@ -40,13 +40,13 @@ const MOBILE_INITIAL_WARMUP_DELAY_MS = 120;
 const INITIAL_WARMUP_TIMEOUT_MS = 800;
 const MOBILE_INITIAL_WARMUP_TIMEOUT_MS = 1200;
 const INITIAL_WARMUP_SNAP_RADIUS = 1;
-const INITIAL_INTERACTION_PRIME_RADIUS = 45;
-const MOBILE_INITIAL_INTERACTION_PRIME_RADIUS = 8;
+const INITIAL_INTERACTION_PRIME_RADIUS = 90;
+const MOBILE_INITIAL_INTERACTION_PRIME_RADIUS = 18;
 const INITIAL_INTERACTION_SNAP_RADIUS = 3;
 const MOBILE_INITIAL_INTERACTION_SNAP_RADIUS = 1;
 const INITIAL_INTERACTION_PRIME_CONCURRENCY = 8;
-const MOBILE_INITIAL_INTERACTION_PRIME_CONCURRENCY = 2;
-const INITIAL_INTERACTION_UNLOCK_COUNT = 15;
+const MOBILE_INITIAL_INTERACTION_PRIME_CONCURRENCY = 3;
+const INITIAL_INTERACTION_UNLOCK_COUNT = 30;
 const MOBILE_INITIAL_INTERACTION_UNLOCK_COUNT = 9;
 const warmedStartupFrames = new Set();
 const warmedStartupImages = new Map();
@@ -377,6 +377,7 @@ export default function Apartment360Viewer({
     const dragPreloadStride = isConstrainedDevice ? MOBILE_DRAG_PRELOAD_STRIDE : DRAG_PRELOAD_STRIDE;
     const snapAnimationDuration = isConstrainedDevice ? MOBILE_SNAP_ANIMATION_DURATION_MS : SNAP_ANIMATION_DURATION_MS;
     const viewerInteractionLocked = interactionLocked || !isStartupPrimed;
+    const canZoom = isConstrainedDevice;
 
     const hydrateWarmFrame = useCallback((frameNumber) => {
         const normalizedFrame = normalizeFrame(frameNumber);
@@ -693,6 +694,29 @@ export default function Apartment360Viewer({
         }
     }, [drawFrame, ensureFrameLoaded, preloadAroundFrame, preloadRadius]);
 
+    const getNearestCachedFrame = useCallback((targetFrame) => {
+        const target = normalizeFrame(targetFrame);
+
+        if (loadedFramesRef.current.has(target)) {
+            return target;
+        }
+
+        for (let offset = 1; offset <= 6; offset += 1) {
+            const next = normalizeFrame(target + offset);
+            const previous = normalizeFrame(target - offset);
+
+            if (loadedFramesRef.current.has(next)) {
+                return next;
+            }
+
+            if (loadedFramesRef.current.has(previous)) {
+                return previous;
+            }
+        }
+
+        return lastDrawnFrameRef.current || displayFrameRef.current;
+    }, []);
+
     const publishFrame = useCallback((frameNumber, options = {}) => {
         pendingFrameRef.current = normalizeFrame(frameNumber);
         pendingPublishOptionsRef.current = {
@@ -756,6 +780,12 @@ export default function Apartment360Viewer({
     useEffect(() => {
         requestFrame(1);
     }, [requestFrame]);
+
+    useEffect(() => {
+        if (!canZoom) {
+            setZoom(MIN_ZOOM);
+        }
+    }, [canZoom]);
 
     useEffect(() => {
         let cancelled = false;
@@ -865,6 +895,8 @@ export default function Apartment360Viewer({
             return;
         }
 
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+
         activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
         if (activePointersRef.current.size === 2) {
@@ -896,7 +928,7 @@ export default function Apartment360Viewer({
         if (activePointersRef.current.size === 2) {
             const nextDistance = getPointerDistance([...activePointersRef.current.values()]);
 
-            if (lastPinchDistanceRef.current) {
+            if (canZoom && lastPinchDistanceRef.current) {
                 const zoomRatio = nextDistance / lastPinchDistanceRef.current;
                 setZoom((currentZoom) => clampZoom(currentZoom * zoomRatio));
             }
@@ -933,10 +965,14 @@ export default function Apartment360Viewer({
         const rawFrame = lastFrame.current - deltaX * (DRAG_SENSITIVITY / zoom);
         const nextFrame = quantizeFrame(rawFrame, dragFrameStep);
 
-        publishFrame(nextFrame, {
-            preload: false,
-            preloadRadius: dragPreloadRadius,
-        });
+        const drawableFrame = getNearestCachedFrame(nextFrame);
+
+        if (drawableFrame) {
+            displayFrameRef.current = drawableFrame;
+            currentFrameRef.current = nextFrame;
+            latestRequestedFrameRef.current = nextFrame;
+            drawFrame(drawableFrame);
+        }
 
         if (getCircularFrameDistance(lastDragPreloadedFrameRef.current, nextFrame) >= dragPreloadStride) {
             lastDragPreloadedFrameRef.current = nextFrame;
@@ -1011,6 +1047,10 @@ export default function Apartment360Viewer({
     }, [animateToFrame, ensureFrameLoaded, preloadAroundFrame]);
 
     const handlePointerUp = (e) => {
+        if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+            e.currentTarget.releasePointerCapture?.(e.pointerId);
+        }
+
         if (interactionLocked) {
             activePointersRef.current.clear();
             lastPinchDistanceRef.current = null;
@@ -1100,8 +1140,12 @@ export default function Apartment360Viewer({
         }
 
         event.preventDefault();
+        if (!canZoom) {
+            return;
+        }
+
         setZoom((currentZoom) => clampZoom(currentZoom - event.deltaY * 0.0015));
-    }, [viewerInteractionLocked]);
+    }, [canZoom, viewerInteractionLocked]);
 
     const handleModelFlatClick = useCallback((flatId) => {
         if (!flatId) {

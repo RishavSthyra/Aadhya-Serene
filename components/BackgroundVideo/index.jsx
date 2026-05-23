@@ -10,23 +10,29 @@ import usePerformanceProfile from '@/hooks/usePerformanceProfile';
 import styles from './background-video.module.css';
 
 const S3_BUCKET = 'https://aadhya-serene-assets-v2.s3.amazonaws.com';
-const HOMEPAGE_VIDEO_CDN = `${S3_BUCKET}/videos/homepage`;
 
-const HOME_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/1-1-Av1.mp4';
-const HOME_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/1-2-Vp9.mp4';
-const ABOUT_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-1-Av1.mp4';
-const ABOUT_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-2-av1.mp4';
-const APARTMENTS_TRANSITION = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-1-Av1_MORE.mp4';
-const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
-
-const MOBILE_VIDEO_FALLBACKS = {
-    [HOME_TRANSITION]: '/assets/background-video/mobile/home-transition.mp4',
-    [HOME_LOOP]: '/assets/background-video/mobile/home-loop.mp4',
-    [ABOUT_TRANSITION]: '/assets/background-video/mobile/about-transition.mp4',
-    [ABOUT_LOOP]: '/assets/background-video/mobile/about-loop.mp4',
-    [APARTMENTS_TRANSITION]: '/assets/background-video/mobile/apartments-transition.mp4',
-    [APARTMENTS_LOOP]: '/assets/background-video/mobile/apartments-loop.mp4',
+const HOME_TRANSITION = {
+    safe: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-1_1920w_60fps_h264_safe.mp4',
+    premium: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-1_2560w_60fps_h264_premium.mp4',
+    ultra: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-1_3200w_60fps_h264_ultra.mp4',
 };
+const HOME_LOOP = {
+    safe: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-2_1920w_60fps_h264_safe.mp4',
+    premium: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-2_2560w_60fps_h264_premium.mp4',
+    ultra: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-2_3200w_60fps_h264_ultra.mp4',
+};
+const ABOUT_TRANSITION = {
+    safe: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/2-1_1920w_60fps_h264_safe.mp4',
+    premium: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/2-1_2560w_60fps_h264_premium.mp4',
+    ultra: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/2-1_3200w_60fps_h264_ultra.mp4',
+};
+const ABOUT_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-2-av1.mp4';
+const APARTMENTS_TRANSITION = {
+    safe: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_1920w_60fps_h264_safe.mp4',
+    premium: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_2560w_60fps_h264_premium.mp4',
+    ultra: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_3200w_60fps_h264_ultra.mp4',
+};
+const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
 
 const BACKGROUND_POSTERS = {
     home: '/assets/background-video/posters/home.jpg',
@@ -38,6 +44,8 @@ const BACKGROUND_POSTERS = {
 
 const APARTMENTS_LOOP_HOLD_MS = 0;
 const HLS_MIN_START_BUFFER_AHEAD_SECONDS = 2.4;
+const MP4_MIN_START_BUFFER_AHEAD_SECONDS = 2.2;
+const LOOP_MIN_START_BUFFER_AHEAD_SECONDS = 1.2;
 const HLS_FULLY_BUFFERED_TOLERANCE_SECONDS = 0.15;
 const HOME_HLS_CONFIG = {
     enableWorker: true,
@@ -134,10 +142,14 @@ const DEFAULT_CONFIG = {
     transitionAssetId: '1-1',
     loopAssetId: '1-2',
 };
-
-function buildHomepageVideoUrl(assetId, quality = '1080p', codec = 'h264') {
-    return `${HOMEPAGE_VIDEO_CDN}/${assetId}/${quality}/${assetId}-${codec}.mp4`;
-}
+const PRELOAD_LAYOUTS = {
+    home: ['about', 'apartments'],
+    about: ['apartments', 'home'],
+    apartments: ['about'],
+};
+const videoWarmCache = new Map();
+const posterWarmCache = new Set();
+const MAX_WARMED_VIDEOS = 8;
 
 function buildResolutionVariantUrl(source, quality) {
     if (typeof source !== 'string' || !quality) {
@@ -153,6 +165,22 @@ function buildResolutionVariantUrl(source, quality) {
 
 function uniqueSources(sources) {
     return [...new Set(sources.filter(Boolean))];
+}
+
+function resolveVideoVariant(source, profile) {
+    if (!source || typeof source !== 'object') {
+        return source;
+    }
+
+    if (profile.shouldConserveData || profile.isMobile || profile.isConstrainedDevice) {
+        return source.safe ?? source.premium ?? source.ultra;
+    }
+
+    if (profile.veryHighCapabilityDesktop) {
+        return source.ultra ?? source.premium ?? source.safe;
+    }
+
+    return source.premium ?? source.safe ?? source.ultra;
 }
 
 function isHlsSource(source) {
@@ -185,6 +213,80 @@ function getBufferedAhead(video) {
     return 0;
 }
 
+function hasEnoughStartupBuffer(video, minimumSeconds) {
+    if (!video) return false;
+
+    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    const bufferedAhead = getBufferedAhead(video);
+    const almostFullDuration = duration > 0
+        ? Math.max(0, duration - HLS_FULLY_BUFFERED_TOLERANCE_SECONDS)
+        : minimumSeconds;
+
+    return video.readyState >= 3
+        || bufferedAhead >= Math.min(minimumSeconds, almostFullDuration)
+        || (duration > 0 && bufferedAhead >= almostFullDuration);
+}
+
+function addBufferReadinessListeners(video, callback) {
+    const events = ['progress', 'loadeddata', 'canplay', 'canplaythrough', 'durationchange', 'timeupdate'];
+
+    events.forEach((eventName) => {
+        video.addEventListener(eventName, callback);
+    });
+
+    return () => {
+        events.forEach((eventName) => {
+            video.removeEventListener(eventName, callback);
+        });
+    };
+}
+
+function trimVideoWarmCache() {
+    while (videoWarmCache.size > MAX_WARMED_VIDEOS) {
+        const [oldestSource, video] = videoWarmCache.entries().next().value ?? [];
+        if (!oldestSource) return;
+
+        videoWarmCache.delete(oldestSource);
+        video?.pause();
+        video?.removeAttribute('src');
+        video?.load();
+    }
+}
+
+function warmPoster(source) {
+    if (!source || posterWarmCache.has(source) || typeof window === 'undefined') {
+        return;
+    }
+
+    posterWarmCache.add(source);
+    const image = new window.Image();
+    image.decoding = 'async';
+    image.fetchPriority = 'low';
+    image.src = source;
+}
+
+function warmVideoSource(source, preload = 'auto') {
+    if (!source || typeof document === 'undefined' || videoWarmCache.has(source)) {
+        return;
+    }
+
+    const video = document.createElement('video');
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.preload = preload;
+    video.crossOrigin = 'anonymous';
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.setAttribute('fetchpriority', 'low');
+    video.src = source;
+    video.load();
+
+    videoWarmCache.set(source, video);
+    trimVideoWarmCache();
+}
+
 export default function BackgroundVideo({ layout = 'home', playing = true, replayKey = 0 }) {
     const {
         isMobile,
@@ -194,6 +296,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         isConstrainedDevice,
         shouldConserveData,
         preferredVideoQuality,
+        veryHighCapabilityDesktop,
     } = usePerformanceProfile();
     const transitionRef = useRef(null);
     const loopRef = useRef(null);
@@ -207,11 +310,11 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const [showLoop, setShowLoop] = useState(false);
 
     const config = LAYOUT_CONFIG[layout] ?? DEFAULT_CONFIG;
-    const transitionPreloadMode = layout === 'home' && !shouldConserveData ? 'auto' : 'metadata';
-    const loopPreloadMode = 'metadata';
+    const transitionPreloadMode = shouldConserveData ? 'metadata' : 'auto';
+    const loopPreloadMode = shouldConserveData ? 'metadata' : 'auto';
     const transitionIsHls = isHlsSource(config.transition);
-    const shouldWaitForHlsStartupBuffer = transitionIsHls && layout === 'home';
-    const shouldEagerlyPrepareLoop = !shouldConserveData && !transitionIsHls;
+    const shouldWaitForStartupBuffer = !shouldConserveData;
+    const shouldEagerlyPrepareLoop = veryHighCapabilityDesktop && !transitionIsHls;
     const shouldDeferLoopPreloadForHls = !shouldConserveData && transitionIsHls && layout !== 'home';
     const shouldHideBackground = layout === 'location';
     const posterSrc = BACKGROUND_POSTERS[layout] ?? BACKGROUND_POSTERS.home;
@@ -231,21 +334,12 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const getSourceCandidates = useCallback((source, assetId) => {
         if (!source) return [];
 
-        const fallbackSource = MOBILE_VIDEO_FALLBACKS[source];
         const preferredMp4Source = assetId
-            ? buildHomepageVideoUrl(
-                assetId,
-                preferredVideoQuality,
-                'h264',
-            )
+            ? null
             : buildResolutionVariantUrl(source, preferredVideoQuality);
 
         if (isHlsSource(source)) {
-            return uniqueSources([source, preferredMp4Source, fallbackSource]);
-        }
-
-        if (shouldConserveData && fallbackSource) {
-            return uniqueSources([fallbackSource, preferredMp4Source, source]);
+            return uniqueSources([source, preferredMp4Source]);
         }
 
         if ((isTablet || isSafari || isIOS || isConstrainedDevice) && preferredMp4Source) {
@@ -253,7 +347,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         }
 
         return [source];
-    }, [isConstrainedDevice, isIOS, isSafari, isTablet, preferredVideoQuality, shouldConserveData]);
+    }, [isConstrainedDevice, isIOS, isSafari, isTablet, preferredVideoQuality]);
 
     const getHlsModule = useCallback(() => {
         if (!hlsModulePromiseRef.current) {
@@ -274,9 +368,24 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         ref.current = null;
     }, []);
 
+    const videoVariantProfile = useMemo(() => ({
+        isMobile,
+        isConstrainedDevice,
+        shouldConserveData,
+        veryHighCapabilityDesktop,
+    }), [isConstrainedDevice, isMobile, shouldConserveData, veryHighCapabilityDesktop]);
+    const transitionSource = useMemo(
+        () => resolveVideoVariant(config.transition, videoVariantProfile),
+        [config.transition, videoVariantProfile],
+    );
+    const loopSource = useMemo(
+        () => resolveVideoVariant(config.loop, videoVariantProfile),
+        [config.loop, videoVariantProfile],
+    );
+
     const transitionSources = useMemo(
-        () => getSourceCandidates(config.transition, config.transitionAssetId),
-        [config.transition, config.transitionAssetId, getSourceCandidates],
+        () => getSourceCandidates(transitionSource, config.transitionAssetId),
+        [config.transitionAssetId, getSourceCandidates, transitionSource],
     );
     const transitionSourcesKey = useMemo(
         () => transitionSources.join('|'),
@@ -284,14 +393,72 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     );
 
     const loopSources = useMemo(
-        () => getSourceCandidates(config.loop, config.loopAssetId),
-        [config.loop, config.loopAssetId, getSourceCandidates],
+        () => getSourceCandidates(loopSource, config.loopAssetId),
+        [config.loopAssetId, getSourceCandidates, loopSource],
     );
     const loopSourcesKey = useMemo(
         () => loopSources.join('|'),
         [loopSources],
     );
     const hasDistinctLoopAsset = transitionSourcesKey !== loopSourcesKey;
+
+    useEffect(() => {
+        if (shouldHideBackground || shouldConserveData) {
+            return undefined;
+        }
+
+        let cancelled = false;
+        const timeoutIds = [];
+        const layoutsToWarm = PRELOAD_LAYOUTS[layout] ?? [];
+
+        const warmLayout = (layoutToWarm) => {
+            if (cancelled) return;
+
+            const layoutConfig = LAYOUT_CONFIG[layoutToWarm];
+            if (!layoutConfig) return;
+
+            const warmTransitionSource = resolveVideoVariant(
+                layoutConfig.transition,
+                videoVariantProfile,
+            );
+            const warmLoopSource = resolveVideoVariant(
+                layoutConfig.loop,
+                videoVariantProfile,
+            );
+            const warmTransitionCandidates = getSourceCandidates(
+                warmTransitionSource,
+                layoutConfig.transitionAssetId,
+            );
+            const warmLoopCandidates = getSourceCandidates(
+                warmLoopSource,
+                layoutConfig.loopAssetId,
+            );
+
+            warmPoster(BACKGROUND_POSTERS[layoutToWarm]);
+            warmVideoSource(warmTransitionCandidates[0], 'auto');
+            warmVideoSource(warmLoopCandidates[0], veryHighCapabilityDesktop ? 'auto' : 'metadata');
+        };
+
+        layoutsToWarm.forEach((layoutToWarm, index) => {
+            const timeoutId = window.setTimeout(() => {
+                warmLayout(layoutToWarm);
+            }, index === 0 ? 0 : 900);
+
+            timeoutIds.push(timeoutId);
+        });
+
+        return () => {
+            cancelled = true;
+            timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+        };
+    }, [
+        getSourceCandidates,
+        layout,
+        shouldConserveData,
+        shouldHideBackground,
+        veryHighCapabilityDesktop,
+        videoVariantProfile,
+    ]);
 
     const primeVideoElement = useCallback((video) => {
         if (!video) return;
@@ -521,39 +688,27 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         };
 
         const startTransitionWhenBuffered = () => {
-            if (!shouldWaitForHlsStartupBuffer) {
+            if (!shouldWaitForStartupBuffer) {
                 startTransition();
                 return;
             }
 
             const maybeStartWhenBuffered = () => {
-                const bufferedAhead = getBufferedAhead(transitionVideo);
-                const duration = Number.isFinite(transitionVideo.duration)
-                    ? transitionVideo.duration
-                    : 0;
-                const hasNearlyFullBuffer = duration > 0
-                    && bufferedAhead >= Math.max(0, duration - HLS_FULLY_BUFFERED_TOLERANCE_SECONDS);
+                const minimumBuffer = transitionIsHls
+                    ? HLS_MIN_START_BUFFER_AHEAD_SECONDS
+                    : MP4_MIN_START_BUFFER_AHEAD_SECONDS;
 
-                if (
-                    bufferedAhead >= HLS_MIN_START_BUFFER_AHEAD_SECONDS
-                    || hasNearlyFullBuffer
-                ) {
+                if (hasEnoughStartupBuffer(transitionVideo, minimumBuffer)) {
                     deferredTransitionStartCleanup?.();
                     deferredTransitionStartCleanup = null;
                     startTransition();
                 }
             };
 
-            transitionVideo.addEventListener('progress', maybeStartWhenBuffered);
-            transitionVideo.addEventListener('loadeddata', maybeStartWhenBuffered);
-            transitionVideo.addEventListener('canplay', maybeStartWhenBuffered);
-            transitionVideo.addEventListener('durationchange', maybeStartWhenBuffered);
-            deferredTransitionStartCleanup = () => {
-                transitionVideo.removeEventListener('progress', maybeStartWhenBuffered);
-                transitionVideo.removeEventListener('loadeddata', maybeStartWhenBuffered);
-                transitionVideo.removeEventListener('canplay', maybeStartWhenBuffered);
-                transitionVideo.removeEventListener('durationchange', maybeStartWhenBuffered);
-            };
+            deferredTransitionStartCleanup = addBufferReadinessListeners(
+                transitionVideo,
+                maybeStartWhenBuffered,
+            );
 
             maybeStartWhenBuffered();
         };
@@ -634,7 +789,8 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         replayKey,
         shouldEagerlyPrepareLoop,
         shouldDeferLoopPreloadForHls,
-        shouldWaitForHlsStartupBuffer,
+        shouldWaitForStartupBuffer,
+        transitionIsHls,
         transitionSourcesKey,
     ]);
 
@@ -718,9 +874,29 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             });
         };
 
+        const startLoopWhenBuffered = () => {
+            if (shouldConserveData) {
+                startLoopPlayback();
+                return;
+            }
+
+            let removeLoopBufferListeners = null;
+
+            const maybeStartLoop = () => {
+                if (hasEnoughStartupBuffer(loopVideo, LOOP_MIN_START_BUFFER_AHEAD_SECONDS)) {
+                    removeLoopBufferListeners?.();
+                    removeLoopBufferListeners = null;
+                    startLoopPlayback();
+                }
+            };
+
+            removeLoopBufferListeners = addBufferReadinessListeners(loopVideo, maybeStartLoop);
+            maybeStartLoop();
+        };
+
         if (!loopVideo.getAttribute('src')) {
             const handleLoopReady = () => {
-                startLoopPlayback();
+                startLoopWhenBuffered();
             };
 
             loopVideo.addEventListener(loopReadyEvent, handleLoopReady, { once: true });
@@ -733,13 +909,13 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
             if (loopVideo.readyState >= loopReadyStateThreshold) {
                 loopVideo.removeEventListener(loopReadyEvent, handleLoopReady);
-                startLoopPlayback();
+                startLoopWhenBuffered();
             }
 
             return;
         }
 
-        startLoopPlayback();
+        startLoopWhenBuffered();
     };
 
     const handleLoopError = () => {

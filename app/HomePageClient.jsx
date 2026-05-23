@@ -2,24 +2,14 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import usePerformanceProfile from "@/hooks/usePerformanceProfile";
 import { warmApartment360Frames } from "@/lib/apartment360Warmup";
 import {
   markHomeRefreshLoaderSeen,
   setHomePreloaderComplete,
-  shouldShowHomeRefreshLoader,
 } from "@/lib/home-loader";
 import styles from "./home.module.css";
-
-const LuxuryPreloader = dynamic(() => import("@/components/Home/LuxuryPreloader"), {
-  ssr: false,
-});
-const HomeScrollLottie = dynamic(() => import("@/components/Home/HomeScrollLottie"), {
-  ssr: false,
-  loading: () => null,
-});
 
 const HERO_TITLE_LINES = ["Quiet luxury,", "shaped for harmony."];
 const HERO_MARKERS = [
@@ -27,6 +17,7 @@ const HERO_MARKERS = [
   "Sky leisure amenities",
   "North Bengaluru address",
 ];
+const WHEEL_NAV_THRESHOLD = 4;
 
 const heroRevealTransition = {
   duration: 0.9,
@@ -90,8 +81,6 @@ function AnimatedHeroTitle({ isActive, disableAnimation = false }) {
 export default function HomePageClient() {
   const router = useRouter();
   const isNavigatingRef = useRef(false);
-  const [showLoader, setShowLoader] = useState(() => shouldShowHomeRefreshLoader());
-  const [loaderCycleComplete, setLoaderCycleComplete] = useState(() => !shouldShowHomeRefreshLoader());
   const [heroAnimationActive, setHeroAnimationActive] = useState(false);
   const { isTabletOrBelow, preferLightExperience } = usePerformanceProfile();
   const shouldUseLightMotion = preferLightExperience;
@@ -103,57 +92,22 @@ export default function HomePageClient() {
   }, [isTabletOrBelow]);
 
   useEffect(() => {
+    router.prefetch("/about");
+    router.prefetch("/apartments");
+  }, [router]);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
       return undefined;
     }
 
-    if (shouldUseLightMotion) {
-      markHomeRefreshLoaderSeen();
-      setHomePreloaderComplete(true);
-      setLoaderCycleComplete(true);
-      setShowLoader(false);
-      return undefined;
-    }
-
-    const shouldUseRefreshLoader = shouldShowHomeRefreshLoader();
     markHomeRefreshLoaderSeen();
-
-    if (!shouldUseRefreshLoader) {
-      setHomePreloaderComplete(true);
-      setLoaderCycleComplete(true);
-      setShowLoader(false);
-      return undefined;
-    }
-
-    let safetyTimeoutId = 0;
-    setHomePreloaderComplete(false);
-
-    // Safety fallback so the home screen never gets stuck behind the loader.
-    safetyTimeoutId = window.setTimeout(() => {
-      setLoaderCycleComplete(true);
-      setHomePreloaderComplete(true);
-    }, 4000);
-
-    return () => {
-      window.clearTimeout(safetyTimeoutId);
-    };
-  }, [shouldUseLightMotion]);
-
-  useEffect(() => {
-    if (!showLoader || !loaderCycleComplete) {
-      return;
-    }
-
     setHomePreloaderComplete(true);
-    setShowLoader(false);
-  }, [loaderCycleComplete, showLoader]);
+
+    return undefined;
+  }, []);
 
   useEffect(() => {
-    if (showLoader) {
-      setHeroAnimationActive(false);
-      return undefined;
-    }
-
     if (shouldUseLightMotion) {
       setHeroAnimationActive(true);
       return undefined;
@@ -166,7 +120,7 @@ export default function HomePageClient() {
     return () => {
       window.cancelAnimationFrame(frameId);
     };
-  }, [shouldUseLightMotion, showLoader]);
+  }, [shouldUseLightMotion]);
 
   const navigateTo = useCallback(
     (path) => {
@@ -183,13 +137,13 @@ export default function HomePageClient() {
       const heroInner = document.getElementById("home-inner");
       if (heroInner) {
         heroInner.style.opacity = "0";
-        heroInner.style.transition = "opacity 0.6s ease";
+        heroInner.style.transition = "opacity 0.42s cubic-bezier(0.22,1,0.36,1)";
       } else {
         document.body.style.opacity = "0";
-        document.body.style.transition = "opacity 0.6s ease";
+        document.body.style.transition = "opacity 0.42s cubic-bezier(0.22,1,0.36,1)";
       }
 
-      const routePushDelay = path === "/apartments" && isTabletOrBelow ? 0 : 220;
+      const routePushDelay = path === "/apartments" && isTabletOrBelow ? 180 : 260;
 
       setTimeout(() => {
         router.push(path);
@@ -201,10 +155,28 @@ export default function HomePageClient() {
   useEffect(() => {
     document.body.style.opacity = "1";
     document.body.style.transition = "";
+    const heroInner = document.getElementById("home-inner");
+    if (heroInner) {
+      heroInner.style.opacity = "1";
+      heroInner.style.transition = "";
+      heroInner.style.pointerEvents = "auto";
+    }
     isNavigatingRef.current = false;
 
+    let accumulatedWheelY = 0;
+    let wheelResetTimeoutId = 0;
+
     const onWheel = (e) => {
-      if (e.deltaY > 30 && !isNavigatingRef.current) {
+      if (isNavigatingRef.current) return;
+
+      accumulatedWheelY += e.deltaY;
+      window.clearTimeout(wheelResetTimeoutId);
+      wheelResetTimeoutId = window.setTimeout(() => {
+        accumulatedWheelY = 0;
+      }, 120);
+
+      if (accumulatedWheelY > WHEEL_NAV_THRESHOLD) {
+        accumulatedWheelY = 0;
         navigateTo("/about");
       }
     };
@@ -228,13 +200,12 @@ export default function HomePageClient() {
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchend", onTouchEnd);
+      window.clearTimeout(wheelResetTimeoutId);
     };
   }, [navigateTo]);
 
   return (
     <main className={styles.heroSection}>
-      {showLoader && <LuxuryPreloader onCycleComplete={() => setLoaderCycleComplete(true)} />}
-
       <section id="home-inner" className={styles.heroInner}>
         <div className={styles.heroContent}>
           <motion.div
@@ -318,8 +289,8 @@ export default function HomePageClient() {
           </motion.div>
         </div>
       </section>
-      {!isTabletOrBelow && !shouldUseLightMotion ? (
-        <HomeScrollLottie className={styles.heroLottie} />
+      {!isTabletOrBelow ? (
+        <div className={styles.heroScrollCue} aria-hidden="true" />
       ) : null}
     </main>
   );

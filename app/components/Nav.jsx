@@ -215,9 +215,9 @@ export default function Nav() {
     }
 
     container.style.opacity = "0";
-    container.style.transition = "opacity 0.6s ease";
+    container.style.transition = "opacity 0.42s cubic-bezier(0.22,1,0.36,1)";
 
-    const routePushDelay = href === "/apartments" && isTabletOrBelow ? 0 : 600;
+    const routePushDelay = href === "/apartments" && isTabletOrBelow ? 180 : 360;
 
     window.setTimeout(() => {
       router.push(href);
