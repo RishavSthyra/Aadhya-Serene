@@ -392,7 +392,7 @@ export default function About() {
         document.body.style.transition = 'opacity 0.42s cubic-bezier(0.22,1,0.36,1)';
       }
 
-      const routePushDelay = path === '/apartments' && isTabletOrBelow ? 180 : 260;
+      const routePushDelay = path === '/apartments' && isTabletOrBelow ? 80 : 120;
       window.setTimeout(() => router.push(path), routePushDelay);
     },
     [isTabletOrBelow, primeApartmentsRoute, router],

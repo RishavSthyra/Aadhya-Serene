@@ -895,7 +895,9 @@ export default function Apartment360Viewer({
             return;
         }
 
-        e.currentTarget.setPointerCapture?.(e.pointerId);
+        if (!e.target?.closest?.(`.${styles.canvasOverlay}`)) {
+            e.currentTarget.setPointerCapture?.(e.pointerId);
+        }
 
         activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 

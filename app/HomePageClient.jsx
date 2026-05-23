@@ -56,7 +56,7 @@ function AnimatedHeroTitle({ isActive, disableAnimation = false }) {
                 className={
                   isSpace ? styles.heroTitleSpace : styles.heroTitleLetter
                 }
-                initial="hidden"
+                initial={false}
                 animate={isActive ? "visible" : "hidden"}
                 variants={{
                   hidden: { y: "112%", opacity: 0, filter: "blur(8px)" },
@@ -81,7 +81,7 @@ function AnimatedHeroTitle({ isActive, disableAnimation = false }) {
 export default function HomePageClient() {
   const router = useRouter();
   const isNavigatingRef = useRef(false);
-  const [heroAnimationActive, setHeroAnimationActive] = useState(false);
+  const [heroAnimationActive, setHeroAnimationActive] = useState(true);
   const { isTabletOrBelow, preferLightExperience } = usePerformanceProfile();
   const shouldUseLightMotion = preferLightExperience;
 
@@ -143,7 +143,7 @@ export default function HomePageClient() {
         document.body.style.transition = "opacity 0.42s cubic-bezier(0.22,1,0.36,1)";
       }
 
-      const routePushDelay = path === "/apartments" && isTabletOrBelow ? 180 : 260;
+      const routePushDelay = path === "/apartments" && isTabletOrBelow ? 80 : 120;
 
       setTimeout(() => {
         router.push(path);
@@ -209,7 +209,7 @@ export default function HomePageClient() {
       <section id="home-inner" className={styles.heroInner}>
         <div className={styles.heroContent}>
           <motion.div
-            initial="hidden"
+            initial={false}
             animate={heroAnimationActive ? "visible" : "hidden"}
             variants={heroRevealVariants}
             transition={{ ...heroRevealTransition, delay: 0.12 }}
@@ -226,7 +226,7 @@ export default function HomePageClient() {
             />
           </h1>
 
-          <motion.p
+          {/* <motion.p
             initial="hidden"
             animate={heroAnimationActive ? "visible" : "hidden"}
             variants={heroRevealVariants}
@@ -235,10 +235,10 @@ export default function HomePageClient() {
           >
             A calmer expression of premium living, with open skies, elevated leisure,
             and beautifully composed homes designed for a more serene daily rhythm.
-          </motion.p>
+          </motion.p> */}
 
           <motion.div
-            initial="hidden"
+            initial={false}
             animate={heroAnimationActive ? "visible" : "hidden"}
             variants={heroRevealVariants}
             transition={{ duration: 0.85, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
@@ -252,7 +252,7 @@ export default function HomePageClient() {
           </motion.div>
 
           <motion.div
-            initial="hidden"
+            initial={false}
             animate={heroAnimationActive ? "visible" : "hidden"}
             variants={heroRevealVariants}
             transition={{ ...heroRevealTransition, delay: 1.34 }}
@@ -279,7 +279,7 @@ export default function HomePageClient() {
           </motion.div>
 
           <motion.div
-            initial="hidden"
+            initial={false}
             animate={heroAnimationActive ? "visible" : "hidden"}
             variants={heroRevealVariants}
             transition={{ duration: 0.85, delay: 1.5, ease: [0.22, 1, 0.36, 1] }}

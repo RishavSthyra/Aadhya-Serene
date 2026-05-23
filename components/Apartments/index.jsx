@@ -21,7 +21,7 @@ import {
 import { isBackgroundTransitionActive } from "../../lib/background-transition";
 import useResponsiveViewport from "../../hooks/useResponsiveViewport";
 
-const DESKTOP_PANEL_WIDTH = 356;
+const DESKTOP_PANEL_WIDTH = 420;
 const COMPACT_VIEWER_ASPECT_RATIO = 16 / 9;
 const Apartment360Viewer = dynamic(() => import("../Apartment360Viewer"), {
   ssr: false,
@@ -54,6 +54,9 @@ export default function Apartments() {
   const prefetchedFlatRoutesRef = useRef(new Set());
   const hasHandledInitialPathRef = useRef(false);
   const isCompactLayout = isTabletOrBelow;
+  const isShortDesktop = !isCompactLayout && height <= 900;
+  const shouldUseCompactCards = isCompactLayout || isShortDesktop;
+  const desktopPanelWidth = isShortDesktop ? 372 : width >= 1536 ? DESKTOP_PANEL_WIDTH : 390;
   const compactBottomOffset = "calc(86px + env(safe-area-inset-bottom, 0px))";
   const compactSheetOverlap = isCompactLayout ? 1 : 0;
   const compactMediaHeight = isTabletOrBelow
@@ -69,7 +72,7 @@ export default function Apartments() {
   const isFlatRoutePreparing = pendingFlatId !== null;
   const sharedScrollStyles = {
     scrollbarWidth: "thin",
-    scrollbarColor: "rgba(255,255,255,0.14) transparent",
+    scrollbarColor: "rgba(33,24,39,0.16) transparent",
     scrollBehavior: "smooth",
     WebkitOverflowScrolling: "touch",
     overscrollBehavior: "contain",
@@ -253,19 +256,19 @@ export default function Apartments() {
   );
 
   const renderListContent = (
-    <div className={`space-y-2 ${isCompactLayout ? "px-0 pb-1 pt-0" : "px-0 pb-2 pt-0"}`}>
+    <div className={`space-y-2 ${shouldUseCompactCards ? "px-0 pb-1 pt-0" : "px-0 pb-2 pt-0"}`}>
       {loading ? (
-        <div className="border border-white/18 bg-[linear-gradient(145deg,rgba(9,14,22,0.76),rgba(7,12,19,0.46)_52%,rgba(5,9,14,0.32))] px-6 py-8 text-center text-xs text-white/68 backdrop-blur-[20px]">
+        <div className="border border-[#211827]/10 bg-white/76 px-6 py-8 text-center text-xs text-[#1c1c20]/62 shadow-[0_18px_42px_rgba(88,47,117,0.08)] backdrop-blur-[20px]">
           Loading...
         </div>
       ) : error ? (
-        <div className="border border-red-200/30 bg-[linear-gradient(145deg,rgba(40,10,10,0.62),rgba(22,7,7,0.4))] px-6 py-8 text-center text-xs text-red-100 backdrop-blur-[20px]">
+        <div className="border border-red-200/70 bg-red-50/88 px-6 py-8 text-center text-xs text-red-700 backdrop-blur-[20px]">
           Error loading apartments.
         </div>
       ) : (
         <ApartmentList
           apartments={data}
-          compactMode={isCompactLayout}
+          compactMode={shouldUseCompactCards}
           onSelect={(apartment) => handleFlatClick(apartment.id)}
         />
       )}
@@ -276,30 +279,43 @@ export default function Apartments() {
     <div
       className="fixed right-0 top-[104px] z-[120] hidden xl:block"
       style={{
+        top: isShortDesktop ? "92px" : "104px",
         opacity: isVideoPlaying ? 0 : 1,
         pointerEvents: isVideoPlaying || isFlatRoutePreparing ? "none" : "auto",
-        transform: isPanelOpen ? "translateX(0)" : `translateX(${DESKTOP_PANEL_WIDTH + 20}px)`,
+        transform: isPanelOpen ? "translateX(0)" : `translateX(${desktopPanelWidth + 20}px)`,
         transition: "transform 420ms cubic-bezier(0.22,1,0.36,1), opacity 280ms ease",
       }}
     >
-      <aside className="mr-4 flex h-[calc(100dvh-120px)] max-h-[calc(100dvh-120px)] w-[356px] flex-col gap-3">
+      <aside
+        className="mr-4 flex flex-col"
+        style={{
+          width: `${desktopPanelWidth}px`,
+          height: isShortDesktop ? "calc(100dvh - 106px)" : "calc(100dvh - 116px)",
+          maxHeight: isShortDesktop ? "calc(100dvh - 106px)" : "calc(100dvh - 116px)",
+          gap: isShortDesktop ? "9px" : "12px",
+        }}
+      >
         <style>{`
           .scrollbar-thin::-webkit-scrollbar { width: 4px; }
           .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
           .scrollbar-thin::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.14);
+            background: rgba(33,24,39,0.16);
             border-radius: 999px;
           }
           .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-            background: rgba(182,196,221,0.32);
+            background: rgba(156,77,170,0.26);
           }
         `}</style>
 
-        <section className="relative shrink-0 overflow-hidden rounded-[28px] border border-white/12 bg-[linear-gradient(180deg,rgba(28,36,48,0.7)_0%,rgba(18,24,34,0.74)_55%,rgba(12,17,25,0.8)_100%)] shadow-[-14px_0_58px_rgba(4,8,14,0.28),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-[28px]">
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_24%,rgba(5,8,14,0.14)_100%)]" />
+        <section className="relative shrink-0 overflow-hidden rounded-[22px] border border-[#211827]/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.96)_0%,rgba(252,249,255,0.95)_56%,rgba(255,255,255,0.92)_100%)] shadow-[-14px_0_58px_rgba(68,38,88,0.12),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-[28px]">
+          <div className="pointer-events-none absolute -right-16 -top-20 h-52 w-56 rotate-12 bg-[conic-gradient(from_220deg_at_50%_50%,rgba(177,78,255,0),rgba(177,78,255,0.13),rgba(236,86,171,0.11),rgba(177,78,255,0))] blur-2xl" />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(255,255,255,0.08)_28%,rgba(255,255,255,0.02)_100%)]" />
           <div
-            className="relative max-h-[52dvh] overflow-y-auto scrollbar-thin"
-            style={sharedScrollStyles}
+            className="relative overflow-y-auto scrollbar-thin"
+            style={{
+              ...sharedScrollStyles,
+              maxHeight: isShortDesktop ? "40dvh" : "45dvh",
+            }}
           >
             <Filters
               filters={filters}
@@ -314,23 +330,24 @@ export default function Apartments() {
           </div>
         </section>
 
-        <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-white/12 bg-[linear-gradient(180deg,rgba(30,38,46,0.74)_0%,rgba(20,26,34,0.78)_58%,rgba(14,18,24,0.84)_100%)] shadow-[-14px_0_58px_rgba(4,8,14,0.28),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[28px]">
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02)_24%,rgba(5,8,14,0.12)_100%)]" />
-          <div className="relative flex items-start justify-between gap-3 border-b border-white/12 px-4 pb-3 pt-3.5">
+        <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-[#211827]/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.94)_0%,rgba(252,249,255,0.92)_58%,rgba(255,255,255,0.9)_100%)] shadow-[-14px_0_58px_rgba(68,38,88,0.12),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-[28px]">
+          <div className="pointer-events-none absolute -right-20 -top-24 h-56 w-60 rotate-12 bg-[conic-gradient(from_220deg_at_50%_50%,rgba(177,78,255,0),rgba(177,78,255,0.12),rgba(236,86,171,0.1),rgba(177,78,255,0))] blur-2xl" />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.26),rgba(255,255,255,0.06)_28%,rgba(255,255,255,0.02)_100%)]" />
+          <div className="relative flex items-start justify-between gap-3 border-b border-[#211827]/8 px-4 pb-3 pt-3.5">
             <div className="min-w-0">
-              <h3 className="text-[1.7rem] font-semibold leading-none tracking-[-0.02em] text-white/92">
+              <h3 className="text-[1.58rem] font-semibold leading-none tracking-[-0.02em] text-[#151518] 2xl:text-[1.72rem]">
                 Matching Flats
               </h3>
-              <p className="mt-1 text-[12px] leading-4 text-white/56">
+              <p className="mt-1.5 text-[11.5px] leading-4 text-[#1c1c20]/54 2xl:text-[12px]">
                 View apartments matching your current filters.
               </p>
             </div>
-            <span className="shrink-0 rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] px-2.5 py-1 text-[10.5px] font-semibold text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <span className="shrink-0 rounded-full border border-[#211827]/10 bg-[#f4f0f7] px-2.5 py-1 text-[10.5px] font-semibold text-[#151518]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
               {data.length} units
             </span>
           </div>
           <div
-            className="relative min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-2 scrollbar-thin"
+            className="relative min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-2.5 scrollbar-thin"
             style={sharedScrollStyles}
           >
             {renderListContent}
@@ -347,7 +364,7 @@ export default function Apartments() {
           type="button"
           aria-label="Close apartments panel backdrop"
           onClick={() => setIsPanelOpen(false)}
-          className="fixed inset-0 z-[109] bg-[radial-gradient(circle_at_top,rgba(126,146,176,0.16),rgba(6,10,18,0.26))] backdrop-blur-[3px] xl:hidden"
+          className="fixed inset-0 z-[109] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),rgba(20,16,26,0.2))] backdrop-blur-[3px] xl:hidden"
           style={{
             top: `calc(${compactMediaHeight} - ${compactSheetOverlap}px)`,
           }}
@@ -368,16 +385,17 @@ export default function Apartments() {
           transition: "transform 300ms cubic-bezier(0.22,1,0.36,1)",
         }}
       >
-        <aside className="relative flex h-full flex-col overflow-hidden rounded-t-[22px] border border-b-0 border-x-0 border-white/14 bg-[linear-gradient(165deg,rgba(28,36,48,0.52)_0%,rgba(12,17,24,0.78)_40%,rgba(7,10,16,0.92)_100%)] shadow-[0_-20px_60px_rgba(8,12,18,0.34),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-[28px] saturate-[150%]">
-          <div className="relative flex items-center justify-between gap-3 border-b border-white/10 px-4 pb-3 pt-3">
+        <aside className="relative flex h-full flex-col overflow-hidden rounded-t-[22px] border border-b-0 border-x-0 border-[#211827]/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.96)_0%,rgba(252,249,255,0.94)_58%,rgba(255,255,255,0.92)_100%)] shadow-[0_-20px_60px_rgba(68,38,88,0.16),inset_0_1px_0_rgba(255,255,255,0.96)] backdrop-blur-[28px] saturate-[140%]">
+          <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-72 rotate-12 bg-[conic-gradient(from_220deg_at_50%_50%,rgba(177,78,255,0),rgba(177,78,255,0.13),rgba(236,86,171,0.11),rgba(177,78,255,0))] blur-2xl" />
+          <div className="relative flex items-center justify-between gap-3 border-b border-[#211827]/8 px-4 pb-3 pt-3">
             <div className="absolute inset-x-0 top-1 flex justify-center">
-              <div className="h-1.5 w-14 rounded-full bg-white/14" />
+              <div className="h-1.5 w-14 rounded-full bg-[#211827]/12" />
             </div>
             <div className="min-w-0">
-              <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-white/74">
+              <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-[#1c1c20]/62">
                 Residence Atelier
               </p>
-              <p className="mt-1 text-[11px] text-white/60 md:text-[12px]">
+              <p className="mt-1 text-[11px] text-[#1c1c20]/54 md:text-[12px]">
                 {data.length} matches from {allData?.length ?? data.length} homes
               </p>
             </div>
@@ -386,14 +404,14 @@ export default function Apartments() {
               <button
                 type="button"
                 onClick={resetFilters}
-                className="rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.05))] px-3 py-2 text-[14px] font-medium uppercase tracking-[0.08em] text-white/70 shadow-[0_14px_32px_rgba(7,10,18,0.14),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-[18px] transition hover:border-white/24 hover:bg-white/[0.1] hover:text-white"
+                className="rounded-full border border-[#211827]/10 bg-white px-3 py-2 text-[14px] font-medium uppercase tracking-[0.08em] text-[#1c1c20]/68 shadow-[0_14px_32px_rgba(88,47,117,0.08),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-[18px] transition hover:border-[#211827]/16 hover:text-[#151518]"
               >
                 Reset
               </button>
               <button
                 type="button"
                 onClick={() => setIsPanelOpen((current) => !current)}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.05))] text-white/70 shadow-[0_14px_32px_rgba(7,10,18,0.14),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-[18px] transition hover:border-white/24 hover:bg-white/[0.1] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#211827]/10 bg-white text-[#1c1c20]/68 shadow-[0_14px_32px_rgba(88,47,117,0.08),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-[18px] transition hover:border-[#211827]/16 hover:text-[#151518]"
                 aria-label={isPanelOpen ? "Collapse apartments panel" : "Expand apartments panel"}
               >
                 {isPanelOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
@@ -406,8 +424,8 @@ export default function Apartments() {
             style={sharedScrollStyles}
           >
             <div className="space-y-3">
-              <section className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(28,36,48,0.72)_0%,rgba(18,24,34,0.76)_58%,rgba(12,17,25,0.82)_100%)] shadow-[0_18px_46px_rgba(4,8,14,0.24),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[24px]">
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02)_26%,rgba(5,8,14,0.12)_100%)]" />
+              <section className="relative overflow-hidden rounded-[20px] border border-[#211827]/8 bg-white/54 shadow-[0_18px_46px_rgba(88,47,117,0.08),inset_0_1px_0_rgba(255,255,255,0.86)] backdrop-blur-[24px]">
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(255,255,255,0.04)_100%)]" />
                 <div className="relative">
                   <Filters
                     filters={filters}
@@ -424,19 +442,19 @@ export default function Apartments() {
                 </div>
               </section>
 
-              <section className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(30,38,46,0.76)_0%,rgba(20,26,34,0.8)_58%,rgba(14,18,24,0.86)_100%)] shadow-[0_18px_46px_rgba(4,8,14,0.24),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[24px]">
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02)_26%,rgba(5,8,14,0.12)_100%)]" />
-                <div className="relative border-b border-white/10 px-4 pb-3 pt-3.5">
+              <section className="relative overflow-hidden rounded-[20px] border border-[#211827]/8 bg-white/54 shadow-[0_18px_46px_rgba(88,47,117,0.08),inset_0_1px_0_rgba(255,255,255,0.86)] backdrop-blur-[24px]">
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(255,255,255,0.04)_100%)]" />
+                <div className="relative border-b border-[#211827]/8 px-4 pb-3 pt-3.5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-[20px] font-semibold leading-none tracking-[-0.02em] text-white/92">
+                      <h3 className="text-[20px] font-semibold leading-none tracking-[-0.02em] text-[#151518]">
                         Matching Flats
                       </h3>
-                      <p className="mt-1 text-[11px] leading-4 text-white/56">
+                      <p className="mt-1 text-[11px] leading-4 text-[#1c1c20]/54">
                         View apartments matching your filters.
                       </p>
                     </div>
-                    <span className="shrink-0 rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] px-2.5 py-1 text-[10px] font-semibold text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                    <span className="shrink-0 rounded-full border border-[#211827]/10 bg-[#f4f0f7] px-2.5 py-1 text-[10px] font-semibold text-[#151518]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
                       {data.length} units
                     </span>
                   </div>

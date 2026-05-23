@@ -27,6 +27,7 @@ import {
 import {
     floorPlanSrc,
     flatRenderFallbackPoster,
+    flatViewAngleFromKey,
     flatVideoFallbackId,
     flatReverseVideoSrc,
     flatVideoSrc,
@@ -271,7 +272,13 @@ export default function FlatDetailPage() {
 
     const [muted, setMuted] = useState(true);
     const [floorPlanError, setFloorPlanError] = useState(false);
-    const [activeViewKey, setActiveViewKey] = useState('A1');
+    const [activeViewKey, setActiveViewKey] = useState(() => {
+        if (typeof window === 'undefined') {
+            return 'A1';
+        }
+
+        return normalizeFlatViewKey(new URLSearchParams(window.location.search).get('view'));
+    });
     const [useVideoFallback, setUseVideoFallback] = useState(() => !supportsFlatRenderVideoPlayback());
     const [videoPhase, setVideoPhase] = useState('intro');
     const [isIntroFrameReady, setIsIntroFrameReady] = useState(false);
@@ -349,7 +356,7 @@ export default function FlatDetailPage() {
             reverseVideo.pause();
             reverseVideo.currentTime = 0;
         }
-    }, [hasFlatSpecificVideo, id, useVideoFallback]);
+    }, [activeViewKey, hasFlatSpecificVideo, id, useVideoFallback]);
 
     useEffect(() => {
         return () => {
@@ -580,7 +587,8 @@ export default function FlatDetailPage() {
     const facingLabel = formatFacing(flat.facing);
     const isAvailable = flat.status === 'available';
     const planSrc = floorPlanSrc(flat.flat);
-    const introVideoSrc = hasFlatSpecificVideo ? flatVideoSrc(fallbackId, 1) : WALKTHROUGH_VIDEO;
+    const flatVideoAngle = ((flatViewAngleFromKey(activeViewKey) - 1) % 2) + 1;
+    const introVideoSrc = hasFlatSpecificVideo ? flatVideoSrc(fallbackId, flatVideoAngle) : WALKTHROUGH_VIDEO;
     const loopVideoSrc = hasFlatSpecificVideo ? flatVideoSrc(fallbackId, 2) : null;
     const reverseVideoSrc = hasFlatSpecificVideo ? flatReverseVideoSrc(fallbackId) : null;
     const bhkValue = Number.parseInt(flat.type, 10);

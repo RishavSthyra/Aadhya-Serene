@@ -34,6 +34,15 @@ const APARTMENTS_TRANSITION = {
 };
 const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
 
+const LOCAL_VIDEO_FALLBACKS = {
+    '1-1': '/assets/background-video/mobile/home-transition.mp4',
+    '1-2': '/assets/background-video/mobile/home-loop.mp4',
+    '2-1': '/assets/background-video/mobile/about-transition.mp4',
+    '2-2': '/assets/background-video/mobile/about-loop.mp4',
+    '3-1': '/assets/background-video/mobile/apartments-transition.mp4',
+    '3-2': '/assets/background-video/mobile/apartments-loop.mp4',
+};
+
 const BACKGROUND_POSTERS = {
     home: '/assets/background-video/posters/home.jpg',
     about: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_2_1.jpg',
@@ -275,7 +284,6 @@ function warmVideoSource(source, preload = 'auto') {
     video.defaultMuted = true;
     video.playsInline = true;
     video.preload = preload;
-    video.crossOrigin = 'anonymous';
     video.setAttribute('muted', '');
     video.setAttribute('playsinline', '');
     video.setAttribute('webkit-playsinline', 'true');
@@ -334,19 +342,20 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const getSourceCandidates = useCallback((source, assetId) => {
         if (!source) return [];
 
+        const localFallbackSource = assetId ? LOCAL_VIDEO_FALLBACKS[assetId] : null;
         const preferredMp4Source = assetId
             ? null
             : buildResolutionVariantUrl(source, preferredVideoQuality);
 
         if (isHlsSource(source)) {
-            return uniqueSources([source, preferredMp4Source]);
+            return uniqueSources([source, preferredMp4Source, localFallbackSource]);
         }
 
         if ((isTablet || isSafari || isIOS || isConstrainedDevice) && preferredMp4Source) {
-            return uniqueSources([preferredMp4Source, source]);
+            return uniqueSources([preferredMp4Source, source, localFallbackSource]);
         }
 
-        return [source];
+        return uniqueSources([source, localFallbackSource]);
     }, [isConstrainedDevice, isIOS, isSafari, isTablet, preferredVideoQuality]);
 
     const getHlsModule = useCallback(() => {

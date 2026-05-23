@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { warmApartment360Frames } from "@/lib/apartment360Warmup";
 import usePerformanceProfile from "@/hooks/usePerformanceProfile";
 import {
   Building2,
@@ -27,6 +28,16 @@ const NAV_LINKS = [
   { href: "/amenities", label: "Amenities", icon: Sparkles, menuKey: "amenities" },
   { href: "/walkthrough", label: "Walkthrough", icon: PlayCircle },
   { href: "/location", label: "Location", icon: MapPin },
+];
+
+const PREFETCH_ROUTES = [
+  "/",
+  "/about",
+  "/apartments",
+  "/amenities",
+  "/walkthrough",
+  "/location",
+  "/contact",
 ];
 
 const AMENITIES_DROPDOWN_ITEMS = [
@@ -126,6 +137,16 @@ export default function Nav() {
     }
   };
 
+  const primeRoute = (href) => {
+    router.prefetch(href);
+
+    if (href === "/apartments") {
+      void warmApartment360Frames({
+        isConstrainedDevice: isTabletOrBelow,
+      });
+    }
+  };
+
   const showNav = () => {
     clearHideTimeout();
     setIsNavVisible(true);
@@ -170,6 +191,12 @@ export default function Nav() {
       setOpenMenu(null);
     }
   }, [isTabletOrBelow]);
+
+  useEffect(() => {
+    PREFETCH_ROUTES.forEach((href) => {
+      router.prefetch(href);
+    });
+  }, [router]);
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -217,7 +244,13 @@ export default function Nav() {
     container.style.opacity = "0";
     container.style.transition = "opacity 0.42s cubic-bezier(0.22,1,0.36,1)";
 
-    const routePushDelay = href === "/apartments" && isTabletOrBelow ? 180 : 360;
+    if (href === "/apartments") {
+      void warmApartment360Frames({
+        isConstrainedDevice: isTabletOrBelow,
+      });
+    }
+
+    const routePushDelay = href === "/apartments" && isTabletOrBelow ? 80 : 120;
 
     window.setTimeout(() => {
       router.push(href);
@@ -310,6 +343,7 @@ export default function Nav() {
                       key={href}
                       type="button"
                       onMouseEnter={() => {
+                        primeRoute(href);
                         if (menuKey) {
                           setOpenMenu(menuKey);
                         } else {
@@ -317,6 +351,7 @@ export default function Nav() {
                         }
                       }}
                       onFocus={() => {
+                        primeRoute(href);
                         if (menuKey) {
                           setOpenMenu(menuKey);
                         } else {
@@ -325,10 +360,7 @@ export default function Nav() {
                       }}
                       onClick={() => {
                         if (menuKey) {
-                          setOpenMenu((current) =>
-                            current === menuKey ? null : menuKey,
-                          );
-                          return;
+                          setOpenMenu(null);
                         }
 
                         handleRouteNavigation(href);
@@ -358,6 +390,8 @@ export default function Nav() {
                 <button
                   type="button"
                   onClick={() => router.push("/contact")}
+                  onPointerEnter={() => primeRoute("/contact")}
+                  onFocus={() => primeRoute("/contact")}
                   className="inline-flex min-h-[42px] cursor-pointer items-center gap-1.5 rounded-full bg-[#17191f] px-4 text-[#f7f3eb] shadow-[0_10px_18px_rgba(10,12,18,0.16)] transition hover:-translate-y-0.5"
                 >
                   <Phone className="h-3 w-3" />
@@ -419,6 +453,8 @@ export default function Nav() {
                     <button
                       type="button"
                       onClick={() => router.push("/amenities")}
+                      onPointerEnter={() => primeRoute("/amenities")}
+                      onFocus={() => primeRoute("/amenities")}
                       className="mt-6 inline-flex min-h-[40px] items-center rounded-full border border-white/45 bg-white/36 px-5 text-[12px] font-medium uppercase tracking-[0.12em] text-[#17191f] backdrop-blur-xl transition hover:bg-white/52"
                     >
                       View All
@@ -511,6 +547,7 @@ export default function Nav() {
                 key={href}
                 type="button"
                 onClick={() => handleRouteNavigation(href)}
+                onPointerDown={() => primeRoute(href)}
                 className={`flex min-h-[42px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1.5 text-center transition md:min-h-[46px] md:gap-1 ${
                   active ? "text-[#17191f]" : "text-[#5f636c]"
                 }`}

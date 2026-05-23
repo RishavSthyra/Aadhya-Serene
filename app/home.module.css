@@ -77,10 +77,10 @@
 .heroTitleLetter,
 .heroTitleSpace {
     display: inline-block;
-    font-size: clamp(3rem, 7vw, 6.45rem);
+    font-size: clamp(3rem, 5.4vw, 5.45rem);
     font-weight: 300;
-    line-height: 0.94;
-    letter-spacing: -0.055em;
+    line-height: 0.96;
+    letter-spacing: -0.03em;
     color: #f7fbff;
     text-shadow: 0 10px 34px rgba(7, 13, 22, 0.16);
     will-change: transform, opacity, filter;
@@ -265,6 +265,76 @@
     100% {
         opacity: 0;
         transform: translate(-50%, 14px);
+    }
+}
+
+@media (min-width: 901px) and (max-height: 860px) {
+    .heroInner {
+        padding: clamp(104px, 11vh, 132px) 24px clamp(70px, 8vh, 96px);
+    }
+
+    .heroEyebrow {
+        margin-bottom: 18px;
+        padding: 8px 14px;
+        font-size: 9px;
+        letter-spacing: 0.24em;
+    }
+
+    .heroTitleLetter,
+    .heroTitleSpace {
+        font-size: clamp(2.85rem, 4.55vw, 4.55rem);
+        line-height: 0.98;
+        letter-spacing: -0.025em;
+    }
+
+    .heroSubtitle {
+        margin-top: 22px;
+        font-size: 16px;
+        line-height: 1.65;
+    }
+
+    .heroMarkerRow {
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    .heroMarker {
+        min-height: 36px;
+        padding: 0 15px;
+        font-size: 9.5px;
+        letter-spacing: 0.16em;
+    }
+
+    .heroActions {
+        gap: 12px;
+        margin-top: 28px;
+    }
+
+    .heroPrimaryCta,
+    .heroSecondaryCta {
+        min-height: 46px;
+        padding: 0 20px;
+        font-size: 10.5px;
+        letter-spacing: 0.15em;
+    }
+}
+
+@media (min-width: 901px) and (max-height: 720px) {
+    .heroTitleLetter,
+    .heroTitleSpace {
+        font-size: clamp(2.5rem, 4vw, 3.9rem);
+    }
+
+    .heroSubtitle {
+        display: none;
+    }
+
+    .heroMarkerRow {
+        margin-top: 18px;
+    }
+
+    .heroActions {
+        margin-top: 22px;
     }
 }
 
