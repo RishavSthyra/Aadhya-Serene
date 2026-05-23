@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChevronRight, X } from 'lucide-react';
 import useResponsiveViewport from '@/hooks/useResponsiveViewport';
 import styles from '../../app/amenities/amenities.module.css';
 
@@ -80,18 +81,18 @@ export default function Amenities({ initialAmenity = null }) {
                 aria-hidden="true"
             />
 
-            <button
-                className={`${styles.hamburgerBtn} ${isSidebarOpen ? styles.open : ''}`}
-                onClick={toggleSidebar}
-                aria-label="Toggle amenities sidebar"
-                aria-expanded={isSidebarOpen}
-                aria-controls="amenities-sidebar"
-                type="button"
-            >
-                <span className={styles.hamburgerLine} />
-                <span className={styles.hamburgerLine} />
-                <span className={styles.hamburgerLine} />
-            </button>
+            {!isSidebarOpen && (
+                <button
+                    className={styles.sidebarRevealBtn}
+                    onClick={toggleSidebar}
+                    aria-label="Show amenities sidebar"
+                    aria-expanded={isSidebarOpen}
+                    aria-controls="amenities-sidebar"
+                    type="button"
+                >
+                    <ChevronRight className={styles.panelIcon} aria-hidden="true" />
+                </button>
+            )}
 
             <section
                 id="amenities-sidebar"
@@ -102,7 +103,18 @@ export default function Amenities({ initialAmenity = null }) {
                 <header className={styles.header}>
                     <div className={styles.headerTop}>
                         <h1>AMENITIES</h1>
-                        <span className={styles.headerBadge}>8 Spaces</span>
+                        <div className={styles.headerActions}>
+                            <span className={styles.headerBadge}>8 Spaces</span>
+                            <button
+                                className={styles.sidebarCloseBtn}
+                                onClick={() => setIsSidebarOpen(false)}
+                                aria-label="Close amenities sidebar"
+                                aria-controls="amenities-sidebar"
+                                type="button"
+                            >
+                                <X className={styles.panelIcon} aria-hidden="true" />
+                            </button>
+                        </div>
                     </div>
                     <h2>We Give More</h2>
                     <p>

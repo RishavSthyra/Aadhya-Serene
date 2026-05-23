@@ -33,6 +33,7 @@ const APARTMENTS_TRANSITION = {
     ultra: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_3200w_60fps_h264_ultra.mp4',
 };
 const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
+const AMENITY_VIDEO_QUALITY = '1080p';
 
 const LOCAL_VIDEO_FALLBACKS = {
     '1-1': '/assets/background-video/mobile/home-transition.mp4',
@@ -50,6 +51,10 @@ const BACKGROUND_POSTERS = {
     contact: '/assets/background-video/posters/about.jpg',
     amenities: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/umbrella-chair2.jpg',
 };
+
+function getAmenityVideoSource(amenity) {
+    return `${S3_BUCKET}/videos/amenities/${amenity}/${AMENITY_VIDEO_QUALITY}/${amenity}-h264.mp4`;
+}
 
 const APARTMENTS_LOOP_HOLD_MS = 0;
 const HLS_MIN_START_BUFFER_AHEAD_SECONDS = 2.4;
@@ -108,40 +113,40 @@ const LAYOUT_CONFIG = {
         loopAssetId: '2-2',
     },
     amenities: {
-        transition: `${S3_BUCKET}/videos/amenities/rooftopLeisureDeck/2160p/rooftopLeisureDeck-h264.mp4`,
-        loop: `${S3_BUCKET}/videos/amenities/rooftopLeisureDeck/2160p/rooftopLeisureDeck-h264.mp4`,
+        transition: getAmenityVideoSource('rooftopLeisureDeck'),
+        loop: getAmenityVideoSource('rooftopLeisureDeck'),
     },
     'amenities-rooftopLeisureDeck': {
-        transition: `${S3_BUCKET}/videos/amenities/rooftopLeisureDeck/2160p/rooftopLeisureDeck-h264.mp4`,
-        loop: `${S3_BUCKET}/videos/amenities/rooftopLeisureDeck/2160p/rooftopLeisureDeck-h264.mp4`,
+        transition: getAmenityVideoSource('rooftopLeisureDeck'),
+        loop: getAmenityVideoSource('rooftopLeisureDeck'),
     },
     'amenities-childrensPlayArea': {
-        transition: `${S3_BUCKET}/videos/amenities/childrensPlayArea/2160p/childrensPlayArea-h264.mp4`,
-        loop: `${S3_BUCKET}/videos/amenities/childrensPlayArea/2160p/childrensPlayArea-h264.mp4`,
+        transition: getAmenityVideoSource('childrensPlayArea'),
+        loop: getAmenityVideoSource('childrensPlayArea'),
     },
     'amenities-swimmingPool': {
-        transition: `${S3_BUCKET}/videos/amenities/swimmingPool/2160p/swimmingPool-h264.mp4`,
-        loop: `${S3_BUCKET}/videos/amenities/swimmingPool/2160p/swimmingPool-h264.mp4`,
+        transition: getAmenityVideoSource('swimmingPool'),
+        loop: getAmenityVideoSource('swimmingPool'),
     },
     'amenities-gymnasium': {
-        transition: `${S3_BUCKET}/videos/amenities/gymnasium/2160p/gymnasium-h264.mp4`,
-        loop: `${S3_BUCKET}/videos/amenities/gymnasium/2160p/gymnasium-h264.mp4`,
+        transition: getAmenityVideoSource('gymnasium'),
+        loop: getAmenityVideoSource('gymnasium'),
     },
     'amenities-indoorGames': {
-        transition: `${S3_BUCKET}/videos/amenities/indoorGames/2160p/indoorGames-h264.mp4`,
-        loop: `${S3_BUCKET}/videos/amenities/indoorGames/2160p/indoorGames-h264.mp4`,
+        transition: getAmenityVideoSource('indoorGames'),
+        loop: getAmenityVideoSource('indoorGames'),
     },
     'amenities-clubhouse': {
-        transition: `${S3_BUCKET}/videos/amenities/clubhouse/2160p/clubhouse-h264.mp4`,
-        loop: `${S3_BUCKET}/videos/amenities/clubhouse/2160p/clubhouse-h264.mp4`,
+        transition: getAmenityVideoSource('clubhouse'),
+        loop: getAmenityVideoSource('clubhouse'),
     },
     'amenities-basketball': {
-        transition: `${S3_BUCKET}/videos/amenities/basketball/2160p/basketball-h264.mp4`,
-        loop: `${S3_BUCKET}/videos/amenities/basketball/2160p/basketball-h264.mp4`,
+        transition: getAmenityVideoSource('basketball'),
+        loop: getAmenityVideoSource('basketball'),
     },
     'amenities-badminton': {
-        transition: `${S3_BUCKET}/videos/amenities/badminton/2160p/badminton-h264.mp4`,
-        loop: `${S3_BUCKET}/videos/amenities/badminton/2160p/badminton-h264.mp4`,
+        transition: getAmenityVideoSource('badminton'),
+        loop: getAmenityVideoSource('badminton'),
     },
 };
 

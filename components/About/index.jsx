@@ -206,11 +206,11 @@ function CountUpStat({ end, label, format, decimals = 0, delay = 0, disableAnima
   const renderedValue = format ? format(value) : value.toFixed(decimals);
 
   return (
-    <article className={`${responsiveStyles.statCard} h-full rounded-[22px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.1)_100%)] px-4 py-4 shadow-[0_20px_40px_rgba(6,10,18,0.16),inset_0_1px_0_rgba(255,255,255,0.22)] backdrop-blur-[24px] md:px-4 md:py-4`}>
-      <div className={`${responsiveStyles.statValue} text-[1.85rem] font-light leading-none tracking-[-0.05em] text-[#f7f8fb] md:text-[1.95rem]`}>
+    <article className={`${responsiveStyles.statCard} h-full rounded-[22px] border border-[#9a752f]/12 bg-[linear-gradient(145deg,#ffffff_0%,#fffdf8_100%)] px-4 py-4 shadow-[0_2px_4px_rgba(0,0,0,0.16),0_16px_32px_-14px_rgba(99,74,31,0.14),inset_0_-3px_0_rgba(126,94,38,0.05),inset_0_1px_0_rgba(255,255,255,0.98)] md:px-4 md:py-4`}>
+      <div className={`${responsiveStyles.statValue} text-[1.85rem] font-light leading-none tracking-[-0.05em] text-[#1d1a15] md:text-[1.95rem]`}>
         {renderedValue}
       </div>
-      <p className={`${responsiveStyles.statLabel} mt-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/62 md:text-[9.5px]`}>
+      <p className={`${responsiveStyles.statLabel} mt-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#7b6336] md:text-[9.5px]`}>
         {label}
       </p>
     </article>
@@ -221,13 +221,13 @@ function ProjectBriefContent({ disableAnimation = false }) {
   return (
     <>
       <div className="flex items-center gap-4">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/72">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7a5b21]">
           Project Brief
         </span>
-        <span className="h-px flex-1 bg-white/18" />
+        <span className="h-px flex-1 bg-[linear-gradient(90deg,rgba(154,117,47,0.28),rgba(154,117,47,0.04))]" />
       </div>
 
-      <p className={`${responsiveStyles.briefCopy} mt-4 max-w-[28ch] text-[14px] leading-[1.8] text-white/72`}>
+      <p className={`${responsiveStyles.briefCopy} mt-4 max-w-[28ch] text-[14px] leading-[1.8] text-[#3f3a32]/76`}>
         Essential details with a quieter, more luxurious finish and a more
         composed residential rhythm.
       </p>
@@ -253,10 +253,10 @@ function AboutMainCardContent({ navigateTo, primeApartmentsRoute, disableAnimati
   return (
     <>
       <div className="flex items-center gap-4">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/72">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7a5b21]">
           About Aadhya Serene
         </span>
-        <span className="h-px flex-1 bg-white/18" />
+        <span className="h-px flex-1 bg-[linear-gradient(90deg,rgba(154,117,47,0.28),rgba(154,117,47,0.04))]" />
       </div>
 
       <div className={`${responsiveStyles.titleBlock} mt-5 space-y-1`}>
@@ -265,12 +265,12 @@ function AboutMainCardContent({ navigateTo, primeApartmentsRoute, disableAnimati
             key={line}
             text={line}
             disableAnimation={disableAnimation}
-            className={`${responsiveStyles.titleLine} ${titleFont.className} text-[clamp(1.72rem,3.2vw,3.45rem)] font-light leading-[1.03] tracking-[-0.04em] text-[#f7f7fa] [text-shadow:0_12px_34px_rgba(0,0,0,0.18)] md:whitespace-nowrap`}
+            className={`${responsiveStyles.titleLine} ${titleFont.className} text-[clamp(1.72rem,3.2vw,3.45rem)] font-light leading-[1.03] tracking-[-0.04em] text-[#1d1a15] md:whitespace-nowrap`}
           />
         ))}
       </div>
 
-      <motion.p className={`${responsiveStyles.introCopy} mt-5 max-w-[405px] text-[13.5px] leading-[1.82] text-white/80 md:text-[14px]`}>
+      <motion.p className={`${responsiveStyles.introCopy} mt-5 max-w-[405px] text-[13.5px] leading-[1.82] text-[#3f3a32]/76 md:text-[14px]`}>
         <AnimatedLine
           text="Aadhya Serene is crafted for those who value clean architecture, generous light, and a more composed living experience in North Bengaluru. Every detail is shaped to feel elevated, elegant, and effortlessly comfortable."
           disableAnimation={disableAnimation}
@@ -289,7 +289,7 @@ function AboutMainCardContent({ navigateTo, primeApartmentsRoute, disableAnimati
         {FEATURE_PILLS.map((pill) => (
           <span
             key={pill}
-            className={`${responsiveStyles.pill} inline-flex min-h-[38px] items-center rounded-full border border-white/18 bg-white/8 px-4 text-[10px] font-medium uppercase tracking-[0.14em] text-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-[18px]`}
+            className={`${responsiveStyles.pill} inline-flex min-h-[38px] items-center rounded-full border border-[#9a752f]/16 bg-[#fffdf8] px-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b5428] shadow-[0_8px_18px_rgba(99,74,31,0.06),inset_0_-2px_0_rgba(154,117,47,0.05),inset_0_1px_0_rgba(255,255,255,0.96)]`}
           >
             {pill}
           </span>
@@ -306,17 +306,17 @@ function AboutMainCardContent({ navigateTo, primeApartmentsRoute, disableAnimati
           <div
             key={title}
             className={`${responsiveStyles.detailRow} flex items-start gap-4 py-5 ${
-              index !== DETAIL_ROWS.length - 1 ? 'border-b border-white/12' : ''
+              index !== DETAIL_ROWS.length - 1 ? 'border-b border-[#2b251a]/10' : ''
             }`}
           >
-            <div className={`${responsiveStyles.detailIcon} flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/18 bg-white/8 text-white/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-[18px]`}>
+            <div className={`${responsiveStyles.detailIcon} flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#9a752f]/16 bg-[linear-gradient(145deg,#ffffff,#fffbf2)] text-[#7a5b21] shadow-[0_2px_4px_rgba(0,0,0,0.14),0_12px_24px_rgba(99,74,31,0.08),inset_0_-2px_0_rgba(154,117,47,0.06),inset_0_1px_0_rgba(255,255,255,0.96)]`}>
               <Icon className="h-4 w-4" />
             </div>
             <div>
-              <h3 className={`${responsiveStyles.detailTitle} m-0 text-[1.05rem] font-medium tracking-[-0.02em] text-[#f4f5f8]`}>
+              <h3 className={`${responsiveStyles.detailTitle} m-0 text-[1.05rem] font-medium tracking-[-0.02em] text-[#1d1a15]`}>
                 {title}
               </h3>
-              <p className={`${responsiveStyles.detailDescription} mt-2 text-[13px] leading-[1.75] text-white/62`}>
+              <p className={`${responsiveStyles.detailDescription} mt-2 text-[13px] leading-[1.75] text-[#4a453d]/64`}>
                 {description}
               </p>
             </div>
@@ -335,7 +335,7 @@ function AboutMainCardContent({ navigateTo, primeApartmentsRoute, disableAnimati
           onClick={() => navigateTo('/apartments')}
           onMouseEnter={primeApartmentsRoute}
           onTouchStart={primeApartmentsRoute}
-          className="inline-flex min-h-[48px] items-center gap-2 rounded-full border border-white/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(241,244,248,0.84)_100%)] px-6 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#101114] shadow-[0_12px_30px_rgba(0,0,0,0.16)] transition duration-300 hover:-translate-y-0.5"
+          className="inline-flex min-h-[48px] items-center gap-2 rounded-full border border-[#211827]/10 bg-[#211827] px-6 text-[9px] font-semibold uppercase tracking-[0.18em] text-white shadow-[0_2px_4px_rgba(0,0,0,0.32),0_14px_28px_-8px_rgba(33,24,39,0.42),inset_0_-3px_0_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.14)] transition duration-300 hover:-translate-y-0.5"
         >
           Explore Apartments
           <ArrowUpRight className="h-4 w-4" />
@@ -554,16 +554,21 @@ export default function About() {
                 y: isIntroVideoPlaying ? 28 : 0,
               }}
               transition={{ duration: 0.52, ease: [0.16, 1, 0.3, 1] }}
-              className={`${responsiveStyles.mainCard} w-full max-w-[540px] overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-6 py-7 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] md:px-7 md:py-8`}
+              className={`${responsiveStyles.mainCard} relative w-full max-w-[540px] overflow-hidden rounded-[34px] border border-white/90 bg-[linear-gradient(145deg,#ffffff_0%,#fffefa_68%,#fffaf0_100%)] px-6 py-7 shadow-[0_2px_4px_rgba(0,0,0,0.2),0_18px_38px_-16px_rgba(99,74,31,0.16),0_32px_80px_-34px_rgba(126,94,38,0.12),inset_0_-4px_0_rgba(126,94,38,0.05),inset_0_1px_0_rgba(255,255,255,1)] md:px-7 md:py-8`}
               style={{
                 pointerEvents: isIntroVideoPlaying ? 'none' : 'auto',
               }}
             >
-              <AboutMainCardContent
-                navigateTo={navigateTo}
-                primeApartmentsRoute={primeApartmentsRoute}
-                disableAnimation={shouldUseLightMotion}
-              />
+              <div className="pointer-events-none absolute -left-24 -top-20 h-64 w-72 rounded-full bg-[#9a752f]/8 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-24 right-4 h-60 w-72 rounded-full bg-[#c4a15a]/7 blur-3xl" />
+              <div className="pointer-events-none absolute right-16 top-1/3 h-32 w-32 rounded-full bg-[#8a6424]/5 blur-2xl" />
+              <div className="relative z-[1]">
+                <AboutMainCardContent
+                  navigateTo={navigateTo}
+                  primeApartmentsRoute={primeApartmentsRoute}
+                  disableAnimation={shouldUseLightMotion}
+                />
+              </div>
             </motion.div>
 
             <motion.aside
@@ -573,12 +578,17 @@ export default function About() {
                 y: isIntroVideoPlaying ? 28 : 0,
               }}
               transition={{ duration: 0.52, delay: isIntroVideoPlaying ? 0 : 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className={`${responsiveStyles.briefCard} hidden w-full max-w-[350px] self-start overflow-hidden rounded-[34px] border border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_100%)] px-5 py-6 shadow-[0_30px_70px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-[34px] xl:ml-auto xl:block xl:self-end md:px-6 md:py-7`}
+              className={`${responsiveStyles.briefCard} relative hidden w-full max-w-[350px] self-start overflow-hidden rounded-[34px] border border-white/90 bg-[linear-gradient(145deg,#ffffff_0%,#fffefa_68%,#fffaf0_100%)] px-5 py-6 shadow-[0_2px_4px_rgba(0,0,0,0.2),0_18px_38px_-16px_rgba(99,74,31,0.16),0_32px_80px_-34px_rgba(126,94,38,0.12),inset_0_-4px_0_rgba(126,94,38,0.05),inset_0_1px_0_rgba(255,255,255,1)] xl:ml-auto xl:block xl:self-end md:px-6 md:py-7`}
               style={{
                 pointerEvents: isIntroVideoPlaying ? 'none' : 'auto',
               }}
             >
-              <ProjectBriefContent disableAnimation={shouldUseLightMotion} />
+              <div className="pointer-events-none absolute -right-24 -top-20 h-60 w-72 rounded-full bg-[#c4a15a]/8 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-24 left-0 h-60 w-72 rounded-full bg-[#9a752f]/7 blur-3xl" />
+              <div className="pointer-events-none absolute left-10 top-1/2 h-28 w-32 rounded-full bg-[#8a6424]/5 blur-2xl" />
+              <div className="relative z-[1]">
+                <ProjectBriefContent disableAnimation={shouldUseLightMotion} />
+              </div>
             </motion.aside>
           </div>
         </section>
@@ -624,22 +634,30 @@ export default function About() {
                 initial={{ opacity: 0, y: 28 }}
                 animate={{ opacity: isIntroVideoPlaying ? 0 : 1, y: isIntroVideoPlaying ? 32 : 0 }}
                 transition={{ duration: 0.56, ease: [0.16, 1, 0.3, 1] }}
-                className="overflow-hidden rounded-[28px] border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.07)_100%)] px-5 py-6 shadow-[0_24px_60px_rgba(6,10,18,0.22),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-[28px] md:px-7 md:py-8"
+                className="relative overflow-hidden rounded-[28px] border border-white/90 bg-[linear-gradient(145deg,#ffffff_0%,#fffefa_68%,#fffaf0_100%)] px-5 py-6 shadow-[0_2px_4px_rgba(0,0,0,0.2),0_18px_38px_-16px_rgba(99,74,31,0.16),0_32px_80px_-34px_rgba(126,94,38,0.12),inset_0_-4px_0_rgba(126,94,38,0.05),inset_0_1px_0_rgba(255,255,255,1)] md:px-7 md:py-8"
               >
-                <AboutMainCardContent
-                  navigateTo={navigateTo}
-                  primeApartmentsRoute={primeApartmentsRoute}
-                  disableAnimation={shouldUseLightMotion}
-                />
+                <div className="pointer-events-none absolute -left-24 -top-20 h-64 w-72 rounded-full bg-[#9a752f]/8 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-24 right-4 h-60 w-72 rounded-full bg-[#c4a15a]/7 blur-3xl" />
+                <div className="relative z-[1]">
+                  <AboutMainCardContent
+                    navigateTo={navigateTo}
+                    primeApartmentsRoute={primeApartmentsRoute}
+                    disableAnimation={shouldUseLightMotion}
+                  />
+                </div>
               </motion.article>
 
               <motion.aside
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: isIntroVideoPlaying ? 0 : 1, y: isIntroVideoPlaying ? 34 : 0 }}
                 transition={{ duration: 0.58, delay: isIntroVideoPlaying ? 0 : 0.08, ease: [0.16, 1, 0.3, 1] }}
-                className="overflow-hidden rounded-[28px] border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.07)_100%)] px-5 py-6 shadow-[0_24px_60px_rgba(6,10,18,0.2),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-[28px] md:px-7 md:py-8"
+                className="relative overflow-hidden rounded-[28px] border border-white/90 bg-[linear-gradient(145deg,#ffffff_0%,#fffefa_68%,#fffaf0_100%)] px-5 py-6 shadow-[0_2px_4px_rgba(0,0,0,0.2),0_18px_38px_-16px_rgba(99,74,31,0.16),0_32px_80px_-34px_rgba(126,94,38,0.12),inset_0_-4px_0_rgba(126,94,38,0.05),inset_0_1px_0_rgba(255,255,255,1)] md:px-7 md:py-8"
               >
-                <ProjectBriefContent disableAnimation={shouldUseLightMotion} />
+                <div className="pointer-events-none absolute -right-24 -top-20 h-60 w-72 rounded-full bg-[#c4a15a]/8 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-24 left-0 h-60 w-72 rounded-full bg-[#9a752f]/7 blur-3xl" />
+                <div className="relative z-[1]">
+                  <ProjectBriefContent disableAnimation={shouldUseLightMotion} />
+                </div>
               </motion.aside>
             </div>
           </section>

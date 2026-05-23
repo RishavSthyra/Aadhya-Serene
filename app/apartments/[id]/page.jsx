@@ -284,6 +284,7 @@ export default function FlatDetailPage() {
     const [isIntroFrameReady, setIsIntroFrameReady] = useState(false);
     const [isExitTransitionActive, setIsExitTransitionActive] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [liveFlat, setLiveFlat] = useState(() => getFlatById(id));
     const { isMobile, isTablet, isTabletOrBelow, width } = useResponsiveViewport();
 
     useEffect(() => {
@@ -297,7 +298,36 @@ export default function FlatDetailPage() {
         setActiveViewKey(nextViewKey);
     }, [id]);
 
-    const flat = getFlatById(id);
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadFlat() {
+            try {
+                const response = await fetch(`/api/flats/${id}`, { cache: 'no-store' });
+                if (!response.ok) return;
+
+                const payload = await response.json();
+                if (!cancelled && payload.flat) {
+                    setLiveFlat(payload.flat);
+                }
+            } catch {
+                if (!cancelled) {
+                    setLiveFlat((current) => current || getFlatById(id));
+                }
+            }
+        }
+
+        setLiveFlat(getFlatById(id));
+        void loadFlat();
+        const intervalId = window.setInterval(loadFlat, 30000);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(intervalId);
+        };
+    }, [id]);
+
+    const flat = liveFlat;
     const renderPosterSrc = flatRenderFallbackPoster(activeViewKey);
     const fallbackId = flat ? flatVideoFallbackId(id) : null;
     const hasVideo = !!fallbackId;

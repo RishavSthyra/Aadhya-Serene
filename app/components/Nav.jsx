@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { warmApartment360Frames } from "@/lib/apartment360Warmup";
 import usePerformanceProfile from "@/hooks/usePerformanceProfile";
+import AadhyaLogo from "@/components/Home/AadhyaLogo";
 import {
   Building2,
   ChevronDown,
@@ -110,6 +111,7 @@ export default function Nav() {
   const router = useRouter();
   const { isTabletOrBelow, isConstrainedDevice, shouldReduceMotion } = usePerformanceProfile();
   const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
+  const isAboutRoute = pathname.startsWith("/about");
   const [openMenu, setOpenMenu] = useState(null);
   const [isNavVisible, setIsNavVisible] = useState(true);
   const [amenitiesCarouselIndex, setAmenitiesCarouselIndex] = useState(0);
@@ -317,19 +319,29 @@ export default function Nav() {
         <div className="relative w-full px-4 pb-2 pt-4 xl:px-8 xl:pb-3 xl:pt-5">
           <div
             data-nav-shell
-            className="rounded-full border border-white/42 bg-[linear-gradient(180deg,rgba(249,245,236,0.76)_0%,rgba(242,236,226,0.62)_100%)] px-4 py-3 text-[#17191f] shadow-[0_18px_42px_rgba(10,12,18,0.12),inset_0_1px_0_rgba(255,255,255,0.56)] backdrop-blur-[28px] supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(249,245,236,0.64)_0%,rgba(242,236,226,0.48)_100%)] md:px-6 xl:px-8"
+            className={`relative overflow-hidden rounded-full px-4 py-3 text-[#17191f] md:px-6 xl:px-8 ${
+              isAboutRoute
+                ? "border border-white/90 bg-[linear-gradient(145deg,#ffffff_0%,#fffdf8_62%,#fffaf0_100%)] shadow-[0_2px_4px_rgba(0,0,0,0.18),0_16px_32px_-14px_rgba(99,74,31,0.16),0_28px_68px_-34px_rgba(151,116,52,0.14),inset_0_-3px_0_rgba(126,94,38,0.06),inset_0_1px_0_rgba(255,255,255,1)]"
+                : "border border-white/42 bg-[linear-gradient(180deg,rgba(249,245,236,0.76)_0%,rgba(242,236,226,0.62)_100%)] shadow-[0_18px_42px_rgba(10,12,18,0.12),inset_0_1px_0_rgba(255,255,255,0.56)] backdrop-blur-[28px] supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(249,245,236,0.64)_0%,rgba(242,236,226,0.48)_100%)]"
+            }`}
           >
-            <div className="flex items-center justify-between gap-4">
+            {isAboutRoute ? (
+              <>
+                <div className="pointer-events-none absolute -left-16 -top-16 h-32 w-52 rounded-full bg-[#9a752f]/10 blur-2xl" />
+                <div className="pointer-events-none absolute -right-14 -bottom-16 h-32 w-52 rounded-full bg-[#c4a15a]/10 blur-2xl" />
+                <div className="pointer-events-none absolute left-[28%] -top-12 h-20 w-36 rounded-full bg-[#8a6424]/6 blur-2xl" />
+                <div className="pointer-events-none absolute right-[32%] -bottom-12 h-20 w-36 rounded-full bg-[#c4a15a]/6 blur-2xl" />
+              </>
+            ) : null}
+
+            <div className="relative z-[1] flex items-center justify-between gap-4">
               <Link
                 href="/"
                 className="flex min-w-[210px] items-center text-left text-[#121319] no-underline"
               >
-                <img
-                  src="https://cdn.sthyra.com/AADHYA%20SERENE/images/generated-svg-image.svg"
-                  alt="Aadhya Serene"
+                <AadhyaLogo
+                  aria-label="Aadhya Serene"
                   className="h-[34px] w-auto object-contain md:h-[38px]"
-                  loading="eager"
-                  decoding="async"
                 />
               </Link>
 

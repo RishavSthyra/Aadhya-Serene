@@ -7,27 +7,27 @@
     pointer-events: none;
 }
 
-/* === Hamburger === */
-.hamburgerBtn {
+/* === Reveal / Close Controls === */
+.sidebarRevealBtn {
     display: flex;
     position: fixed;
-    top: max(174px, calc(env(safe-area-inset-top, 0px) + 96px));
-    left: 14px;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
     z-index: 560;
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
+    width: 34px;
+    height: 54px;
+    border-radius: 0 10px 10px 0;
     background: linear-gradient(180deg, rgba(17, 22, 31, 0.9) 0%, rgba(9, 13, 21, 0.82) 100%);
     backdrop-filter: blur(20px) saturate(150%);
     -webkit-backdrop-filter: blur(20px) saturate(150%);
     border: 1px solid rgba(187, 208, 242, 0.16);
+    border-left: none;
     cursor: pointer;
     align-items: center;
     justify-content: center;
     color: #fff;
-    transition: background 0.25s, border-color 0.25s, transform 0.25s, box-shadow 0.25s;
-    flex-direction: column;
-    gap: 4px;
+    transition: background 0.25s, border-color 0.25s, width 0.25s, box-shadow 0.25s;
     padding: 0;
     pointer-events: auto;
     box-shadow:
@@ -35,32 +35,38 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.hamburgerBtn:hover {
+.sidebarRevealBtn:hover {
+    width: 38px;
     background: linear-gradient(180deg, rgba(24, 30, 42, 0.94) 0%, rgba(11, 16, 25, 0.88) 100%);
     border-color: rgba(199, 219, 249, 0.22);
-    transform: translateY(-1px);
 }
 
-.hamburgerLine {
-    display: block;
+.panelIcon {
     width: 18px;
-    height: 1.5px;
-    background: rgba(245, 248, 255, 0.9);
-    border-radius: 2px;
-    transition: transform 0.25s, opacity 0.25s;
+    height: 18px;
+    color: rgba(245, 248, 255, 0.9);
 }
 
-.hamburgerBtn.open .hamburgerLine:nth-child(1) {
-    transform: translateY(6.5px) rotate(45deg);
+.sidebarCloseBtn {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(187, 208, 242, 0.14);
+    border-radius: 9px;
+    background: rgba(12, 18, 28, 0.54);
+    color: #fff;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
 }
 
-.hamburgerBtn.open .hamburgerLine:nth-child(2) {
-    opacity: 0;
-    transform: scaleX(0);
-}
-
-.hamburgerBtn.open .hamburgerLine:nth-child(3) {
-    transform: translateY(-6.5px) rotate(-45deg);
+.sidebarCloseBtn:hover {
+    background: rgba(22, 31, 45, 0.72);
+    border-color: rgba(199, 219, 249, 0.24);
+    transform: translateY(-1px);
 }
 
 /* === Sidebar === */
@@ -113,7 +119,14 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 14px;
     margin-bottom: 4px;
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .header h1 {
@@ -334,9 +347,9 @@
 
 /* === Responsive === */
 @media (max-width: 1279px) {
-    .hamburgerBtn {
-        top: max(14px, calc(env(safe-area-inset-top, 0px) + 10px));
-        left: 18px;
+    .sidebarRevealBtn {
+        top: max(96px, calc(env(safe-area-inset-top, 0px) + 78px));
+        transform: none;
     }
 
     .sidebar {
@@ -388,11 +401,10 @@
 }
 
 @media (max-width: 480px) {
-    .hamburgerBtn {
-        top: max(12px, calc(env(safe-area-inset-top, 0px) + 8px));
-        left: 12px;
-        width: 46px;
-        height: 46px;
+    .sidebarRevealBtn {
+        top: max(92px, calc(env(safe-area-inset-top, 0px) + 74px));
+        width: 32px;
+        height: 52px;
     }
 
     .sidebar {

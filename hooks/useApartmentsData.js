@@ -1,8 +1,7 @@
 /**
- * useApartmentsData - pulls flat list directly from lib/flats.js
- * (the single source of truth, covering all 7 floors G-6)
+ * useApartmentsData - reads Mongo-backed inventory with a static fallback.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { flatsData } from '../lib/flats';
 
 const INITIAL_FILTERS = {
@@ -17,9 +16,53 @@ const INITIAL_FILTERS = {
 
 export function useApartmentsData() {
     const [filters, setFilters] = useState(INITIAL_FILTERS);
+    const [allData, setAllData] = useState(flatsData);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadFlats({ showLoading = false } = {}) {
+            if (showLoading) {
+                setLoading(true);
+            }
+
+            try {
+                const response = await fetch('/api/flats', { cache: 'no-store' });
+                if (!response.ok) {
+                    throw new Error('Unable to load flats');
+                }
+
+                const payload = await response.json();
+                if (!cancelled && Array.isArray(payload.flats)) {
+                    setAllData(payload.flats);
+                    setError(null);
+                }
+            } catch (nextError) {
+                if (!cancelled) {
+                    setError(nextError);
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        void loadFlats({ showLoading: allData.length === 0 });
+        const intervalId = window.setInterval(() => {
+            void loadFlats();
+        }, 30000);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(intervalId);
+        };
+    }, [allData.length]);
 
     const filteredData = useMemo(() => {
-        return flatsData.filter((flat) => {
+        return allData.filter((flat) => {
             if (filters.type.length > 0 && !filters.type.includes(flat.type)) return false;
             if (filters.facing.length > 0 && !filters.facing.includes(flat.facing)) return false;
             if (filters.floor.length > 0 && !filters.floor.includes(flat.floor)) return false;
@@ -34,7 +77,7 @@ export function useApartmentsData() {
             if (filters.withBalcony && flat.balconies === 0) return false;
             return true;
         });
-    }, [filters]);
+    }, [allData, filters]);
 
     const toggleFilter = (category, value) => {
         setFilters((prev) => {
@@ -58,11 +101,11 @@ export function useApartmentsData() {
 
     return {
         data: filteredData,
-        allData: flatsData,
+        allData,
         totalCount: filteredData.length,
-        totalUnfiltered: flatsData.length,
-        loading: false,
-        error: null,
+        totalUnfiltered: allData.length,
+        loading,
+        error,
         filters,
         toggleFilter,
         setAreaRange,
