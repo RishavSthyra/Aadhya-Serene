@@ -36,8 +36,8 @@ const DRAG_PRELOAD_RADIUS = 20;
 const MOBILE_DRAG_PRELOAD_RADIUS = 4;
 const DRAG_PRELOAD_STRIDE = 1;
 const MOBILE_DRAG_PRELOAD_STRIDE = 4;
-const INITIAL_WARMUP_RADIUS = 30;
-const MOBILE_INITIAL_WARMUP_RADIUS = 6;
+const INITIAL_WARMUP_RADIUS = 48;
+const MOBILE_INITIAL_WARMUP_RADIUS = 10;
 const INITIAL_WARMUP_CONCURRENCY = 3;
 const MOBILE_INITIAL_WARMUP_CONCURRENCY = 2;
 const INITIAL_WARMUP_DELAY_MS = 0;
@@ -232,6 +232,33 @@ function getInteractionPrimeSequence(isConstrainedDevice) {
     return orderedFrames;
 }
 
+function getPreloaderScrubWarmSequence(isConstrainedDevice) {
+    const radius = isConstrainedDevice ? 24 : 120;
+    const stride = isConstrainedDevice ? 3 : 2;
+    const orderedFrames = [];
+    const seen = new Set();
+
+    getPreloadSequence(1, radius).forEach((frameNumber, index) => {
+        if (index === 0 || index % stride === 0) {
+            const normalizedFrame = normalizeFrame(frameNumber);
+            seen.add(normalizedFrame);
+            orderedFrames.push(normalizedFrame);
+        }
+    });
+
+    SNAP_POINTS.slice(0, -1).forEach((snapFrame) => {
+        getPreloadSequence(snapFrame, isConstrainedDevice ? 2 : 5).forEach((frameNumber) => {
+            const normalizedFrame = normalizeFrame(frameNumber);
+            if (!seen.has(normalizedFrame)) {
+                seen.add(normalizedFrame);
+                orderedFrames.push(normalizedFrame);
+            }
+        });
+    });
+
+    return orderedFrames;
+}
+
 async function warmFramesWithConcurrency(frameNumbers, { concurrency, timeoutMs }) {
     const queue = [...new Set(frameNumbers.map((frameNumber) => normalizeFrame(frameNumber)))];
     let index = 0;
@@ -278,12 +305,18 @@ function pumpStartupWarmQueue(runId, options) {
     }
 }
 
-export function scheduleApartment360FrameWarmup({ isConstrainedDevice = false } = {}) {
+export function scheduleApartment360FrameWarmup({
+    isConstrainedDevice = false,
+    includeInteractionFrames = false,
+} = {}) {
     if (typeof window === 'undefined') {
         return () => {};
     }
 
-    const queue = getStartupWarmSequence(isConstrainedDevice)
+    const queue = [...new Set([
+        ...getStartupWarmSequence(isConstrainedDevice),
+        ...(includeInteractionFrames ? getPreloaderScrubWarmSequence(isConstrainedDevice) : []),
+    ])]
         .filter((frameNumber) => !warmedStartupFrames.has(frameNumber));
 
     if (!queue.length) {

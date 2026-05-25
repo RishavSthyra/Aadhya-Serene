@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import usePerformanceProfile from "@/hooks/usePerformanceProfile";
-import { warmApartment360Frames } from "@/lib/apartment360Warmup";
 import LuxuryPreloader from "@/components/Home/LuxuryPreloader";
 import {
   markHomeRefreshLoaderSeen,
@@ -95,10 +94,8 @@ export default function HomePageClient() {
   const shouldUseLightMotion = preferLightExperience;
 
   const primeApartmentsRoute = useCallback(() => {
-    void warmApartment360Frames({
-      isConstrainedDevice: isTabletOrBelow,
-    });
-  }, [isTabletOrBelow]);
+    router.prefetch("/apartments");
+  }, [router]);
 
   useEffect(() => {
     router.prefetch("/about");

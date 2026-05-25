@@ -47,7 +47,9 @@ export default function GlobalBackground() {
 
         if (isEnteringApartmentsPage && shouldSkipApartmentsReplay) {
             setBackgroundTransitionState('apartments', false);
-            window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+            window.dispatchEvent(new CustomEvent('bg-transition-ended', {
+                detail: { layout: 'apartments' },
+            }));
         }
 
         if (isEnteringApartmentsPage) {
@@ -62,7 +64,9 @@ export default function GlobalBackground() {
             && !isBackgroundTransitionActive(newLayout)
         ) {
             // Because no new transition video will play, instantly unblock any listening UI
-            window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+            window.dispatchEvent(new CustomEvent('bg-transition-ended', {
+                detail: { layout: newLayout },
+            }));
         }
 
         prevPathname.current = pathname;

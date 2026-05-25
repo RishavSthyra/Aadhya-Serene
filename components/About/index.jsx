@@ -6,7 +6,6 @@ import { motion } from 'framer-motion';
 import { Inter } from 'next/font/google';
 import { ArrowDown, ArrowUpRight, CheckCircle2, MapPin, Ruler } from 'lucide-react';
 import usePerformanceProfile from '@/hooks/usePerformanceProfile';
-import { warmApartment360Frames } from '@/lib/apartment360Warmup';
 import { isBackgroundTransitionActive } from '@/lib/background-transition';
 import responsiveStyles from './about.module.css';
 
@@ -358,10 +357,8 @@ export default function About() {
   const shouldUseLightMotion = preferLightExperience;
 
   const primeApartmentsRoute = useCallback(() => {
-    void warmApartment360Frames({
-      isConstrainedDevice: isTabletOrBelow,
-    });
-  }, [isTabletOrBelow]);
+    router.prefetch('/apartments');
+  }, [router]);
 
   useEffect(() => {
     router.prefetch('/');
@@ -377,6 +374,7 @@ export default function About() {
         window.dispatchEvent(new CustomEvent('bg-layout', { detail: 'home' }));
       } else if (path === '/apartments') {
         primeApartmentsRoute();
+        setIsIntroVideoPlaying(false);
         window.dispatchEvent(
           new CustomEvent('bg-layout', { detail: 'apartments' }),
         );
@@ -406,12 +404,16 @@ export default function About() {
   }, []);
 
   useEffect(() => {
-    const handleStarted = () => {
-      if (isBackgroundTransitionActive('about')) {
+    const handleStarted = (event) => {
+      if (event.detail?.layout === 'about' || (!event.detail && isBackgroundTransitionActive('about'))) {
         setIsIntroVideoPlaying(true);
       }
     };
-    const handleEnded = () => setIsIntroVideoPlaying(false);
+    const handleEnded = (event) => {
+      if (!event.detail || event.detail?.layout === 'about') {
+        setIsIntroVideoPlaying(false);
+      }
+    };
 
     setIsIntroVideoPlaying(isBackgroundTransitionActive('about'));
     window.addEventListener('bg-transition-started', handleStarted);

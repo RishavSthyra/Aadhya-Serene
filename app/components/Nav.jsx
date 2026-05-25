@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { warmApartment360Frames } from "@/lib/apartment360Warmup";
 import usePerformanceProfile from "@/hooks/usePerformanceProfile";
 import AadhyaLogo from "@/components/Home/AadhyaLogo";
 import {
@@ -143,9 +142,7 @@ export default function Nav() {
     router.prefetch(href);
 
     if (href === "/apartments") {
-      void warmApartment360Frames({
-        isConstrainedDevice: isTabletOrBelow,
-      });
+      router.prefetch("/apartments");
     }
   };
 
@@ -247,9 +244,7 @@ export default function Nav() {
     container.style.transition = "opacity 0.42s cubic-bezier(0.22,1,0.36,1)";
 
     if (href === "/apartments") {
-      void warmApartment360Frames({
-        isConstrainedDevice: isTabletOrBelow,
-      });
+      router.prefetch("/apartments");
     }
 
     const routePushDelay = href === "/apartments" && isTabletOrBelow ? 80 : 120;
@@ -304,12 +299,30 @@ export default function Nav() {
         />
       ) : null}
 
-      <header
-        className={`fixed left-1/2 top-0 z-[500] hidden w-[min(100%,1820px)] -translate-x-1/2 will-change-transform transition-[transform,opacity,filter] duration-700 ease-[cubic-bezier(0.19,1,0.22,1)] xl:block ${
-          shouldAutoHideNav && !isNavVisible
-            ? "pointer-events-none -translate-y-[calc(100%+14px)] opacity-0 blur-[1px]"
-            : "translate-y-0 opacity-100 blur-0"
+      <motion.header
+        className={`fixed left-1/2 top-0 z-[500] hidden w-[min(100%,1820px)] will-change-transform xl:block ${
+          shouldAutoHideNav && !isNavVisible ? "pointer-events-none" : "pointer-events-auto"
         }`}
+        initial={false}
+        animate={
+          shouldAutoHideNav && !isNavVisible
+            ? {
+                x: "-50%",
+                y: "-112%",
+                opacity: 0,
+                filter: shouldReduceMotion ? "blur(0px)" : "blur(1px)",
+              }
+            : {
+                x: "-50%",
+                y: "0%",
+                opacity: 1,
+                filter: "blur(0px)",
+              }
+        }
+        transition={{
+          duration: shouldReduceMotion ? 0.01 : 0.62,
+          ease: [0.19, 1, 0.22, 1],
+        }}
         onMouseEnter={showNav}
         onMouseLeave={() => {
           setOpenMenu(null);
@@ -547,9 +560,22 @@ export default function Nav() {
                 </div>
           </motion.div>
         </div>
-      </header>
+      </motion.header>
 
-      <div className="fixed bottom-[max(10px,env(safe-area-inset-bottom,0px)+6px)] left-1/2 z-[160] w-[min(95vw,680px)] -translate-x-1/2 rounded-full border border-black/6 bg-[#f7f3eb]/92 px-2 py-1.5 shadow-[0_14px_32px_rgba(10,12,18,0.16)] backdrop-blur-2xl xl:hidden md:px-4 md:py-2">
+      <motion.div
+        className="fixed bottom-[max(10px,env(safe-area-inset-bottom,0px)+6px)] left-1/2 z-[160] w-[min(95vw,680px)] rounded-full border border-black/6 bg-[#f7f3eb]/92 px-2 py-1.5 shadow-[0_14px_32px_rgba(10,12,18,0.16)] backdrop-blur-2xl xl:hidden md:px-4 md:py-2"
+        initial={false}
+        animate={{
+          x: "-50%",
+          y: pathname === "/" ? 0 : shouldAutoHideNav ? 8 : 0,
+          opacity: 1,
+          scale: shouldAutoHideNav ? 0.985 : 1,
+        }}
+        transition={{
+          duration: shouldReduceMotion ? 0.01 : 0.42,
+          ease: [0.19, 1, 0.22, 1],
+        }}
+      >
         <nav className="flex items-center justify-between gap-0">
           {NAV_LINKS.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
@@ -572,7 +598,7 @@ export default function Nav() {
             );
           })}
         </nav>
-      </div>
+      </motion.div>
     </>
   );
 }

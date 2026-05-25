@@ -92,8 +92,16 @@ export default function Apartments() {
   }, []);
 
   useEffect(() => {
-    const handleStart = () => setIsVideoPlaying(true);
-    const handleEnd = () => setIsVideoPlaying(false);
+    const handleStart = (event) => {
+      if (!event.detail || event.detail?.layout === "apartments") {
+        setIsVideoPlaying(true);
+      }
+    };
+    const handleEnd = (event) => {
+      if (!event.detail || event.detail?.layout === "apartments") {
+        setIsVideoPlaying(false);
+      }
+    };
     const handlePageShow = (event) => {
       if (event.persisted) {
         resetApartmentsExperience(true);
@@ -153,7 +161,7 @@ export default function Apartments() {
   }, [allData?.length, isCompactLayout, pathname, prioritizedWarmupFlatIds]);
 
   useEffect(() => {
-    if (pathname !== "/apartments") {
+    if (pathname !== "/apartments" || isVideoPlaying) {
       return undefined;
     }
 
@@ -162,6 +170,7 @@ export default function Apartments() {
 
     void warmApartment360Frames({
       isConstrainedDevice: isCompactLayout,
+      includeInteractionFrames: true,
     }).then((cleanup) => {
       if (cancelled) {
         cleanup?.();
@@ -175,14 +184,14 @@ export default function Apartments() {
       cancelled = true;
       cancelRotatorWarmup?.();
     };
-  }, [isCompactLayout, pathname]);
+  }, [isCompactLayout, isVideoPlaying, pathname]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return undefined;
     }
 
-    if (shouldMountViewer) {
+    if (isVideoPlaying || shouldMountViewer) {
       return undefined;
     }
 
@@ -193,7 +202,7 @@ export default function Apartments() {
     return () => {
       window.cancelAnimationFrame(rafId);
     };
-  }, [shouldMountViewer, viewerVersion]);
+  }, [isVideoPlaying, shouldMountViewer, viewerVersion]);
 
   const shouldRevealViewer = shouldMountViewer && isViewerReady && !isVideoPlaying;
 

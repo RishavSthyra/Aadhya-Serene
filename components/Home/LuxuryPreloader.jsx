@@ -29,6 +29,27 @@ function frameUrl(frameNumber) {
   return `${ROT360_BASE}/frame_${String(frameNumber).padStart(4, '0')}.webp`;
 }
 
+function normalizeFrameNumber(frameNumber) {
+  return (((Math.round(frameNumber) - 1) % 360) + 360) % 360 + 1;
+}
+
+function getPreloaderScrubFrames() {
+  const frames = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 90, 180, 270, 360]);
+
+  for (let offset = 12; offset <= 120; offset += 6) {
+    frames.add(normalizeFrameNumber(offset));
+    frames.add(normalizeFrameNumber(360 - offset));
+  }
+
+  [90, 180, 270].forEach((centerFrame) => {
+    for (let offset = -12; offset <= 12; offset += 4) {
+      frames.add(normalizeFrameNumber(centerFrame + offset));
+    }
+  });
+
+  return [...frames].sort((a, b) => a - b);
+}
+
 function shouldUseSafeMedia() {
   if (typeof window === 'undefined') {
     return true;
@@ -53,35 +74,28 @@ function getSelectedMediaSources() {
 
 function getCriticalAssets() {
   const sources = getSelectedMediaSources();
+  const scrubFrameAssets = getPreloaderScrubFrames()
+    .slice(0, shouldUseSafeMedia() ? 18 : 34)
+    .map(frameUrl);
 
   return [
     '/favicon.ico',
     '/assets/background-video/posters/home.jpg',
     sources.homeTransition,
+    sources.apartmentsTransition,
     sources.homeLoop,
-    frameUrl(1),
-    frameUrl(2),
-    frameUrl(90),
-    frameUrl(180),
-    frameUrl(270),
+    APARTMENTS_LOOP,
+    ...scrubFrameAssets,
   ];
 }
 
 function getIdleWarmAssets() {
   const sources = getSelectedMediaSources();
-  const frameSeeds = [
-    3, 4, 5, 6, 7, 8, 9, 10,
-    88, 89, 91, 92,
-    178, 179, 181, 182,
-    268, 269, 271, 272,
-    350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360,
-  ];
+  const frameSeeds = getPreloaderScrubFrames();
 
   return [
     sources.aboutTransition,
     ABOUT_LOOP,
-    sources.apartmentsTransition,
-    APARTMENTS_LOOP,
     '/assets/background-video/posters/about.jpg',
     'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_2_1.jpg',
     'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_3_1%20(1).jpg',
@@ -117,10 +131,10 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
       onRevealStart?.();
 
       prefetchAssetsInChunks(getIdleWarmAssets(), {
-        chunkSize: 3,
+        chunkSize: 5,
         concurrency: 1,
         priority: 'low',
-        gapMs: 620,
+        gapMs: 420,
         idleTimeoutMs: 2200,
       });
 
@@ -198,10 +212,7 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
       <div className={styles.luxuryLoaderInner}>
         <div className={styles.luxuryLoaderMarkWrap} aria-hidden="true">
           <div className={styles.luxuryLoaderRing} />
-          <div className={styles.luxuryLoaderRingFine} />
-          <div className={styles.luxuryLoaderMarkPlate}>
-            <img src="/favicon.ico" alt="" className={styles.luxuryLoaderMark} />
-          </div>
+          <img src="/favicon.ico" alt="" className={styles.luxuryLoaderMark} />
         </div>
 
         <div className={styles.luxuryLoaderProgressMeta}>

@@ -303,7 +303,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
         setShowLoop(false);
         setBackgroundTransitionState(layout, false);
-        window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+        window.dispatchEvent(new CustomEvent('bg-transition-ended', { detail: { layout } }));
     }, [layout, shouldHideBackground]);
 
     const getSourceCandidates = useCallback((source, assetId) => {
@@ -635,7 +635,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
             setShowLoop(false);
             setBackgroundTransitionState(layout, true);
-            window.dispatchEvent(new CustomEvent('bg-transition-started'));
+            window.dispatchEvent(new CustomEvent('bg-transition-started', { detail: { layout } }));
 
             if (playing) {
                 transitionVideo.currentTime = 0;
@@ -717,7 +717,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
         if (!loadTransitionCandidate(0)) {
             setBackgroundTransitionState(layout, false);
-            window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+            window.dispatchEvent(new CustomEvent('bg-transition-ended', { detail: { layout } }));
             return undefined;
         }
 
@@ -750,7 +750,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 sources: transitionSources,
             });
             setBackgroundTransitionState(layout, false);
-            window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+            window.dispatchEvent(new CustomEvent('bg-transition-ended', { detail: { layout } }));
         };
 
         transitionVideo.addEventListener(transitionReadyEvent, handleTransitionReady);
@@ -820,7 +820,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             transitionVideo.play().catch(() => { });
             setShowLoop(false);
             setBackgroundTransitionState(layout, false);
-            window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+            window.dispatchEvent(new CustomEvent('bg-transition-ended', { detail: { layout } }));
             return;
         }
 
@@ -829,7 +829,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
         const finishTransition = () => {
             setBackgroundTransitionState(layout, false);
-            window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+            window.dispatchEvent(new CustomEvent('bg-transition-ended', { detail: { layout } }));
         };
 
         const revealLoop = () => {
@@ -865,7 +865,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 }
                 loopVideo.removeEventListener('playing', revealLoop);
                 setBackgroundTransitionState(layout, false);
-                window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+                window.dispatchEvent(new CustomEvent('bg-transition-ended', { detail: { layout } }));
             });
         };
 
@@ -898,7 +898,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
             if (!loadLoopCandidate(0)) {
                 setBackgroundTransitionState(layout, false);
-                window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+                window.dispatchEvent(new CustomEvent('bg-transition-ended', { detail: { layout } }));
                 return;
             }
 
@@ -928,7 +928,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
         transitionVideo.play().catch(() => { });
         setShowLoop(false);
         setBackgroundTransitionState(layout, false);
-        window.dispatchEvent(new CustomEvent('bg-transition-ended'));
+        window.dispatchEvent(new CustomEvent('bg-transition-ended', { detail: { layout } }));
     };
 
     if (shouldHideBackground) {
