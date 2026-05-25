@@ -82,6 +82,7 @@ function getCriticalAssets() {
     '/favicon.ico',
     '/assets/background-video/posters/home.jpg',
     sources.homeTransition,
+    sources.aboutTransition,
     sources.apartmentsTransition,
     sources.homeLoop,
     APARTMENTS_LOOP,
@@ -94,7 +95,6 @@ function getIdleWarmAssets() {
   const frameSeeds = getPreloaderScrubFrames();
 
   return [
-    sources.aboutTransition,
     ABOUT_LOOP,
     '/assets/background-video/posters/about.jpg',
     'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_2_1.jpg',

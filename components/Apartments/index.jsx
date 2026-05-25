@@ -57,7 +57,7 @@ export default function Apartments() {
   const isShortDesktop = !isCompactLayout && height <= 900;
   const shouldUseCompactCards = isCompactLayout || isShortDesktop;
   const desktopPanelWidth = isShortDesktop ? 372 : width >= 1536 ? DESKTOP_PANEL_WIDTH : 390;
-  const compactBottomOffset = "calc(86px + env(safe-area-inset-bottom, 0px))";
+  const compactNavClearance = "calc(108px + env(safe-area-inset-bottom, 0px))";
   const compactSheetOverlap = isCompactLayout ? 1 : 0;
   const compactMediaHeight = isTabletOrBelow
     ? `${Math.min(
@@ -384,7 +384,7 @@ export default function Apartments() {
         className="fixed inset-x-0 bottom-0 z-[120] xl:hidden"
         style={{
           top: `calc(${compactMediaHeight} - ${compactSheetOverlap}px)`,
-          bottom: compactBottomOffset,
+          bottom: 0,
           opacity: 1,
           pointerEvents: isFlatRoutePreparing ? "none" : "auto",
           height: "auto",
@@ -394,8 +394,8 @@ export default function Apartments() {
           transition: "transform 300ms cubic-bezier(0.22,1,0.36,1)",
         }}
       >
-        <aside className="relative flex h-full flex-col overflow-hidden rounded-t-[22px] border border-b-0 border-x-0 border-[#211827]/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.96)_0%,rgba(252,249,255,0.94)_58%,rgba(255,255,255,0.92)_100%)] shadow-[0_-20px_60px_rgba(68,38,88,0.16),inset_0_1px_0_rgba(255,255,255,0.96)] backdrop-blur-[28px] saturate-[140%]">
-          <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-72 rotate-12 bg-[conic-gradient(from_220deg_at_50%_50%,rgba(177,78,255,0),rgba(177,78,255,0.13),rgba(236,86,171,0.11),rgba(177,78,255,0))] blur-2xl" />
+        <aside className="relative flex h-full flex-col overflow-hidden rounded-t-[22px] border border-b-0 border-x-0 border-[#211827]/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.98)_0%,rgba(252,249,255,0.96)_58%,rgba(255,255,255,0.94)_100%)] shadow-[0_-16px_42px_rgba(68,38,88,0.1),inset_0_1px_0_rgba(255,255,255,0.96)] saturate-[120%] md:backdrop-blur-[18px]">
+          <div className="pointer-events-none absolute -right-20 -top-24 hidden h-64 w-72 rotate-12 bg-[conic-gradient(from_220deg_at_50%_50%,rgba(177,78,255,0),rgba(177,78,255,0.13),rgba(236,86,171,0.11),rgba(177,78,255,0))] blur-2xl md:block" />
           <div className="relative flex items-center justify-between gap-3 border-b border-[#211827]/8 px-4 pb-3 pt-3">
             <div className="absolute inset-x-0 top-1 flex justify-center">
               <div className="h-1.5 w-14 rounded-full bg-[#211827]/12" />
@@ -429,11 +429,14 @@ export default function Apartments() {
           </div>
 
           <div
-            className="min-h-0 flex-1 overflow-y-auto px-3 pb-5 pt-3 scrollbar-thin"
-            style={sharedScrollStyles}
+            className="min-h-0 flex-1 overflow-y-auto px-3 pt-3 scrollbar-thin"
+            style={{
+              ...sharedScrollStyles,
+              paddingBottom: compactNavClearance,
+            }}
           >
             <div className="space-y-3">
-              <section className="relative overflow-hidden rounded-[20px] border border-[#211827]/8 bg-white/54 shadow-[0_18px_46px_rgba(88,47,117,0.08),inset_0_1px_0_rgba(255,255,255,0.86)] backdrop-blur-[24px]">
+              <section className="relative overflow-hidden rounded-[20px] border border-[#211827]/8 bg-white/72 shadow-[0_14px_34px_rgba(88,47,117,0.06),inset_0_1px_0_rgba(255,255,255,0.86)] md:backdrop-blur-[18px]">
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(255,255,255,0.04)_100%)]" />
                 <div className="relative">
                   <Filters
@@ -451,7 +454,7 @@ export default function Apartments() {
                 </div>
               </section>
 
-              <section className="relative overflow-hidden rounded-[20px] border border-[#211827]/8 bg-white/54 shadow-[0_18px_46px_rgba(88,47,117,0.08),inset_0_1px_0_rgba(255,255,255,0.86)] backdrop-blur-[24px]">
+              <section className="relative overflow-hidden rounded-[20px] border border-[#211827]/8 bg-white/72 shadow-[0_14px_34px_rgba(88,47,117,0.06),inset_0_1px_0_rgba(255,255,255,0.86)] md:backdrop-blur-[18px]">
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(255,255,255,0.04)_100%)]" />
                 <div className="relative border-b border-[#211827]/8 px-4 pb-3 pt-3.5">
                   <div className="flex items-start justify-between gap-3">
@@ -515,6 +518,7 @@ export default function Apartments() {
             filteredFlatIds={filteredFlatIds}
             onReadyChange={setIsViewerReady}
             interactionLocked={isFlatRoutePreparing}
+            selectedFlatId={pendingFlatId}
           />
         ) : (
           <div className="h-full w-full bg-transparent" />
@@ -522,19 +526,6 @@ export default function Apartments() {
       </div>
 
       <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(8,19,38,0.05)_0%,rgba(9,24,46,0.01)_28%,rgba(10,26,52,0.1)_100%)]" />
-
-      {isFlatRoutePreparing ? (
-        <div className="absolute inset-0 z-[125] flex items-center justify-center bg-[radial-gradient(circle_at_center,rgba(193,216,255,0.08),rgba(6,10,18,0.16))] backdrop-blur-[3px]">
-          <div className="border border-white/14 bg-[linear-gradient(180deg,rgba(12,18,28,0.82),rgba(8,13,20,0.58))] px-5 py-3 text-center shadow-[0_18px_42px_rgba(7,10,18,0.22)] backdrop-blur-[18px]">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-white/58">
-              Preparing Residence
-            </p>
-            <p className="mt-1.5 text-[13px] font-medium tracking-[0.06em] text-white/88">
-              Apartment {pendingFlatId}
-            </p>
-          </div>
-        </div>
-      ) : null}
 
       {renderDesktopPanel}
       {isCompactLayout ? renderCompactSheet : null}

@@ -17,9 +17,13 @@ export default function ApartmentCard({ apartment, onSelect, compactMode = false
         <button
             type="button"
             onClick={() => onSelect(apartment)}
-            className={`group w-full border border-[#211827]/10 bg-white/78 text-left shadow-[0_14px_34px_rgba(88,47,117,0.08),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-[18px] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#211827]/16 hover:bg-white ${
+            className={`group w-full border border-[#211827]/10 bg-white/78 text-left shadow-[0_14px_34px_rgba(88,47,117,0.08),inset_0_1px_0_rgba(255,255,255,0.95)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#211827]/16 hover:bg-white ${compactMode ? '' : 'backdrop-blur-[18px]'} ${
                 compactMode ? 'rounded-[14px] px-3 py-2.5' : 'rounded-[18px] px-4.5 py-4'
             }`}
+            style={{
+                contentVisibility: 'auto',
+                containIntrinsicSize: compactMode ? '64px' : '84px',
+            }}
         >
             <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">

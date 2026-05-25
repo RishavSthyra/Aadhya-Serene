@@ -14,15 +14,15 @@ function makeAvailableOverlay(isHover) {
     return new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(isHover ? '#8d7331' : '#6f7930'),
         emissive: new THREE.Color(isHover ? '#ffd65e' : '#c6de54'),
-        emissiveIntensity: isHover ? 1.95 : 0.62,
+        emissiveIntensity: isHover ? 0.9 : 0.28,
         metalness: 0.04,
         roughness: 0.18,
-        clearcoat: 1,
+        clearcoat: 0.4,
         clearcoatRoughness: 0.1,
         transparent: true,
-        opacity: isHover ? 0.46 : 0.32,
-        transmission: 0.08,
-        thickness: 0.45,
+        opacity: isHover ? 0.36 : 0.22,
+        transmission: 0.02,
+        thickness: 0.2,
         depthWrite: false,
         depthTest: true,
         toneMapped: false,
@@ -34,15 +34,15 @@ function makeSoldOverlay(isHover) {
     return new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(isHover ? '#a03030' : '#7a2020'),
         emissive: new THREE.Color(isHover ? '#ff5555' : '#ff4a4a'),
-        emissiveIntensity: isHover ? 1.4 : 0.3,
+        emissiveIntensity: isHover ? 0.7 : 0.15,
         metalness: 0.04,
         roughness: 0.18,
-        clearcoat: 1,
+        clearcoat: 0.4,
         clearcoatRoughness: 0.1,
         transparent: true,
-        opacity: isHover ? 0.42 : 0.25,
-        transmission: 0.08,
-        thickness: 0.45,
+        opacity: isHover ? 0.32 : 0.18,
+        transmission: 0.02,
+        thickness: 0.2,
         depthWrite: false,
         depthTest: true,
         toneMapped: false,
@@ -137,7 +137,16 @@ function getMeshWorldCenter(mesh) {
     return center;
 }
 
-function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHoverStart, onFlatClick, shouldAllowFlatClick, meshInteractionEnabled }) {
+function SceneWithCamera({
+    currentFrame,
+    filteredFlatIds,
+    onFlatHover,
+    onFlatHoverStart,
+    onFlatClick,
+    shouldAllowFlatClick,
+    meshInteractionEnabled,
+    selectedFlatId,
+}) {
     const { scene: sourceScene } = useGLTF('/assets/building.glb');
     const scene = useMemo(() => sourceScene.clone(true), [sourceScene]);
     const { size, gl, camera } = useThree();
@@ -150,6 +159,7 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
     const hoveredIdRef = useRef(null);
     const raycasterRef = useRef(new THREE.Raycaster());
     const pointerRef = useRef(new THREE.Vector2());
+    const selectedFlatKey = selectedFlatId ? String(selectedFlatId) : null;
 
     useEffect(() => {
         const glbDummies = {};
@@ -380,9 +390,11 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
     }, [meshInteractionEnabled, pointVisibleIds]);
 
     const shouldShowFlatFromFilter = useCallback((flatId) => {
-        if (!flatId || filteredFlatIds == null || !meshInteractionEnabled) return false;
+        if (!flatId) return false;
+        if (selectedFlatKey && String(flatId) === selectedFlatKey) return true;
+        if (filteredFlatIds == null || !meshInteractionEnabled) return false;
         return pointVisibleIds.has(flatId) && filteredFlatIds.has(flatId);
-    }, [filteredFlatIds, meshInteractionEnabled, pointVisibleIds]);
+    }, [filteredFlatIds, meshInteractionEnabled, pointVisibleIds, selectedFlatKey]);
 
     const applyHover = useCallback((flatId) => {
         if (!flatId || !flatRefs.current[flatId]) return;
@@ -400,6 +412,10 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
 
     const restoreState = useCallback((flatId) => {
         if (!flatId || !flatRefs.current[flatId]) return;
+        if (selectedFlatKey && String(flatId) === selectedFlatKey) {
+            applyHover(flatId);
+            return;
+        }
 
         const { mesh, edgeLines, hitbox } = flatRefs.current[flatId];
         const available = isFlatAvailable(flatId);
@@ -420,7 +436,7 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
         edgeLines.material = available ? edgeMatAvailable() : edgeMatSold();
         edgeLines.visible = true;
         setOverlayScale(mesh, edgeLines, BASE_OVERLAY_SCALE);
-    }, [isFlatHoverable, shouldShowFlatFromFilter]);
+    }, [applyHover, isFlatHoverable, selectedFlatKey, shouldShowFlatFromFilter]);
 
     const setHoveredFlat = useCallback((flatId, clientX = 0, clientY = 0) => {
         if (flatId === hoveredIdRef.current) {
@@ -448,7 +464,7 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
 
     useEffect(() => {
         Object.entries(flatRefs.current).forEach(([flatId, refs]) => {
-            if (flatId === hoveredIdRef.current) return;
+            if (flatId === hoveredIdRef.current || flatId === selectedFlatKey) return;
 
             const { mesh, edgeLines, hitbox } = refs;
             const available = isFlatAvailable(flatId);
@@ -471,16 +487,24 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
             setOverlayScale(mesh, edgeLines, BASE_OVERLAY_SCALE);
         });
 
-        if (hoveredIdRef.current && !isFlatHoverable(hoveredIdRef.current)) {
+        if (selectedFlatKey && flatRefs.current[selectedFlatKey]) {
+            applyHover(selectedFlatKey);
+        }
+
+        if (
+            hoveredIdRef.current
+            && hoveredIdRef.current !== selectedFlatKey
+            && !isFlatHoverable(hoveredIdRef.current)
+        ) {
             setHoveredFlat(null);
         }
-    }, [isFlatHoverable, meshInteractionEnabled, setHoveredFlat, shouldShowFlatFromFilter]);
+    }, [applyHover, isFlatHoverable, meshInteractionEnabled, selectedFlatKey, setHoveredFlat, shouldShowFlatFromFilter]);
 
     useEffect(() => {
-        if (!meshInteractionEnabled && hoveredIdRef.current) {
+        if (!meshInteractionEnabled && hoveredIdRef.current && hoveredIdRef.current !== selectedFlatKey) {
             setHoveredFlat(null);
         }
-    }, [meshInteractionEnabled, setHoveredFlat]);
+    }, [meshInteractionEnabled, selectedFlatKey, setHoveredFlat]);
 
     useEffect(() => {
         const canvasElement = gl?.domElement;
@@ -488,7 +512,9 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
 
         const updateHoveredFlat = (event) => {
             if (!meshInteractionEnabled) {
-                setHoveredFlat(null);
+                if (!selectedFlatKey) {
+                    setHoveredFlat(null);
+                }
                 return;
             }
 
@@ -572,7 +598,7 @@ function SceneWithCamera({ currentFrame, filteredFlatIds, onFlatHover, onFlatHov
             canvasElement.removeEventListener('click', handleCanvasClick);
             window.removeEventListener('blur', clearHover);
         };
-    }, [camera, gl, isFlatHoverable, meshInteractionEnabled, onFlatClick, setHoveredFlat, shouldAllowFlatClick]);
+    }, [camera, gl, isFlatHoverable, meshInteractionEnabled, onFlatClick, selectedFlatKey, setHoveredFlat, shouldAllowFlatClick]);
 
     let position = new THREE.Vector3();
     let quaternion = new THREE.Quaternion();
@@ -613,40 +639,39 @@ function FlatTooltip({ flatId, x, y }) {
         <div
             style={{
                 position: 'fixed',
-                left: x + 18,
-                top: y - 44,
+                left: x + 28,
+                top: y - 60,
                 zIndex: 600,
                 pointerEvents: 'none',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
-                background: 'linear-gradient(135deg, rgba(6,12,30,0.96), rgba(10,20,48,0.98))',
-                border: `1px solid ${available ? 'rgba(212,185,110,0.3)' : 'rgba(255,80,80,0.3)'}`,
-                boxShadow: `0 12px 40px rgba(0,0,0,0.7), 0 0 0 1px ${available ? 'rgba(212,185,110,0.15)' : 'rgba(255,80,80,0.15)'}`,
+                gap: 14,
+                background: 'linear-gradient(135deg, rgba(6,12,30,0.97), rgba(10,20,48,0.99))',
+                border: `1px solid ${available ? 'rgba(212,185,110,0.4)' : 'rgba(255,80,80,0.4)'}`,
                 borderRadius: 999,
-                padding: '9px 18px',
-                backdropFilter: 'blur(16px)',
-                fontSize: 11,
-                letterSpacing: '0.09em',
+                padding: '12px 24px',
+                backdropFilter: 'blur(20px)',
+                fontSize: 13,
+                letterSpacing: '0.07em',
                 textTransform: 'uppercase',
                 color: '#fff',
                 whiteSpace: 'nowrap',
             }}
         >
-            <span style={{ opacity: 0.5, fontWeight: 500 }}>Flat</span>
-            <span style={{ fontWeight: 800, fontSize: 13 }}>{flatId}</span>
+            <span style={{ opacity: 0.55, fontWeight: 500 }}>Flat</span>
+            <span style={{ fontWeight: 800, fontSize: 15 }}>{flatId}</span>
             <span
                 style={{
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: '0.12em',
                     color: available ? '#d4b96e' : '#ff5555',
                     background: available
-                        ? 'linear-gradient(135deg, rgba(212,185,110,0.18), rgba(212,185,110,0.08))'
-                        : 'linear-gradient(135deg, rgba(255,80,80,0.18), rgba(255,80,80,0.08))',
-                    border: `1px solid ${available ? 'rgba(212,185,110,0.3)' : 'rgba(255,80,80,0.3)'}`,
+                        ? 'linear-gradient(135deg, rgba(212,185,110,0.22), rgba(212,185,110,0.1))'
+                        : 'linear-gradient(135deg, rgba(255,80,80,0.22), rgba(255,80,80,0.1))',
+                    border: `1px solid ${available ? 'rgba(212,185,110,0.4)' : 'rgba(255,80,80,0.4)'}`,
                     borderRadius: 999,
-                    padding: '4px 12px',
+                    padding: '6px 16px',
                 }}
             >
                 {available ? 'AVAILABLE' : 'SOLD OUT'}
@@ -663,12 +688,24 @@ export default function BuildingModel({
     shouldAllowFlatClick,
     isConstrainedDevice = false,
     meshInteractionEnabled = true,
+    selectedFlatId = null,
 }) {
     const [tooltip, setTooltip] = useState({ flatId: null, x: 0, y: 0 });
 
     const handleFlatHover = useCallback((flatId, x, y) => {
+        if (selectedFlatId) {
+            setTooltip({ flatId: null, x: 0, y: 0 });
+            return;
+        }
+
         setTooltip({ flatId, x, y });
-    }, []);
+    }, [selectedFlatId]);
+
+    useEffect(() => {
+        if (selectedFlatId) {
+            setTooltip({ flatId: null, x: 0, y: 0 });
+        }
+    }, [selectedFlatId]);
 
     return (
         <>
@@ -693,9 +730,10 @@ export default function BuildingModel({
                     onFlatClick={onFlatClick}
                     shouldAllowFlatClick={shouldAllowFlatClick}
                     meshInteractionEnabled={meshInteractionEnabled}
+                    selectedFlatId={selectedFlatId}
                 />
             </Canvas>
-            <FlatTooltip {...tooltip} />
+            {!selectedFlatId ? <FlatTooltip {...tooltip} /> : null}
         </>
     );
 }

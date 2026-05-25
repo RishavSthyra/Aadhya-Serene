@@ -111,6 +111,7 @@ export default function Nav() {
   const { isTabletOrBelow, isConstrainedDevice, shouldReduceMotion } = usePerformanceProfile();
   const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
   const isAboutRoute = pathname.startsWith("/about");
+  const isApartmentsRoute = pathname.startsWith("/apartments");
   const [openMenu, setOpenMenu] = useState(null);
   const [isNavVisible, setIsNavVisible] = useState(true);
   const [amenitiesCarouselIndex, setAmenitiesCarouselIndex] = useState(0);
@@ -119,7 +120,7 @@ export default function Nav() {
   const shouldAutoHideNav =
     pathname === "/location" ||
     pathname === "/amenities" ||
-    pathname.startsWith("/apartments") ||
+    isApartmentsRoute ||
     isInteriorPanosRoute;
 
   const maxAmenitiesStartIndex = Math.max(
@@ -563,22 +564,31 @@ export default function Nav() {
       </motion.header>
 
       <motion.div
-        className="fixed bottom-[max(10px,env(safe-area-inset-bottom,0px)+6px)] left-1/2 z-[160] w-[min(95vw,680px)] rounded-full border border-black/6 bg-[#f7f3eb]/92 px-2 py-1.5 shadow-[0_14px_32px_rgba(10,12,18,0.16)] backdrop-blur-2xl xl:hidden md:px-4 md:py-2"
+        className={`fixed inset-x-0 bottom-0 z-[160] xl:hidden ${
+          isApartmentsRoute
+            ? "border-t border-[#211827]/8 bg-[#f7f3eb] px-4 pb-[calc(8px+env(safe-area-inset-bottom,0px))] pt-2 shadow-[0_-10px_26px_rgba(68,38,88,0.08)]"
+            : "px-3 pb-[calc(10px+env(safe-area-inset-bottom,0px))]"
+        }`}
         initial={false}
         animate={{
-          x: "-50%",
-          y: pathname === "/" ? 0 : shouldAutoHideNav ? 8 : 0,
+          y: pathname === "/" ? 0 : shouldAutoHideNav ? 4 : 0,
           opacity: 1,
-          scale: shouldAutoHideNav ? 0.985 : 1,
+          scale: 1,
         }}
         transition={{
           duration: shouldReduceMotion ? 0.01 : 0.42,
           ease: [0.19, 1, 0.22, 1],
         }}
       >
-        <nav className="flex items-center justify-between gap-0">
+        <nav
+          className={`mx-auto flex w-[min(100%,680px)] items-center justify-between gap-0 rounded-full border px-2 py-1.5 md:px-4 md:py-2 ${
+            isApartmentsRoute
+              ? "border-[#211827]/8 bg-[#f7f3eb] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]"
+              : "border-black/6 bg-[#f7f3eb]/92 shadow-[0_14px_32px_rgba(10,12,18,0.16)] backdrop-blur-2xl"
+          }`}
+        >
           {NAV_LINKS.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href;
+            const active = pathname === href || pathname.startsWith(`${href}/`);
 
             return (
               <button

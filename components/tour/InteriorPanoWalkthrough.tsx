@@ -264,9 +264,9 @@ function ArrowButton({
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
-      className="group flex h-9 w-9 items-center justify-center rounded-[0.95rem] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.36),rgba(235,240,245,0.14))] text-white shadow-[0_16px_34px_rgba(8,12,20,0.24),inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl saturate-[180%] transition duration-200 hover:-translate-y-0.5 hover:border-white/50 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.44),rgba(238,243,247,0.2))] disabled:cursor-not-allowed disabled:opacity-30 sm:h-10 sm:w-10 md:h-11 md:w-11 lg:h-12 lg:w-12"
+      className="group flex h-8 w-8 items-center justify-center rounded-[0.9rem] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.36),rgba(235,240,245,0.14))] text-white shadow-[0_14px_30px_rgba(8,12,20,0.22),inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl saturate-[180%] transition duration-200 hover:-translate-y-0.5 hover:border-white/50 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.44),rgba(238,243,247,0.2))] disabled:cursor-not-allowed disabled:opacity-30 sm:h-9 sm:w-9 md:h-10 md:w-10 lg:h-11 lg:w-11"
     >
-      <Icon className="h-4 w-4 transition duration-200 group-hover:scale-110 sm:h-[1.05rem] sm:w-[1.05rem] md:h-[1.15rem] md:w-[1.15rem]" />
+      <Icon className="h-3.5 w-3.5 transition duration-200 group-hover:scale-110 sm:h-4 sm:w-4 md:h-[1.05rem] md:w-[1.05rem]" />
     </button>
   );
 }
@@ -1042,7 +1042,7 @@ export default function InteriorPanoWalkthrough({
         }}
       />
 
-      <div className="pointer-events-auto absolute right-4 top-[56%] z-30 -translate-y-1/2">
+      <div className="pointer-events-auto absolute right-4 z-30" style={{ bottom: 'calc(4px + 15.5rem + 0.75rem)', right: '4px' }}>
         <div className="flex flex-col items-center gap-1.5 rounded-[1.35rem] border border-white/34 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(230,237,244,0.12))] px-2.5 py-3 shadow-[0_20px_42px_rgba(8,12,20,0.22),inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl saturate-[180%] sm:gap-2 sm:px-3 sm:py-4 md:rounded-[1.7rem] md:px-4 md:py-5">
           <ArrowButton
             icon={ArrowUp}

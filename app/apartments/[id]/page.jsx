@@ -10,7 +10,6 @@ import {
     Building2,
     Compass,
     Flower2,
-    Fullscreen,
     Home,
     LayoutGrid,
     Maximize2,
@@ -25,7 +24,6 @@ import {
     VolumeX,
 } from 'lucide-react';
 import {
-    floorPlanSrc,
     flatRenderFallbackPoster,
     flatViewAngleFromKey,
     flatVideoFallbackId,
@@ -51,6 +49,7 @@ import useResponsiveViewport from '../../../hooks/useResponsiveViewport';
 const WHATSAPP_URL = 'https://wa.me/919620993333?text=Hi!%20I%20want%20to%20know%20more%20about%20flat%20';
 const COMPACT_MEDIA_ASPECT_RATIO = 16 / 9;
 const FLAT_DETAIL_CACHE_TTL_MS = 5 * 60 * 1000;
+const WHITE_PANEL_SHADOW = '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)';
 const flatDetailCache = new Map();
 const flatDetailRequests = new Map();
 
@@ -72,15 +71,15 @@ function getRoomIcon(name) {
     return LayoutGrid;
 }
 
-function StatCard({ icon: Icon, label, value, accent = 'text-white' }) {
+function StatCard({ icon: Icon, label, value, accent = 'text-[#151518]' }) {
     return (
-        <div className="rounded-[20px] border border-white/14 bg-[linear-gradient(160deg,rgba(255,255,255,0.12),rgba(48,57,71,0.16)_42%,rgba(10,14,21,0.38)_100%)] px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-[26px]">
+        <div className="rounded-[18px] border border-[#211827]/10 bg-white/82 px-4 py-3 backdrop-blur-[18px]" style={{ boxShadow: WHITE_PANEL_SHADOW }}>
             <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/36">
-                    <Icon className="h-4 w-4 text-white/68" />
+                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#1c1c20]/48">
+                    <Icon className="h-4 w-4 text-[#1c1c20]/62" />
                     <span>{label}</span>
                 </div>
-                <p className={`text-[16px] font-medium ${accent}`}>
+                <p className={`text-[16px] font-semibold ${accent}`}>
                     {value}
                 </p>
             </div>
@@ -92,98 +91,24 @@ function RoomCard({ room }) {
     const Icon = getRoomIcon(room.name);
 
     return (
-        <div className="group rounded-[20px] border border-white/14 bg-[linear-gradient(160deg,rgba(255,255,255,0.1),rgba(47,57,70,0.14)_42%,rgba(10,14,21,0.34)_100%)] px-4 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[22px] transition-all duration-300 hover:border-white/22 hover:bg-[linear-gradient(160deg,rgba(255,255,255,0.14),rgba(52,61,75,0.18)_42%,rgba(12,17,24,0.4)_100%)]">
+        <div className="group rounded-[18px] border border-[#211827]/10 bg-white/78 px-4 py-3 backdrop-blur-[18px] transition-all duration-300 hover:-translate-y-0.5 hover:bg-white" style={{ boxShadow: WHITE_PANEL_SHADOW }}>
             <div className="flex items-center justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] text-white/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#211827]/10 bg-white text-[#1c1c20]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)]">
                         <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/35">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#1c1c20]/42">
                             Space
                         </p>
-                        <h3 className="mt-1 truncate text-[15px] font-medium text-white/88">
+                        <h3 className="mt-1 truncate text-[15px] font-semibold text-[#151518]">
                             {room.name}
                         </h3>
                     </div>
                 </div>
-                <p className="shrink-0 text-[13px] text-white/52">
+                <p className="shrink-0 text-[13px] font-medium text-[#1c1c20]/58">
                     {room.size}
                 </p>
-            </div>
-        </div>
-    );
-}
-
-function FloorPlanCard({
-    flat,
-    planSrc,
-    floorPlanError,
-    onFloorPlanError,
-    sectionTitleClass,
-    compactMode = false,
-}) {
-    const imageHeightClass = compactMode ? 'h-[220px] sm:h-[250px]' : 'h-[260px]';
-
-    return (
-        <div className="p-4 rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(25,33,44,0.14)_24%,rgba(7,11,17,0.26)_100%)] shadow-[0_16px_38px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[22px]">
-            <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
-                        Floor Plan
-                    </p>
-                    <h2 className={`mt-2 font-medium text-white ${sectionTitleClass}`}>
-                        Residence layout
-                    </h2>
-                </div>
-                <span className="rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                    {flat.flat}
-                </span>
-            </div>
-
-            <div className="overflow-hidden rounded-[18px] border border-white/12 bg-[linear-gradient(180deg,rgba(5,8,14,0.48),rgba(5,8,14,0.26))] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-                {!floorPlanError ? (
-                    <img
-                        src={planSrc}
-                        alt={`Floor plan of apartment ${flat.flat}`}
-                        className={`${imageHeightClass} w-full object-cover transition duration-500 hover:scale-[1.02]`}
-                        draggable={false}
-                        loading="lazy"
-                        decoding="async"
-                        onError={onFloorPlanError}
-                    />
-                ) : (
-                    <div className={`flex ${imageHeightClass} flex-col items-center justify-center bg-black/20 px-6 text-center`}>
-                        <Fullscreen className="h-10 w-10 text-white/64" />
-                        <p className="mt-4 text-[12px] font-semibold uppercase tracking-[0.2em] text-white/42">
-                            Floor plan unavailable
-                        </p>
-                        <p className="mt-2 text-sm text-white/56">
-                            This plan preview will be added shortly.
-                        </p>
-                    </div>
-                )}
-            </div>
-
-            <div className="mt-4 grid gap-2">
-                <a
-                    href={planSrc}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:border-white/24 hover:bg-white/[0.08]"
-                >
-                    <Maximize2 className="h-4 w-4" />
-                    Open Plan
-                </a>
-                <a
-                    href={`${WHATSAPP_URL}${flat.flat}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06))] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/88 shadow-[0_12px_26px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.1)] transition hover:border-white/24 hover:bg-white/[0.1]"
-                >
-                    <MessageCircle className="h-4 w-4" />
-                    Discuss
-                </a>
             </div>
         </div>
     );
@@ -199,18 +124,18 @@ function WalkthroughPreviewCard({
     const imageHeightClass = compactMode ? 'h-[230px] sm:h-[260px]' : 'h-[210px]';
 
     return (
-        <div className="p-4 rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(25,33,44,0.14)_24%,rgba(7,11,17,0.26)_100%)] shadow-[0_16px_38px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[22px]">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
+        <div className="rounded-[18px] border border-[#211827]/10 bg-white/82 p-4 backdrop-blur-[18px]" style={{ boxShadow: WHITE_PANEL_SHADOW }}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#1c1c20]/42">
                 Interior Preview
             </p>
-            <h2 className={`mt-2 font-medium text-white ${sectionTitleClass}`}>
+            <h2 className={`mt-2 font-semibold text-[#151518] ${sectionTitleClass}`}>
                 Sample walkthrough
             </h2>
 
             <button
                 type="button"
                 onClick={onOpenWalkthrough}
-                className="group mt-4 block w-full overflow-hidden rounded-[18px] border border-white/12 bg-[linear-gradient(180deg,rgba(5,8,14,0.48),rgba(5,8,14,0.26))] text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+                className="group mt-4 block w-full overflow-hidden rounded-[18px] border border-[#211827]/10 bg-[#f4f0f7] text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]"
             >
                 <div className="relative">
                     <img
@@ -234,10 +159,10 @@ function WalkthroughPreviewCard({
             </button>
 
             <div className={`mt-4 px-4 py-4 ${quietSurfaceClass}`}>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/36">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#1c1c20]/42">
                     Design Note
                 </p>
-                <p className={`mt-3 text-white/56 ${bodyCopyClass}`}>
+                <p className={`mt-3 text-[#1c1c20]/58 ${bodyCopyClass}`}>
                     The residence is positioned as a calm, daylight-led home with a more
                     understated luxury language across proportion, flow, and private outdoor edges.
                 </p>
@@ -278,7 +203,6 @@ export default function FlatDetailPage() {
     const hasActiveTouchGestureRef = useRef(false);
 
     const [muted, setMuted] = useState(true);
-    const [floorPlanError, setFloorPlanError] = useState(false);
     const [activeViewKey, setActiveViewKey] = useState(() => {
         if (typeof window === 'undefined') {
             return 'A1';
@@ -711,7 +635,6 @@ export default function FlatDetailPage() {
     const floorLabel = flat.floor === 'G' ? 'Ground Floor' : `Floor ${flat.floor}`;
     const facingLabel = formatFacing(flat.facing);
     const isAvailable = flat.status === 'available';
-    const planSrc = floorPlanSrc(flat.flat);
     const bhkValue = Number.parseInt(flat.type, 10);
     const shouldShowDetailPanels = isTabletOrBelow
         ? true
@@ -728,10 +651,10 @@ export default function FlatDetailPage() {
     const desktopPanelHeight = isCompactDesktop ? 'calc(100vh - 8rem)' : 'calc(100vh - 8.9rem)';
     const desktopSidebarHeight = isCompactDesktop ? 'calc(100vh - 7.6rem)' : 'calc(100vh - 8.35rem)';
     const desktopGridColumns = isWideDesktop
-        ? '420px 410px'
+        ? '480px 450px'
         : isCompactDesktop
-            ? '360px 350px'
-            : '390px 380px';
+            ? '420px 400px'
+            : '450px 430px';
     const compactMediaHeight = isTabletOrBelow
         ? `${Math.min(
             Math.max(Math.round(width / COMPACT_MEDIA_ASPECT_RATIO), isTablet ? 420 : 220),
@@ -773,20 +696,12 @@ export default function FlatDetailPage() {
             ? 'text-[11px] leading-5 xl:text-[12px] xl:leading-6'
             : 'text-[12px] leading-6';
     const metaValueClass = isCompactDesktop ? 'text-[12px] xl:text-[13px]' : 'text-[13px]';
-    const cardSurfaceClass = 'rounded-[24px] border border-white/14 bg-[linear-gradient(160deg,rgba(255,255,255,0.12),rgba(48,58,72,0.16)_42%,rgba(9,13,20,0.4)_100%)] shadow-[0_24px_68px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-[32px]';
-    const insetSurfaceClass = 'rounded-[20px] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(28,36,47,0.16)_26%,rgba(7,11,17,0.3)_100%)] shadow-[0_18px_40px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[26px]';
-    const quietSurfaceClass = 'rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(25,33,44,0.14)_24%,rgba(7,11,17,0.26)_100%)] shadow-[0_16px_38px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[22px]';
+    const cardSurfaceClass = 'rounded-[24px] border border-[#211827]/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.96)_0%,rgba(252,249,255,0.94)_58%,rgba(255,255,255,0.92)_100%)] text-[#151518] backdrop-blur-[28px]';
+    const insetSurfaceClass = 'rounded-[20px] border border-[#211827]/10 bg-white/78 text-[#151518] backdrop-blur-[18px]';
+    const quietSurfaceClass = 'rounded-[18px] border border-[#211827]/10 bg-white/74 text-[#151518] backdrop-blur-[18px]';
     const openWalkthrough = () => router.push(interiorPanosHref);
     const renderSupportCards = (compactMode = false) => (
         <div className="space-y-4">
-            <FloorPlanCard
-                flat={flat}
-                planSrc={planSrc}
-                floorPlanError={floorPlanError}
-                onFloorPlanError={() => setFloorPlanError(true)}
-                sectionTitleClass={sectionTitleClass}
-                compactMode={compactMode}
-            />
             <WalkthroughPreviewCard
                 onOpenWalkthrough={openWalkthrough}
                 sectionTitleClass={sectionTitleClass}
@@ -936,11 +851,11 @@ export default function FlatDetailPage() {
                 <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-none flex-col">
                     {!isMobile ? (
                         <div className="fixed inset-x-0 bottom-4 z-20 flex justify-center px-4 lg:bottom-5">
-                            <div className={`flex flex-wrap items-center justify-center rounded-[22px] border border-white/12 bg-[linear-gradient(160deg,rgba(255,255,255,0.12),rgba(33,42,55,0.16)_42%,rgba(8,12,18,0.42)_100%)] shadow-[0_18px_46px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[28px] ${dockShellClass}`}>
+                            <div className={`flex flex-wrap items-center justify-center rounded-[22px] bg-white/92 border border-[#211827]/10 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-[28px] ${dockShellClass}`}>
                                 <button
                                     type="button"
                                     onClick={toggleMute}
-                                    className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] font-semibold uppercase text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08] ${dockButtonClass}`}
+                                    className={`inline-flex items-center gap-2 rounded-full border border-[#211827]/10 bg-white px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#151518] shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_2px_4px_rgba(0,0,0,0.06)] backdrop-blur-[20px] transition hover:border-[#211827]/16 hover:bg-[#f8f6fb] ${dockButtonClass}`}
                                 >
                                     {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
                                     {muted ? 'Muted' : 'Audio On'}
@@ -952,7 +867,7 @@ export default function FlatDetailPage() {
                                         event.stopPropagation();
                                         void goFullscreen();
                                     }}
-                                    className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] font-semibold uppercase text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08] ${dockButtonClass}`}
+                                    className={`inline-flex items-center gap-2 rounded-full border border-[#211827]/10 bg-white px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#151518] shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_2px_4px_rgba(0,0,0,0.06)] backdrop-blur-[20px] transition hover:border-[#211827]/16 hover:bg-[#f8f6fb] ${dockButtonClass}`}
                                 >
                                     <Maximize2 className="h-3.5 w-3.5" />
                                     {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
@@ -961,7 +876,7 @@ export default function FlatDetailPage() {
                                     href={`${WHATSAPP_URL}${flat.flat}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className={`inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06))] font-semibold uppercase text-white/88 shadow-[0_12px_26px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.1)] transition hover:border-white/24 hover:bg-white/[0.1] ${dockButtonClass} ${isCompactDesktop ? 'px-3.5' : 'px-4 2xl:px-5'}`}
+                                    className={`inline-flex items-center gap-2 rounded-full border border-[#211827]/10 bg-[linear-gradient(135deg,#f4f0f7,#ede8f5)] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#211827] shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_2px_6px_rgba(88,47,117,0.12)] backdrop-blur-[20px] transition hover:border-[#211827]/16 hover:bg-[#f0ecf7] ${dockButtonClass} ${isCompactDesktop ? 'px-3.5' : 'px-4 2xl:px-5'}`}
                                 >
                                     <MessageCircle className="h-3.5 w-3.5" />
                                     Enquire
@@ -978,24 +893,25 @@ export default function FlatDetailPage() {
                     >
                         <div className="min-h-0 w-full">
                             <div
-                                className={`${cardSurfaceClass} ${isTabletOrBelow ? 'rounded-t-[28px] border-x-0 border-b-0 px-3 pb-6 pt-3 shadow-[0_-20px_60px_rgba(8,12,18,0.34),inset_0_1px_0_rgba(255,255,255,0.16)]' : 'p-3 sm:p-4 lg:overflow-hidden'}`}
-                                style={!isTabletOrBelow ? { height: desktopPanelHeight } : undefined}
+                                className={`${cardSurfaceClass} ${isTabletOrBelow ? 'rounded-t-[28px] border-x-0 border-b-0 px-3 pb-6 pt-3' : 'p-3 sm:p-4 lg:overflow-hidden'}`}
+                                style={{ boxShadow: WHITE_PANEL_SHADOW, ...(!isTabletOrBelow ? { height: desktopPanelHeight } : {}) }}
                             >
                                 <div
                                     ref={mainPanelRef}
-                                    className={`flex min-h-0 flex-col gap-4 lg:h-full lg:overflow-y-auto lg:pr-1 ${glassScrollbarClass}`}
+                                    className={`flex min-h-0 flex-col gap-4 lg:h-full lg:overflow-y-auto ${glassScrollbarClass}`}
+                                    style={{ paddingRight: '2px' }}
                                 >
                                     <div className={`flex shrink-0 flex-col p-4 ${insetSurfaceClass}`}>
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <span className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.05))] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                                            <span className="inline-flex items-center gap-2 rounded-full border border-[#211827]/10 bg-white px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#1c1c20]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)]">
                                                 <Sparkles className="h-3.5 w-3.5" />
                                                 Aadhya Serene
                                             </span>
                                             <span
                                                 className={`inline-flex border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] ${
                                                     isAvailable
-                                                        ? 'border-emerald-300/18 bg-emerald-300/10 text-emerald-200'
-                                                        : 'border-white/12 bg-white/8 text-white/58'
+                                                        ? 'border-emerald-600/18 bg-emerald-50 text-emerald-700'
+                                                        : 'border-[#211827]/10 bg-[#f4f0f7] text-[#1c1c20]/48'
                                                 }`}
                                             >
                                                 {isAvailable ? 'Available Now' : 'Sold Out'}
@@ -1003,54 +919,54 @@ export default function FlatDetailPage() {
                                         </div>
 
                                         <div className="mt-4">
-                                            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">
+                                                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#1c1c20]/42">
                                                 Signature Residence
                                             </p>
-                                            <h1 className={`mt-3 font-serif leading-[0.94] text-white ${heroTitleClass}`}>
+                                            <h1 className={`mt-3 font-serif leading-[0.94] text-[#151518] ${heroTitleClass}`}>
                                                 Apartment {flat.flat}
                                             </h1>
-                                            <p className={`mt-3 text-white/58 ${bodyCopyClass}`}>
+                                            <p className={`mt-3 text-[#1c1c20]/58 ${bodyCopyClass}`}>
                                                 A calmer expression of premium living shaped with balanced proportions, refined daylight, and everyday ease.
                                             </p>
                                             {useVideoFallback ? (
-                                                <p className="mt-3 border border-white/12 bg-white/[0.05] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/58">
+                                                <p className="mt-3 border border-[#211827]/10 bg-[#f4f0f7] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#1c1c20]/56">
                                                     Sample exterior video shown while the flat-specific preview is unavailable.
                                                 </p>
                                             ) : null}
                                         </div>
 
                                         <div className={`mt-4 p-3.5 ${quietSurfaceClass}`}>
-                                            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/34">
+                                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#1c1c20]/42">
                                                 Curated Summary
                                             </p>
                                             <div className="mt-3 space-y-2.5">
-                                                <div className="flex items-center justify-between border-b border-white/8 pb-2">
-                                                    <span className="text-[10px] uppercase tracking-[0.16em] text-white/36">Typology</span>
-                                                    <span className={`${metaValueClass} font-medium text-white/88`}>{flat.type}</span>
+                                                <div className="flex items-center justify-between border-b border-[#211827]/8 pb-2">
+                                                    <span className="text-[10px] uppercase tracking-[0.14em] text-[#1c1c20]/44">Typology</span>
+                                                    <span className={`${metaValueClass} font-semibold text-[#151518]`}>{flat.type}</span>
                                                 </div>
-                                                <div className="flex items-center justify-between border-b border-white/8 pb-2">
-                                                    <span className="text-[10px] uppercase tracking-[0.16em] text-white/36">Area</span>
-                                                    <span className={`${metaValueClass} font-medium text-white/88`}>{flat.area} sqft</span>
+                                                <div className="flex items-center justify-between border-b border-[#211827]/8 pb-2">
+                                                    <span className="text-[10px] uppercase tracking-[0.14em] text-[#1c1c20]/44">Area</span>
+                                                    <span className={`${metaValueClass} font-semibold text-[#151518]`}>{flat.area} sqft</span>
                                                 </div>
-                                                <div className="flex items-center justify-between border-b border-white/8 pb-2">
-                                                    <span className="text-[10px] uppercase tracking-[0.16em] text-white/36">Facing</span>
-                                                    <span className={`${metaValueClass} font-medium text-white/88`}>{facingLabel}</span>
+                                                <div className="flex items-center justify-between border-b border-[#211827]/8 pb-2">
+                                                    <span className="text-[10px] uppercase tracking-[0.14em] text-[#1c1c20]/44">Facing</span>
+                                                    <span className={`${metaValueClass} font-semibold text-[#151518]`}>{facingLabel}</span>
                                                 </div>
-                                                <div className="flex items-center justify-between border-b border-white/8 pb-2">
-                                                    <span className="text-[10px] uppercase tracking-[0.16em] text-white/36">Level</span>
-                                                    <span className={`${metaValueClass} font-medium text-white/88`}>{floorLabel}</span>
+                                                <div className="flex items-center justify-between border-b border-[#211827]/8 pb-2">
+                                                    <span className="text-[10px] uppercase tracking-[0.14em] text-[#1c1c20]/44">Level</span>
+                                                    <span className={`${metaValueClass} font-semibold text-[#151518]`}>{floorLabel}</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] uppercase tracking-[0.16em] text-white/36">Balconies</span>
-                                                    <span className={`${metaValueClass} font-medium text-white/88`}>{flat.balconies}</span>
+                                                    <span className="text-[10px] uppercase tracking-[0.14em] text-[#1c1c20]/44">Balconies</span>
+                                                    <span className={`${metaValueClass} font-semibold text-[#151518]`}>{flat.balconies}</span>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="mt-4 grid gap-2">
                                             <div className={`${quietSurfaceClass} px-3.5 py-3`}>
-                                                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/34">Status</p>
-                                                <p className={`mt-1.5 text-[17px] font-medium ${isAvailable ? 'text-emerald-200' : 'text-white/64'}`}>
+                                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#1c1c20]/42">Status</p>
+                                                <p className={`mt-1.5 text-[17px] font-semibold ${isAvailable ? 'text-emerald-700' : 'text-[#1c1c20]/54'}`}>
                                                     {isAvailable ? 'Available' : 'Sold Out'}
                                                 </p>
                                             </div>
@@ -1065,7 +981,7 @@ export default function FlatDetailPage() {
                                         <button
                                             type="button"
                                             onClick={navigateBack}
-                                                className="mt-4 inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[20px] transition hover:border-white/24 hover:bg-white/[0.08]"
+                                                className="mt-4 inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-[#211827]/10 bg-white px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#1c1c20]/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-[18px] transition hover:border-[#211827]/16 hover:text-[#151518]"
                                         >
                                             <ArrowLeft className="h-4 w-4" />
                                             Back to Apartments
@@ -1085,20 +1001,20 @@ export default function FlatDetailPage() {
                                                         icon={Sparkles}
                                                         label="Status"
                                                         value={isAvailable ? 'Available' : 'Sold Out'}
-                                                        accent={isAvailable ? 'text-emerald-200' : 'text-white/64'}
+                                                        accent={isAvailable ? 'text-emerald-700' : 'text-[#1c1c20]/54'}
                                                     />
                                                 </div>
 
                                                 <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
                                                     <div>
-                                                        <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-white/36">
+                                                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#1c1c20]/42">
                                                             Spatial Composition
                                                         </p>
-                                                        <h2 className={`mt-2 font-medium tracking-[0.02em] text-white ${roomSectionHeadingClass}`}>
+                                                        <h2 className={`mt-2 font-semibold tracking-[0.02em] text-[#151518] ${roomSectionHeadingClass}`}>
                                                             Room Dimensions
                                                         </h2>
                                                     </div>
-                                                    <p className={`max-w-[34ch] text-white/48 ${isCompactDesktop ? 'text-[12px] leading-5' : 'text-[13px] leading-6'}`}>
+                                                    <p className={`max-w-[34ch] text-[#1c1c20]/52 ${isCompactDesktop ? 'text-[12px] leading-5' : 'text-[13px] leading-6'}`}>
                                                         Every room is proportioned for practical comfort while preserving a clean,
                                                         elevated planning language throughout the residence.
                                                     </p>
@@ -1130,7 +1046,7 @@ export default function FlatDetailPage() {
                             <div
                                 ref={sidebarPanelRef}
                                 className={`${cardSurfaceClass} p-3 sm:p-4 lg:overflow-y-auto ${glassScrollbarClass}`}
-                                style={!isTabletOrBelow ? { maxHeight: desktopSidebarHeight } : undefined}
+                                style={!isTabletOrBelow ? { maxHeight: desktopSidebarHeight, boxShadow: WHITE_PANEL_SHADOW } : undefined}
                             >
                                 {renderSupportCards(false)}
                             </div>

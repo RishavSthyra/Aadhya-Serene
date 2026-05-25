@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { setBackgroundTransitionState } from '@/lib/background-transition';
+import {
+    isBackgroundTransitionActive,
+    setBackgroundTransitionState,
+} from '@/lib/background-transition';
 import {
     HOME_PRELOADER_COMPLETE_EVENT,
     isHomePreloaderComplete,
@@ -385,6 +388,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
 
         let cancelled = false;
         const timeoutIds = [];
+        let removeTransitionEndListener = null;
         const layoutsToWarm = PRELOAD_LAYOUTS[layout] ?? [];
 
         const warmLayout = (layoutToWarm) => {
@@ -423,16 +427,38 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             });
         };
 
-        layoutsToWarm.forEach((layoutToWarm, index) => {
-            const timeoutId = window.setTimeout(() => {
-                warmLayout(layoutToWarm);
-            }, index === 0 ? 0 : 900);
+        const scheduleWarmLayouts = () => {
+            layoutsToWarm.forEach((layoutToWarm, index) => {
+                const timeoutId = window.setTimeout(() => {
+                    warmLayout(layoutToWarm);
+                }, index === 0 ? 120 : 1000);
 
-            timeoutIds.push(timeoutId);
-        });
+                timeoutIds.push(timeoutId);
+            });
+        };
+
+        if (isBackgroundTransitionActive(layout)) {
+            const handleTransitionEnded = (event) => {
+                if (event.detail?.layout && event.detail.layout !== layout) {
+                    return;
+                }
+
+                removeTransitionEndListener?.();
+                removeTransitionEndListener = null;
+                scheduleWarmLayouts();
+            };
+
+            window.addEventListener('bg-transition-ended', handleTransitionEnded);
+            removeTransitionEndListener = () => {
+                window.removeEventListener('bg-transition-ended', handleTransitionEnded);
+            };
+        } else {
+            scheduleWarmLayouts();
+        }
 
         return () => {
             cancelled = true;
+            removeTransitionEndListener?.();
             timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
         };
     }, [

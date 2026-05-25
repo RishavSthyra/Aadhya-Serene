@@ -387,6 +387,7 @@ export default function Apartment360Viewer({
     filteredFlatIds,
     onReadyChange,
     interactionLocked = false,
+    selectedFlatId = null,
 }) {
     const [snappedFrame, setSnappedFrame] = useState(1);
     const [isSettled, setIsSettled] = useState(true);
@@ -748,7 +749,9 @@ export default function Apartment360Viewer({
             return target;
         }
 
-        for (let offset = 1; offset <= 6; offset += 1) {
+        const searchRadius = isConstrainedDevice ? 14 : 8;
+
+        for (let offset = 1; offset <= searchRadius; offset += 1) {
             const next = normalizeFrame(target + offset);
             const previous = normalizeFrame(target - offset);
 
@@ -762,7 +765,7 @@ export default function Apartment360Viewer({
         }
 
         return lastDrawnFrameRef.current || displayFrameRef.current;
-    }, []);
+    }, [isConstrainedDevice]);
 
     const publishFrame = useCallback((frameNumber, options = {}) => {
         pendingFrameRef.current = normalizeFrame(frameNumber);
@@ -1229,6 +1232,7 @@ export default function Apartment360Viewer({
                             shouldAllowFlatClick={shouldAllowFlatClick}
                             isConstrainedDevice={isConstrainedDevice}
                             meshInteractionEnabled={isSettled && !isDraggingState && !viewerInteractionLocked}
+                            selectedFlatId={selectedFlatId}
                         />
                     </div>
                 ) : null}
