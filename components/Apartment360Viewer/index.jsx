@@ -4,6 +4,11 @@ import dynamic from 'next/dynamic';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './viewer.module.css';
 import { flatViewKeyFromFrame } from '../../lib/flats';
+import {
+    cacheAssetOnce,
+    prefetchAssetsInChunks,
+    registerAssetCacheServiceWorker,
+} from '../../lib/client-asset-cache';
 
 const TOTAL_FRAMES = 360;
 const SNAP_POINTS = [1, 90, 180, 270, 360];
@@ -14,12 +19,12 @@ const ROT360_FRAME_EXTENSION = ROT360_CDN_BASE.includes('webp') ? 'webp' : 'avif
 const DRAG_FRAME_STEP = 1;
 const MOBILE_DRAG_FRAME_STEP = 1;
 const PRELOAD_RADIUS = 40;
-const PRELOAD_CONCURRENCY = 6;
-const MAX_CACHE_SIZE = 220;
+const PRELOAD_CONCURRENCY = 4;
+const MAX_CACHE_SIZE = 360;
 const DRAG_SENSITIVITY = 0.28;
 const MOBILE_PRELOAD_RADIUS = 7;
-const MOBILE_PRELOAD_CONCURRENCY = 3;
-const MOBILE_MAX_CACHE_SIZE = 48;
+const MOBILE_PRELOAD_CONCURRENCY = 2;
+const MOBILE_MAX_CACHE_SIZE = 96;
 const MOBILE_DPR_CAP = 1;
 const DESKTOP_DPR_CAP = 1.6;
 const MIN_ZOOM = 1;
@@ -33,7 +38,7 @@ const DRAG_PRELOAD_STRIDE = 1;
 const MOBILE_DRAG_PRELOAD_STRIDE = 4;
 const INITIAL_WARMUP_RADIUS = 30;
 const MOBILE_INITIAL_WARMUP_RADIUS = 6;
-const INITIAL_WARMUP_CONCURRENCY = 8;
+const INITIAL_WARMUP_CONCURRENCY = 3;
 const MOBILE_INITIAL_WARMUP_CONCURRENCY = 2;
 const INITIAL_WARMUP_DELAY_MS = 0;
 const MOBILE_INITIAL_WARMUP_DELAY_MS = 120;
@@ -44,10 +49,10 @@ const INITIAL_INTERACTION_PRIME_RADIUS = 90;
 const MOBILE_INITIAL_INTERACTION_PRIME_RADIUS = 18;
 const INITIAL_INTERACTION_SNAP_RADIUS = 3;
 const MOBILE_INITIAL_INTERACTION_SNAP_RADIUS = 1;
-const INITIAL_INTERACTION_PRIME_CONCURRENCY = 8;
-const MOBILE_INITIAL_INTERACTION_PRIME_CONCURRENCY = 3;
-const INITIAL_INTERACTION_UNLOCK_COUNT = 30;
-const MOBILE_INITIAL_INTERACTION_UNLOCK_COUNT = 9;
+const INITIAL_INTERACTION_PRIME_CONCURRENCY = 3;
+const MOBILE_INITIAL_INTERACTION_PRIME_CONCURRENCY = 2;
+const INITIAL_INTERACTION_UNLOCK_COUNT = 8;
+const MOBILE_INITIAL_INTERACTION_UNLOCK_COUNT = 4;
 const warmedStartupFrames = new Set();
 const warmedStartupImages = new Map();
 const startupWarmPromises = new Map();
@@ -137,7 +142,7 @@ function clearStartupWarmSchedule() {
     startupWarmTimeoutHandle = null;
 }
 
-function warmStartupFrame(frameNumber, timeoutMs) {
+function warmStartupFrame(frameNumber, timeoutMs, priority = 'low') {
     if (typeof window === 'undefined') {
         return Promise.resolve(false);
     }
@@ -168,8 +173,10 @@ function warmStartupFrame(frameNumber, timeoutMs) {
 
         const timeoutId = window.setTimeout(() => finish(false), timeoutMs);
 
+        const frameUrl = getFrameUrl(normalizedFrame);
+
         image.decoding = 'async';
-        image.fetchPriority = normalizedFrame === 1 ? 'high' : 'low';
+        image.fetchPriority = priority;
         image.onload = async () => {
             try {
                 if (typeof image.decode === 'function') {
@@ -187,7 +194,13 @@ function warmStartupFrame(frameNumber, timeoutMs) {
             window.clearTimeout(timeoutId);
             finish(false);
         };
-        image.src = getFrameUrl(normalizedFrame);
+
+        cacheAssetOnce(frameUrl, { priority })
+            .finally(() => {
+                if (!settled) {
+                    image.src = frameUrl;
+                }
+            });
     });
 
     startupWarmPromises.set(normalizedFrame, warmPromise);
@@ -280,6 +293,16 @@ export function scheduleApartment360FrameWarmup({ isConstrainedDevice = false } 
     startupWarmRunId += 1;
     const runId = startupWarmRunId;
     startupWarmQueue = queue;
+
+    void registerAssetCacheServiceWorker();
+
+    prefetchAssetsInChunks(queue.map(getFrameUrl), {
+        chunkSize: isConstrainedDevice ? 2 : 4,
+        concurrency: 1,
+        priority: 'low',
+        gapMs: isConstrainedDevice ? 900 : 520,
+        idleTimeoutMs: isConstrainedDevice ? 2600 : 1800,
+    });
 
     const options = {
         concurrency: isConstrainedDevice ? MOBILE_INITIAL_WARMUP_CONCURRENCY : INITIAL_WARMUP_CONCURRENCY,
@@ -378,6 +401,10 @@ export default function Apartment360Viewer({
     const snapAnimationDuration = isConstrainedDevice ? MOBILE_SNAP_ANIMATION_DURATION_MS : SNAP_ANIMATION_DURATION_MS;
     const viewerInteractionLocked = interactionLocked || !isStartupPrimed;
     const canZoom = isConstrainedDevice;
+
+    useEffect(() => {
+        void registerAssetCacheServiceWorker();
+    }, []);
 
     const hydrateWarmFrame = useCallback((frameNumber) => {
         const normalizedFrame = normalizeFrame(frameNumber);
@@ -586,30 +613,17 @@ export default function Apartment360Viewer({
 
             activeLoadsRef.current += 1;
 
-            const promise = new Promise((resolve, reject) => {
-                const image = new window.Image();
-                image.decoding = 'async';
-                image.fetchPriority = nextFrame === latestRequestedFrameRef.current ? 'high' : 'low';
-
-                image.onload = async () => {
-                    try {
-                        if (typeof image.decode === 'function') {
-                            await image.decode();
-                        }
-                    } catch {
-                        // Some browsers can still draw the frame even if decode rejects.
+            const priority = nextFrame === latestRequestedFrameRef.current ? 'high' : 'low';
+            const promise = warmStartupFrame(
+                nextFrame,
+                isConstrainedDevice ? MOBILE_INITIAL_WARMUP_TIMEOUT_MS : INITIAL_WARMUP_TIMEOUT_MS,
+                priority,
+            )
+                .then((loaded) => {
+                    if (!loaded || !hydrateWarmFrame(nextFrame)) {
+                        throw new Error(`Failed to load frame ${nextFrame}`);
                     }
 
-                    resolve(image);
-                };
-                image.onerror = () => reject(new Error(`Failed to load frame ${nextFrame}`));
-                image.src = getFrameUrl(nextFrame);
-            })
-                .then((image) => {
-                    imageCacheRef.current.delete(nextFrame);
-                    imageCacheRef.current.set(nextFrame, image);
-                    loadedFramesRef.current.add(nextFrame);
-                    failedFramesRef.current.delete(nextFrame);
                     trimCache();
 
                     if (latestRequestedFrameRef.current === nextFrame) {
@@ -628,7 +642,7 @@ export default function Apartment360Viewer({
 
             loadingPromisesRef.current.set(nextFrame, promise);
         }
-    }, [drawFrame, hydrateWarmFrame, preloadConcurrency, trimCache]);
+    }, [drawFrame, hydrateWarmFrame, isConstrainedDevice, preloadConcurrency, trimCache]);
 
     const enqueueFrames = useCallback((frameNumbers) => {
         const normalizedFrames = frameNumbers.map((frameNumber) => normalizeFrame(frameNumber));
@@ -826,23 +840,12 @@ export default function Apartment360Viewer({
                 return;
             }
 
-            void warmFramesWithConcurrency(backgroundFrames, {
-                concurrency: isConstrainedDevice
-                    ? MOBILE_INITIAL_INTERACTION_PRIME_CONCURRENCY
-                    : Math.max(4, INITIAL_INTERACTION_PRIME_CONCURRENCY - 2),
-                timeoutMs: isConstrainedDevice
-                    ? MOBILE_INITIAL_WARMUP_TIMEOUT_MS
-                    : INITIAL_WARMUP_TIMEOUT_MS,
-            }).then(() => {
-                if (cancelled) {
-                    return;
-                }
-
-                backgroundFrames.forEach((frameNumber) => {
-                    hydrateWarmFrame(frameNumber);
-                });
-
-                trimCache();
+            prefetchAssetsInChunks(backgroundFrames.map(getFrameUrl), {
+                chunkSize: isConstrainedDevice ? 2 : 5,
+                concurrency: 1,
+                priority: 'low',
+                gapMs: isConstrainedDevice ? 900 : 520,
+                idleTimeoutMs: isConstrainedDevice ? 2800 : 1800,
             });
         };
 

@@ -42,10 +42,17 @@ import {
     INTERIOR_START_PREVIEW_URL,
 } from '../../../lib/interior-panos';
 import { skipNextApartmentsReplay } from '../../../lib/background-transition';
+import {
+    prefetchAssetsInChunks,
+    registerAssetCacheServiceWorker,
+} from '../../../lib/client-asset-cache';
 import useResponsiveViewport from '../../../hooks/useResponsiveViewport';
 
 const WHATSAPP_URL = 'https://wa.me/919620993333?text=Hi!%20I%20want%20to%20know%20more%20about%20flat%20';
 const COMPACT_MEDIA_ASPECT_RATIO = 16 / 9;
+const FLAT_DETAIL_CACHE_TTL_MS = 5 * 60 * 1000;
+const flatDetailCache = new Map();
+const flatDetailRequests = new Map();
 
 function formatFacing(facing) {
     return facing.charAt(0).toUpperCase() + facing.slice(1);
@@ -300,15 +307,49 @@ export default function FlatDetailPage() {
 
     useEffect(() => {
         let cancelled = false;
+        let idleHandle = null;
+        let timeoutHandle = null;
+
+        async function fetchFlatOnce() {
+            const cached = flatDetailCache.get(id);
+            if (cached && Date.now() - cached.cachedAt < FLAT_DETAIL_CACHE_TTL_MS) {
+                return cached.flat;
+            }
+
+            const existingRequest = flatDetailRequests.get(id);
+            if (existingRequest) {
+                return existingRequest;
+            }
+
+            const request = fetch(`/api/flats/${id}`, { cache: 'force-cache' })
+                .then((response) => {
+                    if (!response.ok) return null;
+                    return response.json();
+                })
+                .then((payload) => {
+                    if (payload?.flat) {
+                        flatDetailCache.set(id, {
+                            flat: payload.flat,
+                            cachedAt: Date.now(),
+                        });
+                        return payload.flat;
+                    }
+
+                    return null;
+                })
+                .finally(() => {
+                    flatDetailRequests.delete(id);
+                });
+
+            flatDetailRequests.set(id, request);
+            return request;
+        }
 
         async function loadFlat() {
             try {
-                const response = await fetch(`/api/flats/${id}`, { cache: 'no-store' });
-                if (!response.ok) return;
-
-                const payload = await response.json();
-                if (!cancelled && payload.flat) {
-                    setLiveFlat(payload.flat);
+                const nextFlat = await fetchFlatOnce();
+                if (!cancelled && nextFlat) {
+                    setLiveFlat(nextFlat);
                 }
             } catch {
                 if (!cancelled) {
@@ -317,13 +358,34 @@ export default function FlatDetailPage() {
             }
         }
 
-        setLiveFlat(getFlatById(id));
+        const staticFlat = getFlatById(id);
+        const cached = flatDetailCache.get(id);
+        setLiveFlat(cached?.flat ?? staticFlat);
         void loadFlat();
-        const intervalId = window.setInterval(loadFlat, 30000);
+
+        const refreshWhenIdle = () => {
+            const current = flatDetailCache.get(id);
+            if (!current || Date.now() - current.cachedAt >= FLAT_DETAIL_CACHE_TTL_MS) {
+                void loadFlat();
+            }
+        };
+
+        if (typeof window !== 'undefined') {
+            if (typeof window.requestIdleCallback === 'function') {
+                idleHandle = window.requestIdleCallback(refreshWhenIdle, { timeout: 5000 });
+            } else {
+                timeoutHandle = window.setTimeout(refreshWhenIdle, 2400);
+            }
+        }
 
         return () => {
             cancelled = true;
-            window.clearInterval(intervalId);
+            if (idleHandle !== null && typeof window.cancelIdleCallback === 'function') {
+                window.cancelIdleCallback(idleHandle);
+            }
+            if (timeoutHandle !== null) {
+                window.clearTimeout(timeoutHandle);
+            }
         };
     }, [id]);
 
@@ -333,6 +395,10 @@ export default function FlatDetailPage() {
     const hasVideo = !!fallbackId;
     const hasFlatSpecificVideo = hasVideo && !useVideoFallback;
     const shouldAllowGestureBack = !hasFlatSpecificVideo || videoPhase === 'loop';
+    const flatVideoAngle = ((flatViewAngleFromKey(activeViewKey) - 1) % 2) + 1;
+    const introVideoSrc = hasFlatSpecificVideo ? flatVideoSrc(fallbackId, flatVideoAngle) : WALKTHROUGH_VIDEO;
+    const loopVideoSrc = hasFlatSpecificVideo ? flatVideoSrc(fallbackId, 2) : null;
+    const reverseVideoSrc = hasFlatSpecificVideo ? flatReverseVideoSrc(fallbackId) : null;
 
     const clearReverseFallbackTimeout = useCallback(() => {
         if (!reverseFallbackTimeoutRef.current) return;
@@ -516,6 +582,35 @@ export default function FlatDetailPage() {
     }, [router]);
 
     useEffect(() => {
+        void registerAssetCacheServiceWorker();
+
+        if (!hasFlatSpecificVideo) {
+            prefetchAssetsInChunks([renderPosterSrc], {
+                chunkSize: 1,
+                concurrency: 1,
+                priority: 'low',
+                gapMs: 700,
+                idleTimeoutMs: 2400,
+            });
+            return;
+        }
+
+        prefetchAssetsInChunks([renderPosterSrc, loopVideoSrc, reverseVideoSrc], {
+            chunkSize: 1,
+            concurrency: 1,
+            priority: 'low',
+            gapMs: isTabletOrBelow ? 900 : 560,
+            idleTimeoutMs: isTabletOrBelow ? 2800 : 1800,
+        });
+    }, [
+        hasFlatSpecificVideo,
+        isTabletOrBelow,
+        loopVideoSrc,
+        renderPosterSrc,
+        reverseVideoSrc,
+    ]);
+
+    useEffect(() => {
         const isInsideInteractivePanel = (target) => {
             if (!(target instanceof Node)) return false;
 
@@ -617,10 +712,6 @@ export default function FlatDetailPage() {
     const facingLabel = formatFacing(flat.facing);
     const isAvailable = flat.status === 'available';
     const planSrc = floorPlanSrc(flat.flat);
-    const flatVideoAngle = ((flatViewAngleFromKey(activeViewKey) - 1) % 2) + 1;
-    const introVideoSrc = hasFlatSpecificVideo ? flatVideoSrc(fallbackId, flatVideoAngle) : WALKTHROUGH_VIDEO;
-    const loopVideoSrc = hasFlatSpecificVideo ? flatVideoSrc(fallbackId, 2) : null;
-    const reverseVideoSrc = hasFlatSpecificVideo ? flatReverseVideoSrc(fallbackId) : null;
     const bhkValue = Number.parseInt(flat.type, 10);
     const shouldShowDetailPanels = isTabletOrBelow
         ? true

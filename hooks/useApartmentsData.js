@@ -4,6 +4,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { flatsData } from '../lib/flats';
 
+const FLATS_CACHE_TTL_MS = 5 * 60 * 1000;
+let cachedFlatsPayload = flatsData;
+let cachedFlatsAt = 0;
+let flatsRequestPromise = null;
+
 const INITIAL_FILTERS = {
     type: [],
     facing: [],
@@ -16,27 +21,61 @@ const INITIAL_FILTERS = {
 
 export function useApartmentsData() {
     const [filters, setFilters] = useState(INITIAL_FILTERS);
-    const [allData, setAllData] = useState(flatsData);
+    const [allData, setAllData] = useState(cachedFlatsPayload);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         let cancelled = false;
+        let idleHandle = null;
+        let timeoutHandle = null;
 
-        async function loadFlats({ showLoading = false } = {}) {
+        async function fetchFlatsOnce() {
+            if (flatsRequestPromise) {
+                return flatsRequestPromise;
+            }
+
+            flatsRequestPromise = fetch('/api/flats', { cache: 'force-cache' })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error('Unable to load flats');
+                    }
+
+                    return response.json();
+                })
+                .then((payload) => {
+                    if (Array.isArray(payload.flats)) {
+                        cachedFlatsPayload = payload.flats;
+                        cachedFlatsAt = Date.now();
+                    }
+
+                    return cachedFlatsPayload;
+                })
+                .finally(() => {
+                    flatsRequestPromise = null;
+                });
+
+            return flatsRequestPromise;
+        }
+
+        async function loadFlats({ showLoading = false, force = false } = {}) {
+            const hasFreshCache = cachedFlatsAt > 0
+                && Date.now() - cachedFlatsAt < FLATS_CACHE_TTL_MS;
+
+            if (!force && hasFreshCache) {
+                setAllData(cachedFlatsPayload);
+                setError(null);
+                return;
+            }
+
             if (showLoading) {
                 setLoading(true);
             }
 
             try {
-                const response = await fetch('/api/flats', { cache: 'no-store' });
-                if (!response.ok) {
-                    throw new Error('Unable to load flats');
-                }
-
-                const payload = await response.json();
-                if (!cancelled && Array.isArray(payload.flats)) {
-                    setAllData(payload.flats);
+                const flats = await fetchFlatsOnce();
+                if (!cancelled && Array.isArray(flats)) {
+                    setAllData(flats);
                     setError(null);
                 }
             } catch (nextError) {
@@ -50,16 +89,31 @@ export function useApartmentsData() {
             }
         }
 
-        void loadFlats({ showLoading: allData.length === 0 });
-        const intervalId = window.setInterval(() => {
-            void loadFlats();
-        }, 30000);
+        setAllData(cachedFlatsPayload);
+        void loadFlats({ showLoading: cachedFlatsPayload.length === 0 });
+
+        const refreshWhenIdle = () => {
+            void loadFlats({ force: true });
+        };
+
+        if (typeof window !== 'undefined') {
+            if (typeof window.requestIdleCallback === 'function') {
+                idleHandle = window.requestIdleCallback(refreshWhenIdle, { timeout: 5000 });
+            } else {
+                timeoutHandle = window.setTimeout(refreshWhenIdle, 2400);
+            }
+        }
 
         return () => {
             cancelled = true;
-            window.clearInterval(intervalId);
+            if (idleHandle !== null && typeof window.cancelIdleCallback === 'function') {
+                window.cancelIdleCallback(idleHandle);
+            }
+            if (timeoutHandle !== null) {
+                window.clearTimeout(timeoutHandle);
+            }
         };
-    }, [allData.length]);
+    }, []);
 
     const filteredData = useMemo(() => {
         return allData.filter((flat) => {

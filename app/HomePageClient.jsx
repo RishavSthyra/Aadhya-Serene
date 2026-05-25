@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import usePerformanceProfile from "@/hooks/usePerformanceProfile";
 import { warmApartment360Frames } from "@/lib/apartment360Warmup";
+import LuxuryPreloader from "@/components/Home/LuxuryPreloader";
 import {
   markHomeRefreshLoaderSeen,
   setHomePreloaderComplete,
+  shouldShowHomeRefreshLoader,
 } from "@/lib/home-loader";
 import styles from "./home.module.css";
 
@@ -82,6 +84,13 @@ export default function HomePageClient() {
   const router = useRouter();
   const isNavigatingRef = useRef(false);
   const [heroAnimationActive, setHeroAnimationActive] = useState(true);
+  const [showPreloader, setShowPreloader] = useState(() => {
+    if (typeof window === "undefined") {
+      return true;
+    }
+
+    return shouldShowHomeRefreshLoader();
+  });
   const { isTabletOrBelow, preferLightExperience } = usePerformanceProfile();
   const shouldUseLightMotion = preferLightExperience;
 
@@ -101,11 +110,15 @@ export default function HomePageClient() {
       return undefined;
     }
 
+    if (showPreloader) {
+      setHomePreloaderComplete(false);
+      return undefined;
+    }
+
     markHomeRefreshLoaderSeen();
     setHomePreloaderComplete(true);
-
     return undefined;
-  }, []);
+  }, [showPreloader]);
 
   useEffect(() => {
     if (shouldUseLightMotion) {
@@ -206,6 +219,15 @@ export default function HomePageClient() {
 
   return (
     <main className={styles.heroSection}>
+      {showPreloader ? (
+        <LuxuryPreloader
+          onRevealStart={() => {
+            markHomeRefreshLoaderSeen();
+            setHomePreloaderComplete(true);
+          }}
+          onCycleComplete={() => setShowPreloader(false)}
+        />
+      ) : null}
       <section id="home-inner" className={styles.heroInner}>
         <div className={styles.heroContent}>
           <motion.div

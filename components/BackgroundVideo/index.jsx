@@ -6,6 +6,12 @@ import {
     HOME_PRELOADER_COMPLETE_EVENT,
     isHomePreloaderComplete,
 } from '@/lib/home-loader';
+import {
+    cacheAssetOnce,
+    isAssetCachePending,
+    prefetchAssetsInChunks,
+    registerAssetCacheServiceWorker,
+} from '@/lib/client-asset-cache';
 import usePerformanceProfile from '@/hooks/usePerformanceProfile';
 import styles from './background-video.module.css';
 
@@ -161,9 +167,6 @@ const PRELOAD_LAYOUTS = {
     about: ['apartments', 'home'],
     apartments: ['about'],
 };
-const videoWarmCache = new Map();
-const posterWarmCache = new Set();
-const MAX_WARMED_VIDEOS = 8;
 
 function buildResolutionVariantUrl(source, quality) {
     if (typeof source !== 'string' || !quality) {
@@ -255,51 +258,6 @@ function addBufferReadinessListeners(video, callback) {
     };
 }
 
-function trimVideoWarmCache() {
-    while (videoWarmCache.size > MAX_WARMED_VIDEOS) {
-        const [oldestSource, video] = videoWarmCache.entries().next().value ?? [];
-        if (!oldestSource) return;
-
-        videoWarmCache.delete(oldestSource);
-        video?.pause();
-        video?.removeAttribute('src');
-        video?.load();
-    }
-}
-
-function warmPoster(source) {
-    if (!source || posterWarmCache.has(source) || typeof window === 'undefined') {
-        return;
-    }
-
-    posterWarmCache.add(source);
-    const image = new window.Image();
-    image.decoding = 'async';
-    image.fetchPriority = 'low';
-    image.src = source;
-}
-
-function warmVideoSource(source, preload = 'auto') {
-    if (!source || typeof document === 'undefined' || videoWarmCache.has(source)) {
-        return;
-    }
-
-    const video = document.createElement('video');
-    video.muted = true;
-    video.defaultMuted = true;
-    video.playsInline = true;
-    video.preload = preload;
-    video.setAttribute('muted', '');
-    video.setAttribute('playsinline', '');
-    video.setAttribute('webkit-playsinline', 'true');
-    video.setAttribute('fetchpriority', 'low');
-    video.src = source;
-    video.load();
-
-    videoWarmCache.set(source, video);
-    trimVideoWarmCache();
-}
-
 export default function BackgroundVideo({ layout = 'home', playing = true, replayKey = 0 }) {
     const {
         isMobile,
@@ -335,6 +293,10 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const transitionReadyStateThreshold = shouldConserveData ? 1 : 2;
     const loopReadyEvent = shouldConserveData ? 'loadedmetadata' : 'loadeddata';
     const loopReadyStateThreshold = shouldConserveData ? 1 : 2;
+
+    useEffect(() => {
+        void registerAssetCacheServiceWorker();
+    }, []);
 
     useEffect(() => {
         if (!shouldHideBackground) return;
@@ -448,9 +410,17 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 layoutConfig.loopAssetId,
             );
 
-            warmPoster(BACKGROUND_POSTERS[layoutToWarm]);
-            warmVideoSource(warmTransitionCandidates[0], 'auto');
-            warmVideoSource(warmLoopCandidates[0], veryHighCapabilityDesktop ? 'auto' : 'metadata');
+            prefetchAssetsInChunks([
+                BACKGROUND_POSTERS[layoutToWarm],
+                warmTransitionCandidates[0],
+                warmLoopCandidates[0],
+            ], {
+                chunkSize: 1,
+                concurrency: 1,
+                priority: 'low',
+                gapMs: veryHighCapabilityDesktop ? 420 : 760,
+                idleTimeoutMs: 2400,
+            });
         };
 
         layoutsToWarm.forEach((layoutToWarm, index) => {
@@ -573,6 +543,17 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                     }
                 });
 
+            return true;
+        }
+
+        if (isAssetCachePending(source)) {
+            cacheAssetOnce(source, {
+                priority: target === 'transition' ? 'high' : 'low',
+            }).finally(() => {
+                if (loadIdRef.current !== loadId) return;
+                video.src = source;
+                video.load();
+            });
             return true;
         }
 
