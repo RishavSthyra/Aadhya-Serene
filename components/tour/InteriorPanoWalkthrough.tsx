@@ -229,8 +229,8 @@ function InteriorMinimap({
               onClick={() => onNavigate(node.id)}
               className={`absolute rounded-full border transition duration-200 ${
                 node.isActive
-                  ? "h-2.5 w-2.5 border-[#d9f7ff] bg-[#6ee7ff] shadow-[0_0_0_3px_rgba(77,234,255,0.18),0_0_14px_rgba(77,234,255,0.6)]"
-                  : "h-1.5 w-1.5 border-[#baf4ff] bg-[#32dfff] shadow-[0_0_8px_rgba(50,223,255,0.7)] hover:scale-110 hover:border-[#e8fcff] hover:bg-[#7cebff]"
+                  ? "h-3.5 w-3.5 border-[#fff8dc] bg-[#ffd700] shadow-[0_0_0_3px_rgba(255,215,0,0.3),0_0_12px_rgba(255,215,0,0.7)]"
+                  : "h-2.5 w-2.5 border-[#ffe066] bg-[#ffb300] shadow-[0_0_8px_rgba(255,179,0,0.6)] hover:scale-125 hover:border-[#ffe680] hover:bg-[#ffc107]"
               } ${disabled ? "cursor-not-allowed opacity-70" : ""}`}
               style={{
                 left: `${node.left}%`,
