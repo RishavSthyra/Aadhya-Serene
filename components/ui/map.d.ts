@@ -45,4 +45,13 @@ export const MarkerLabel: React.ComponentType<Record<string, unknown>>;
 export const MapPopup: React.ComponentType<Record<string, unknown>>;
 export const MapControls: React.ComponentType<Record<string, unknown>>;
 export const MapRoute: React.ComponentType<Record<string, unknown>>;
-export const MapClusterLayer: React.ComponentType<Record<string, unknown>>;
+export function MapClusterLayer(props: {
+  data: string | object;
+  clusterMaxZoom?: number;
+  clusterRadius?: number;
+  clusterColors?: string[];
+  clusterThresholds?: number[];
+  pointColor?: string;
+  onPointClick?: (feature: { properties: Record<string, unknown> }, coordinates: [number, number]) => void;
+  onClusterClick?: (clusterId: number, coordinates: [number, number], pointCount: number) => void;
+}): React.JSX.Element;

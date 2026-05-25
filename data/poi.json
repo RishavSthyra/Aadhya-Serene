@@ -24,28 +24,6 @@
     "image": "/assets/embassyman.jpg"
   },
   {
-    "id": 103,
-    "name": "Cessna Business Park",
-    "category": "IT Company",
-    "lng": 77.69328282549846,
-    "lat": 12.936783327535188,
-    "distanceLabel": "13.5 km",
-    "timeLabel": "25 min",
-    "rating": 4.5,
-    "image": "/cessna.webp"
-  },
-  {
-    "id": 104,
-    "name": "Infosys",
-    "category": "IT Company",
-    "lng": 77.66386888815293,
-    "lat": 12.849812954159967,
-    "distanceLabel": "13.2 km",
-    "timeLabel": "30 min",
-    "rating": 4.4,
-    "image": "/infosys.webp"
-  },
-  {
     "id": 105,
     "name": "Kristu Jayanti (Deemed to be University)",
     "category": "school",
@@ -67,17 +45,7 @@
     "rating": 4.8,
     "image": "/assets/klay.jpg"
   },
-  {
-    "id": 107,
-    "name": "St. Joseph English High School",
-    "category": "school",
-    "lng": 77.77694822265036,
-    "lat": 12.845398656039851,
-    "distanceLabel": "2.6 km",
-    "timeLabel": "8 min",
-    "rating": 4.4,
-    "image": "/assets/St. Joseph English High School.jpg"
-  },
+
   {
     "id": 108,
     "name": "Atria University",
@@ -168,18 +136,6 @@
     "image": "/assets/harshodaya.jpg"
   },
   {
-    "id": 116,
-    "name": "Kidztopiaa",
-    "category": "mall",
-    "lng": 77.74658305174466,
-    "lat": 12.892135753124949,
-    "distanceLabel": "5.7 km",
-    "timeLabel": "12 min",
-    "rating": 4.5,
-    "image": "/kidztopia.webp"
-  },
-
-  {
     "id": 118,
     "name": "K Narayanapura Cross",
     "category": "bus_stop",
@@ -189,28 +145,6 @@
     "timeLabel": "2 min",
     "rating": 4.1,
     "image": "/assets/ncross.jpg"
-  },
-  {
-    "id": 119,
-    "name": "Bus Station, Sompura Gate",
-    "category": "bus_stop",
-    "lng": 77.77189302040267,
-    "lat": 12.86242513817878,
-    "distanceLabel": "2.3 km",
-    "timeLabel": "4 min",
-    "rating": 5,
-    "image": "/sobbs.webp"
-  },
-  {
-    "id": 120,
-    "name": "Karmelaram Railway Station",
-    "category": "bus_stop",
-    "lng": 77.70602386412557,
-    "lat": 12.907550285982408,
-    "distanceLabel": "9.3 km",
-    "timeLabel": "18 min",
-    "rating": 3.6,
-    "image": "/karmelaram.webp"
   },
     {
     "id": 121,
@@ -266,5 +200,27 @@
     "timeLabel": "6 min",
     "rating": 4.3,
     "image": "/assets/manrespark.jpg"
+  },
+    {
+    "id": 126 ,
+    "name": "Kempegowda International Airport",
+    "category": "bus_stop",
+    "lng":  13.204951917394272, 
+    "lat": 77.71069230205899,
+    "distanceLabel": "25 km",
+    "timeLabel": "30 min",
+    "rating": 4.6,
+    "image": "/assets/airport.jpg"
+  },
+    {
+    "id": 127,
+    "name": "Cognizant Technology Solutions",
+    "category": "IT Company",
+    "lng":  13.05020875825585, 
+    "lat": 77.62273254717196,
+    "distanceLabel": "3.7 km",
+    "timeLabel": "13 min",
+    "rating": 4.4,
+    "image": "/assets/cognizant.jpg"
   }
 ]

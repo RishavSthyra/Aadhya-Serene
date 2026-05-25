@@ -11,6 +11,8 @@ import { Map as MapView,
   MapControls,
   useMap,
   MapRoute,
+  MapClusterLayer,
+  MapPopup,
 } from "../ui/map";
 import {
   BriefcaseBusiness,
@@ -95,7 +97,9 @@ const DEFAULT_SELECTED_CATEGORIES: PoiCategory[] = [
   "landmark",
   "IT Company",
 ];
+
 const CATEGORY_ORDER = DEFAULT_SELECTED_CATEGORIES;
+const CLUSTER_ACTIVATION_ZOOM = 13.5;
 const ROUTE_CACHE_KEY = "veranza-poi-routes-v1";
 const ROUTE_REQUEST_TIMEOUT = 12000;
 const ROUTE_ANIMATION_DURATION = 2600;
@@ -783,8 +787,14 @@ export function CustomStyleExample() {
   const [selectedCategories, setSelectedCategories] = useState<PoiCategory[]>(
     DEFAULT_SELECTED_CATEGORIES,
   );
-
+  const [selectedClusterPoint, setSelectedClusterPoint] = useState<{
+    coordinates: [number, number];
+    properties: Poi;
+  } | null>(null);
+  const [mapZoom, setMapZoom] = useState(15);
   const [search, setSearch] = useState("");
+
+  const isClusteringActive = mapZoom < CLUSTER_ACTIVATION_ZOOM;
   const deferredSearch = useDeferredValue(search);
   const selectedStyle = styles[style];
   const is3D = style === "openstreetmap3d";
@@ -855,6 +865,29 @@ export function CustomStyleExample() {
   }, [deferredSearch, selectedCategories]);
 
   const visiblePois = filteredPois;
+  const visiblePoisGeoJSON = useMemo(
+    () => ({
+      type: "FeatureCollection" as const,
+      features: visiblePois.map((poi) => ({
+        type: "Feature" as const,
+        properties: {
+          id: poi.id,
+          name: poi.name,
+          category: poi.category,
+          distanceLabel: poi.distanceLabel,
+          timeLabel: poi.timeLabel,
+          rating: poi.rating,
+          featured: poi.featured,
+          image: poi.image,
+        },
+        geometry: {
+          type: "Point" as const,
+          coordinates: [poi.lng, poi.lat],
+        },
+      })),
+    }),
+    [visiblePois],
+  );
   const routeLookup = useMemo(
     () => new Map(routes.map((route) => [route.id, route] as const)),
     [routes],
@@ -1045,6 +1078,7 @@ export function CustomStyleExample() {
             ? { light: selectedStyle, dark: selectedStyle }
             : undefined
         }
+        onViewportChange={(vp) => setMapZoom(vp.zoom)}
       >
         <MapControls
           position="bottom-right"
@@ -1239,7 +1273,23 @@ export function CustomStyleExample() {
           </MapMarker>
         ) : null}
 
-        {visiblePois.map((poi) => (
+        {isClusteringActive && (
+          <MapClusterLayer
+            data={visiblePoisGeoJSON}
+            clusterRadius={64}
+            clusterMaxZoom={14}
+            clusterColors={["#1d8cf8", "#6d5dfc", "#e23670"]}
+            pointColor="#1d8cf8"
+            onPointClick={(feature, coordinates) => {
+              setSelectedClusterPoint({
+                coordinates,
+                properties: feature.properties as unknown as Poi,
+              });
+            }}
+          />
+        )}
+
+        {!isClusteringActive && visiblePois.map((poi) => (
           <PoiMarker
             key={poi.id}
             poi={poi}
@@ -1248,6 +1298,48 @@ export function CustomStyleExample() {
             onViewRoute={handleViewRoute}
           />
         ))}
+
+        {selectedClusterPoint && (
+          <MapPopup
+            key={`cluster-popup-${selectedClusterPoint.coordinates[0]}-${selectedClusterPoint.coordinates[1]}`}
+            longitude={selectedClusterPoint.coordinates[0]}
+            latitude={selectedClusterPoint.coordinates[1]}
+            onClose={() => setSelectedClusterPoint(null)}
+            closeOnClick={false}
+            focusAfterOpen={false}
+            closeButton
+            className="w-70"
+          >
+            <div className="text-[13px]">
+              <p className="text-muted-foreground">
+                Category:{" "}
+                <span className="text-foreground font-medium">
+                  {categoryMeta[selectedClusterPoint.properties.category]?.label}
+                </span>
+              </p>
+              <p className="text-muted-foreground">
+                Name:{" "}
+                <span className="text-foreground font-medium">
+                  {selectedClusterPoint.properties.name}
+                </span>
+              </p>
+              <p className="text-muted-foreground">
+                Distance:{" "}
+                <span className="text-foreground font-medium">
+                  {selectedClusterPoint.properties.distanceLabel}
+                </span>
+              </p>
+              {selectedClusterPoint.properties.rating && (
+                <p className="text-muted-foreground">
+                  Rating:{" "}
+                  <span className="text-foreground font-medium">
+                    {selectedClusterPoint.properties.rating} ★
+                  </span>
+                </p>
+              )}
+            </div>
+          </MapPopup>
+        )}
       </MapView>
 
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_30%),linear-gradient(to_bottom,rgba(255,255,255,0.02),rgba(255,255,255,0.06))]" />
