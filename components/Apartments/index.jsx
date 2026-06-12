@@ -23,6 +23,28 @@ import useResponsiveViewport from "../../hooks/useResponsiveViewport";
 
 const DESKTOP_PANEL_WIDTH = 420;
 const COMPACT_VIEWER_ASPECT_RATIO = 16 / 9;
+const SIDEBAR_SHELL_CLASS = "relative overflow-hidden rounded-[22px] border border-[#eadff3] bg-[linear-gradient(145deg,rgba(255,252,248,0.76)_0%,rgba(255,251,247,0.72)_36%,rgba(250,244,255,0.68)_100%)] shadow-[-14px_0_58px_rgba(190,170,220,0.14),inset_0_1px_0_rgba(255,255,255,0.84)] backdrop-blur-[30px]";
+const MOBILE_SIDEBAR_SHELL_CLASS = "relative overflow-hidden rounded-[20px] border border-[#eadff3] bg-[linear-gradient(145deg,rgba(255,252,248,0.8)_0%,rgba(255,251,247,0.76)_42%,rgba(250,244,255,0.72)_100%)] shadow-[0_14px_34px_rgba(190,170,220,0.12),inset_0_1px_0_rgba(255,255,255,0.84)] md:backdrop-blur-[18px]";
+
+function SidebarLeaves({ compact = false }) {
+  return (
+    <>
+      <img
+        src="/leaves-illustrations-1.png"
+        alt=""
+        aria-hidden="true"
+        className={`pointer-events-none absolute select-none object-contain ${compact ? "-left-12 top-[4.5rem] w-[236px] opacity-[0.8] [transform:rotateY(180deg)]" : "-left-20 top-14 w-[312px] opacity-[1] [transform:rotateY(180deg)]"}`}
+      />
+      <img
+        src="/leaves-illustrations-2.png"
+        alt=""
+        aria-hidden="true"
+        className={`pointer-events-none absolute select-none object-contain ${compact ? "-right-12 bottom-0 w-[256px] opacity-[0.76]" : "-right-[4.5rem] -bottom-2 w-[336px] opacity-[0.92]"}`}
+      />
+    </>
+  );
+}
+
 const Apartment360Viewer = dynamic(() => import("../Apartment360Viewer"), {
   ssr: false,
   loading: () => null,
@@ -316,11 +338,13 @@ export default function Apartments() {
           }
         `}</style>
 
-        <section className="relative shrink-0 overflow-hidden rounded-[22px] border border-[#211827]/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.96)_0%,rgba(252,249,255,0.95)_56%,rgba(255,255,255,0.92)_100%)] shadow-[-14px_0_58px_rgba(68,38,88,0.12),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-[28px]">
-          <div className="pointer-events-none absolute -right-16 -top-20 h-52 w-56 rotate-12 bg-[conic-gradient(from_220deg_at_50%_50%,rgba(177,78,255,0),rgba(177,78,255,0.13),rgba(236,86,171,0.11),rgba(177,78,255,0))] blur-2xl" />
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(255,255,255,0.08)_28%,rgba(255,255,255,0.02)_100%)]" />
+        <section className={`${SIDEBAR_SHELL_CLASS} shrink-0`}>
+          <div className="pointer-events-none absolute -right-10 -top-16 h-44 w-48 rounded-full bg-[radial-gradient(circle,rgba(226,215,248,0.52)_0%,rgba(226,215,248,0)_72%)] blur-3xl" />
+          <div className="pointer-events-none absolute -left-10 bottom-8 h-36 w-40 rounded-full bg-[radial-gradient(circle,rgba(245,225,233,0.46)_0%,rgba(245,225,233,0)_72%)] blur-3xl" />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.46),rgba(255,255,255,0.14)_32%,rgba(255,255,255,0.04)_100%)]" />
+          <SidebarLeaves />
           <div
-            className="relative overflow-y-auto scrollbar-thin"
+            className="relative z-[1] overflow-y-auto scrollbar-thin"
             style={{
               ...sharedScrollStyles,
               maxHeight: isShortDesktop ? "40dvh" : "45dvh",
@@ -339,24 +363,25 @@ export default function Apartments() {
           </div>
         </section>
 
-        <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-[#211827]/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.94)_0%,rgba(252,249,255,0.92)_58%,rgba(255,255,255,0.9)_100%)] shadow-[-14px_0_58px_rgba(68,38,88,0.12),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-[28px]">
-          <div className="pointer-events-none absolute -right-20 -top-24 h-56 w-60 rotate-12 bg-[conic-gradient(from_220deg_at_50%_50%,rgba(177,78,255,0),rgba(177,78,255,0.12),rgba(236,86,171,0.1),rgba(177,78,255,0))] blur-2xl" />
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.26),rgba(255,255,255,0.06)_28%,rgba(255,255,255,0.02)_100%)]" />
-          <div className="relative flex items-start justify-between gap-3 border-b border-[#211827]/8 px-4 pb-3 pt-3.5">
+        <section className={`${SIDEBAR_SHELL_CLASS} flex min-h-0 flex-1 flex-col`}>
+          <div className="pointer-events-none absolute -right-8 top-8 h-36 w-40 rounded-full bg-[radial-gradient(circle,rgba(226,215,248,0.38)_0%,rgba(226,215,248,0)_70%)] blur-3xl" />
+          <div className="pointer-events-none absolute -left-12 bottom-4 h-40 w-44 rounded-full bg-[radial-gradient(circle,rgba(245,225,233,0.34)_0%,rgba(245,225,233,0)_72%)] blur-3xl" />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.4),rgba(255,255,255,0.08)_32%,rgba(255,255,255,0.03)_100%)]" />
+          <div className="relative z-[1] flex items-start justify-between gap-3 border-b border-[#efe4f4] px-4 pb-3 pt-3.5">
             <div className="min-w-0">
-              <h3 className="text-[1.58rem] font-semibold leading-none tracking-[-0.02em] text-[#151518] 2xl:text-[1.72rem]">
+              <h3 className="text-[1.58rem] font-semibold leading-none tracking-[-0.02em] text-[#2e2438] 2xl:text-[1.72rem]">
                 Matching Flats
               </h3>
-              <p className="mt-1.5 text-[11.5px] leading-4 text-[#1c1c20]/54 2xl:text-[12px]">
+              <p className="mt-1.5 text-[11.5px] leading-4 text-[#8c8197] 2xl:text-[12px]">
                 View apartments matching your current filters.
               </p>
             </div>
-            <span className="shrink-0 rounded-full border border-[#211827]/10 bg-[#f4f0f7] px-2.5 py-1 text-[10.5px] font-semibold text-[#151518]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+            <span className="shrink-0 rounded-full border border-[#eee4f7] bg-[linear-gradient(180deg,#fffdfc_0%,#faf3ff_100%)] px-2.5 py-1 text-[10.5px] font-semibold text-[#8e7fa5] shadow-[inset_0_1px_0_rgba(255,255,255,0.96)]">
               {data.length} units
             </span>
           </div>
           <div
-            className="relative min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-2.5 scrollbar-thin"
+            className="relative z-[1] min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-2.5 scrollbar-thin"
             style={sharedScrollStyles}
           >
             {renderListContent}
@@ -394,17 +419,18 @@ export default function Apartments() {
           transition: "transform 300ms cubic-bezier(0.22,1,0.36,1)",
         }}
       >
-        <aside className="relative flex h-full flex-col overflow-hidden rounded-t-[22px] border border-b-0 border-x-0 border-[#211827]/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.98)_0%,rgba(252,249,255,0.96)_58%,rgba(255,255,255,0.94)_100%)] shadow-[0_-16px_42px_rgba(68,38,88,0.1),inset_0_1px_0_rgba(255,255,255,0.96)] saturate-[120%] md:backdrop-blur-[18px]">
-          <div className="pointer-events-none absolute -right-20 -top-24 hidden h-64 w-72 rotate-12 bg-[conic-gradient(from_220deg_at_50%_50%,rgba(177,78,255,0),rgba(177,78,255,0.13),rgba(236,86,171,0.11),rgba(177,78,255,0))] blur-2xl md:block" />
-          <div className="relative flex items-center justify-between gap-3 border-b border-[#211827]/8 px-4 pb-3 pt-3">
+        <aside className="relative flex h-full flex-col overflow-hidden rounded-t-[22px] border border-b-0 border-x-0 border-[#eadff3] bg-[linear-gradient(145deg,rgba(255,252,248,0.98)_0%,rgba(255,251,247,0.96)_42%,rgba(250,244,255,0.94)_100%)] shadow-[0_-16px_42px_rgba(190,170,220,0.16),inset_0_1px_0_rgba(255,255,255,0.98)] saturate-[120%] md:backdrop-blur-[18px]">
+          <div className="pointer-events-none absolute -right-14 -top-12 h-44 w-48 rounded-full bg-[radial-gradient(circle,rgba(226,215,248,0.42)_0%,rgba(226,215,248,0)_72%)] blur-3xl" />
+          <div className="pointer-events-none absolute -left-10 bottom-16 h-36 w-40 rounded-full bg-[radial-gradient(circle,rgba(245,225,233,0.3)_0%,rgba(245,225,233,0)_72%)] blur-3xl" />
+          <div className="relative z-[1] flex items-center justify-between gap-3 border-b border-[#efe4f4] px-4 pb-3 pt-3">
             <div className="absolute inset-x-0 top-1 flex justify-center">
-              <div className="h-1.5 w-14 rounded-full bg-[#211827]/12" />
+              <div className="h-1.5 w-14 rounded-full bg-[#d8cde8]" />
             </div>
             <div className="min-w-0">
-              <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-[#1c1c20]/62">
+              <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-[#9c8aa2]">
                 Residence Atelier
               </p>
-              <p className="mt-1 text-[11px] text-[#1c1c20]/54 md:text-[12px]">
+              <p className="mt-1 text-[11px] text-[#8c8197] md:text-[12px]">
                 {data.length} matches from {allData?.length ?? data.length} homes
               </p>
             </div>
@@ -413,14 +439,14 @@ export default function Apartments() {
               <button
                 type="button"
                 onClick={resetFilters}
-                className="rounded-full border border-[#211827]/10 bg-white px-3 py-2 text-[14px] font-medium uppercase tracking-[0.08em] text-[#1c1c20]/68 shadow-[0_14px_32px_rgba(88,47,117,0.08),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-[18px] transition hover:border-[#211827]/16 hover:text-[#151518]"
+                className="rounded-full border border-[#eee4f7] bg-[linear-gradient(180deg,#fffefd_0%,#faf4ff_100%)] px-3 py-2 text-[14px] font-medium uppercase tracking-[0.08em] text-[#736781] shadow-[0_14px_32px_rgba(194,175,221,0.14),inset_0_1px_0_rgba(255,255,255,0.98)] backdrop-blur-[18px] transition hover:border-[#ddcfee] hover:text-[#564b64]"
               >
                 Reset
               </button>
               <button
                 type="button"
                 onClick={() => setIsPanelOpen((current) => !current)}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#211827]/10 bg-white text-[#1c1c20]/68 shadow-[0_14px_32px_rgba(88,47,117,0.08),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-[18px] transition hover:border-[#211827]/16 hover:text-[#151518]"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#eee4f7] bg-[linear-gradient(180deg,#fffefd_0%,#faf4ff_100%)] text-[#7c7190] shadow-[0_14px_32px_rgba(194,175,221,0.14),inset_0_1px_0_rgba(255,255,255,0.98)] backdrop-blur-[18px] transition hover:border-[#ddcfee] hover:text-[#564b64]"
                 aria-label={isPanelOpen ? "Collapse apartments panel" : "Expand apartments panel"}
               >
                 {isPanelOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
@@ -436,9 +462,10 @@ export default function Apartments() {
             }}
           >
             <div className="space-y-3">
-              <section className="relative overflow-hidden rounded-[20px] border border-[#211827]/8 bg-white/72 shadow-[0_14px_34px_rgba(88,47,117,0.06),inset_0_1px_0_rgba(255,255,255,0.86)] md:backdrop-blur-[18px]">
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(255,255,255,0.04)_100%)]" />
-                <div className="relative">
+              <section className={MOBILE_SIDEBAR_SHELL_CLASS}>
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.42),rgba(255,255,255,0.08)_100%)]" />
+                <SidebarLeaves compact />
+                <div className="relative z-[1]">
                   <Filters
                     filters={filters}
                     onToggle={toggleFilter}
@@ -454,24 +481,24 @@ export default function Apartments() {
                 </div>
               </section>
 
-              <section className="relative overflow-hidden rounded-[20px] border border-[#211827]/8 bg-white/72 shadow-[0_14px_34px_rgba(88,47,117,0.06),inset_0_1px_0_rgba(255,255,255,0.86)] md:backdrop-blur-[18px]">
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(255,255,255,0.04)_100%)]" />
-                <div className="relative border-b border-[#211827]/8 px-4 pb-3 pt-3.5">
+              <section className={MOBILE_SIDEBAR_SHELL_CLASS}>
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.38),rgba(255,255,255,0.08)_100%)]" />
+                <div className="relative z-[1] border-b border-[#efe4f4] px-4 pb-3 pt-3.5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-[20px] font-semibold leading-none tracking-[-0.02em] text-[#151518]">
+                      <h3 className="text-[20px] font-semibold leading-none tracking-[-0.02em] text-[#2e2438]">
                         Matching Flats
                       </h3>
-                      <p className="mt-1 text-[11px] leading-4 text-[#1c1c20]/54">
+                      <p className="mt-1 text-[11px] leading-4 text-[#8c8197]">
                         View apartments matching your filters.
                       </p>
                     </div>
-                    <span className="shrink-0 rounded-full border border-[#211827]/10 bg-[#f4f0f7] px-2.5 py-1 text-[10px] font-semibold text-[#151518]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                    <span className="shrink-0 rounded-full border border-[#eee4f7] bg-[linear-gradient(180deg,#fffdfc_0%,#faf3ff_100%)] px-2.5 py-1 text-[10px] font-semibold text-[#8e7fa5] shadow-[inset_0_1px_0_rgba(255,255,255,0.96)]">
                       {data.length} units
                     </span>
                   </div>
                 </div>
-                <div className="relative px-3 pb-3 pt-2">
+                <div className="relative z-[1] px-3 pb-3 pt-2">
                   {renderListContent}
                 </div>
               </section>

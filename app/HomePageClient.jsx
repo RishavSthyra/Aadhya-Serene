@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { Montserrat } from "next/font/google";
 import {
   ArrowRight,
   Building2,
@@ -18,6 +19,12 @@ import {
   shouldShowHomeRefreshLoader,
 } from "@/lib/home-loader";
 import styles from "./home.module.css";
+
+const statsFont = Montserrat({
+  subsets: ["latin"],
+  weight: ["200", "300", "400"],
+  display: "swap",
+});
 
 const HERO_TITLE_LINES = ["The art of", "thoughtful living"];
 const HERO_STATS = [
@@ -305,8 +312,8 @@ export default function HomePageClient() {
                   <Icon className={styles.heroStatIcon} aria-hidden="true" />
                 </span>
                 <div className={styles.heroStatText}>
-                  <span className={styles.heroStatValue}>{value}</span>
-                  <span className={styles.heroStatLabel}>{label}</span>
+                  <span className={`${styles.heroStatValue} ${statsFont.className}`}>{value}</span>
+                  <span className={`${styles.heroStatLabel} ${statsFont.className}`}>{label}</span>
                 </div>
               </div>
             ))}

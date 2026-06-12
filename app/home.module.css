@@ -229,17 +229,18 @@
 
 .heroStatValue {
     color: #f8f3ee;
-    font-family: var(--font-hero), Georgia, "Times New Roman", serif;
     font-size: clamp(2rem, 2.7vw, 2.5rem);
+    font-weight: 300;
     line-height: 0.94;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
 }
 
 .heroStatLabel {
     color: rgba(240, 242, 245, 0.72);
     font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.16em;
+    font-weight: 300;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
 }
 

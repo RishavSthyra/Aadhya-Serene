@@ -178,7 +178,7 @@ export default function Nav() {
     <>
       {shouldAutoHideNav ? (
         <div
-          className={`fixed left-1/2 top-0 z-[490] hidden h-[88px] w-[min(100%,1560px)] -translate-x-1/2 xl:block ${
+          className={`fixed inset-x-0 top-0 z-[490] hidden h-[88px] xl:block ${
             isNavVisible ? "pointer-events-none" : "pointer-events-auto"
           }`}
           onMouseEnter={showNav}
@@ -187,20 +187,18 @@ export default function Nav() {
       ) : null}
 
       <motion.header
-        className={`fixed left-1/2 top-0 z-[500] hidden w-[min(100%,1560px)] will-change-transform xl:block ${
+        className={`fixed inset-x-0 top-0 z-[500] hidden will-change-transform xl:block ${
           shouldAutoHideNav && !isNavVisible ? "pointer-events-none" : "pointer-events-auto"
         }`}
         initial={false}
         animate={
           shouldAutoHideNav && !isNavVisible
             ? {
-                x: "-50%",
                 y: "-112%",
                 opacity: 0,
                 filter: shouldReduceMotion ? "blur(0px)" : "blur(1px)",
               }
             : {
-                x: "-50%",
                 y: "0%",
                 opacity: 1,
                 filter: "blur(0px)",
@@ -213,12 +211,12 @@ export default function Nav() {
         onMouseEnter={showNav}
         onMouseLeave={scheduleHideNav}
       >
-        <div className="relative w-full px-4 pb-2 pt-4 xl:px-6 xl:pb-3 xl:pt-5">
-          <div className="relative px-2 py-2 text-white md:px-3 xl:px-4">
-            <div className="relative z-[1] flex min-h-[88px] items-center justify-between gap-4">
+        <div className="relative w-full px-6 pb-2 pt-4 xl:px-8 xl:pb-3 xl:pt-5 2xl:px-10">
+          <div className="relative py-2 text-white">
+            <div className="relative z-[1] flex min-h-[88px] items-center justify-between gap-6">
               <Link
                 href="/"
-                className="flex min-w-[160px] items-center justify-start text-left text-white no-underline"
+                className="relative z-[2] flex items-center justify-start text-left text-white no-underline"
               >
                 <AadhyaLogo
                   aria-label="Aadhya Serene"
@@ -226,7 +224,7 @@ export default function Nav() {
                 />
               </Link>
 
-              <nav className="hidden items-center gap-5 lg:flex xl:gap-7">
+              <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-7 lg:flex xl:gap-9 2xl:gap-10">
                 {desktopNavLinks.map(({ href, label }) => {
                   const active = pathname === href;
 
@@ -249,7 +247,7 @@ export default function Nav() {
                 })}
               </nav>
 
-              <div className="hidden min-w-[160px] items-center justify-end gap-2 md:flex">
+              <div className="relative z-[2] ml-auto hidden items-center justify-end gap-2 md:flex">
                 <Link
                   href={BROCHURE_URL}
                   target="_blank"
