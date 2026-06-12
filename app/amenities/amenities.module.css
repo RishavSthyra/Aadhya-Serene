@@ -1,463 +1,474 @@
-/* === Container === */
 .container {
     position: fixed;
-    inset: 40px 0 0 0;
-    display: flex;
+    inset: 0;
     overflow: hidden;
     pointer-events: none;
 }
 
-/* === Reveal / Close Controls === */
-.sidebarRevealBtn {
-    display: flex;
-    position: fixed;
-    top: 50%;
-    left: 0;
-    transform: translateY(-50%);
-    z-index: 560;
-    width: 34px;
-    height: 54px;
-    border-radius: 0 10px 10px 0;
-    background: linear-gradient(180deg, rgba(17, 22, 31, 0.9) 0%, rgba(9, 13, 21, 0.82) 100%);
-    backdrop-filter: blur(20px) saturate(150%);
-    -webkit-backdrop-filter: blur(20px) saturate(150%);
-    border: 1px solid rgba(187, 208, 242, 0.16);
-    border-left: none;
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    transition: background 0.25s, border-color 0.25s, width 0.25s, box-shadow 0.25s;
+.sceneOverlay {
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    pointer-events: none;
+}
+
+.copyPanel {
+    position: absolute;
+    top: 104px;
+    left: clamp(24px, 4vw, 66px);
+    z-index: 2;
+    width: min(20vw, 340px);
     padding: 0;
     pointer-events: auto;
-    box-shadow:
-        0 14px 36px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.sidebarRevealBtn:hover {
-    width: 38px;
-    background: linear-gradient(180deg, rgba(24, 30, 42, 0.94) 0%, rgba(11, 16, 25, 0.88) 100%);
-    border-color: rgba(199, 219, 249, 0.22);
+.copyEyebrow {
+    color: rgba(245, 230, 186, 0.86);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
 }
 
-.panelIcon {
+.copyTitle {
+    margin: 18px 0 0;
+    max-width: none;
+    color: #efe0bc;
+    font-family: var(--font-hero), Georgia, "Times New Roman", serif;
+    font-size: clamp(2.45rem, 3.1vw, 3.5rem);
+    font-weight: 400;
+    line-height: 0.96;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+}
+
+.copyTitle span {
+    display: block;
+    white-space: nowrap;
+}
+
+.copyDivider {
+    width: 56px;
+    height: 2px;
+    margin-top: 24px;
+    background: linear-gradient(90deg, rgba(214, 172, 94, 1) 0%, rgba(214, 172, 94, 0.2) 100%);
+}
+
+.copyBody {
+    max-width: 21rem;
+    margin: 22px 0 0;
+    color: rgba(236, 227, 206, 0.7);
+    font-size: 14px;
+    line-height: 1.72;
+}
+
+.copyBody span {
+    display: block;
+    white-space: nowrap;
+}
+
+.copyAction {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 28px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: rgba(226, 187, 103, 0.92);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.copyActionIcon {
     width: 18px;
     height: 18px;
-    color: rgba(245, 248, 255, 0.9);
 }
 
-.sidebarCloseBtn {
-    width: 34px;
-    height: 34px;
-    flex: 0 0 34px;
+.carouselDock {
+    --amenity-card-width: clamp(220px, 16.8vw, 320px);
+    --amenity-stage-height: clamp(320px, calc(var(--amenity-card-width) * 1.36), 448px);
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 110px clamp(26px, 3.6vw, 62px) 0;
+    gap: clamp(16px, 2.2vh, 28px);
+    pointer-events: none;
+}
+
+.carouselShell {
+    position: relative;
+    width: min(100%, 1820px);
+    margin: 0 auto;
+    z-index: 1;
+}
+
+.carouselButton {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(187, 208, 242, 0.14);
-    border-radius: 9px;
-    background: rgba(12, 18, 28, 0.54);
-    color: #fff;
+    width: 54px;
+    height: 54px;
+    border-radius: 999px;
+    border: 1px solid rgba(214, 180, 111, 0.38);
+    background: rgba(22, 18, 12, 0.32);
+    color: rgba(243, 228, 194, 0.92);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
     cursor: pointer;
-    pointer-events: auto;
-    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+    transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
 }
 
-.sidebarCloseBtn:hover {
-    background: rgba(22, 31, 45, 0.72);
-    border-color: rgba(199, 219, 249, 0.24);
+.carouselButton:hover {
     transform: translateY(-1px);
+    border-color: rgba(225, 193, 132, 0.58);
+    background: rgba(29, 24, 16, 0.44);
 }
 
-/* === Sidebar === */
-.sidebar {
-    position: absolute;
-    left: 40px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 380px;
-    height: min(60vh, 860px);
-    max-height: min(60vh, 860px);
+.carouselButtonIcon {
+    width: 18px;
+    height: 18px;
+}
+
+.carouselViewport {
+    position: relative;
     display: flex;
-    flex-direction: column;
-    background: rgba(10, 14, 22, 0.62);
-    backdrop-filter: blur(28px) saturate(160%);
-    -webkit-backdrop-filter: blur(28px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.11);
-    border-radius: 20px;
+    align-items: flex-end;
+    justify-content: center;
+    min-height: var(--amenity-stage-height);
     pointer-events: auto;
-    z-index: 540;
-    box-shadow:
-        0 24px 48px rgba(0, 0, 0, 0.5),
-        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    perspective: 1400px;
+    perspective-origin: center center;
+    overflow: visible;
+    touch-action: pan-y;
+}
+
+.carouselStage {
+    position: relative;
+    width: min(100%, 1720px);
+    height: var(--amenity-stage-height);
+    transform-style: preserve-3d;
+}
+
+.carouselCard {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--amenity-card-width);
+    margin-left: calc(var(--amenity-card-width) * -0.5);
+    margin-top: calc(var(--amenity-card-width) * -0.54);
+    padding: 0;
+    border: none;
+    background: transparent;
+    transform-style: preserve-3d;
+    transform-origin: center center;
+    cursor: pointer;
+    will-change: transform, opacity, filter;
+}
+
+.cardChrome {
+    position: relative;
     overflow: hidden;
-    transition: opacity 0.32s ease, transform 0.32s ease, filter 0.32s ease;
+    padding: 18px 18px 16px;
+    border-radius: 26px;
+    border: 1px solid rgba(217, 181, 113, 0.3);
+    background: linear-gradient(180deg, rgba(26, 22, 16, 0.9) 0%, rgba(17, 14, 10, 0.84) 100%);
+    box-shadow:
+        0 26px 56px rgba(0, 0, 0, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    text-align: left;
+    transform-style: preserve-3d;
+    transition: margin-top 0.82s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.sidebar.mobileOpen {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(-50%);
-    filter: blur(0px);
-}
-
-.sidebar.mobileClosed {
-    opacity: 0;
+.cardChrome::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 28%);
     pointer-events: none;
-    transform: translate(calc(-100% - 18px), -50%);
-    filter: blur(2px);
 }
 
-/* === Header === */
-.header {
-    padding: 28px 28px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-    flex-shrink: 0;
+.carouselCardActive .cardChrome {
+    border-color: rgba(232, 196, 129, 0.46);
+    box-shadow:
+        0 30px 64px rgba(0, 0, 0, 0.42),
+        0 0 0 1px rgba(232, 196, 129, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.11);
 }
 
-.headerTop {
+.cardTopRow {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14px;
-    margin-bottom: 4px;
+    gap: 12px;
+    margin-bottom: 16px;
 }
 
-.headerActions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.header h1 {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.22em;
-    color: rgba(180, 195, 220, 0.6);
-    margin: 0;
-}
-
-.headerBadge {
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    color: rgba(120, 180, 255, 0.7);
-    background: rgba(100, 160, 255, 0.08);
-    border: 1px solid rgba(100, 160, 255, 0.15);
-    border-radius: 6px;
-    padding: 3px 8px;
-}
-
-.header h2 {
-    font-size: 26px;
-    font-weight: 400;
-    color: #fff;
-    margin: 0 0 12px;
-    font-family: Georgia, 'Times New Roman', serif;
-    letter-spacing: -0.01em;
-}
-
-.header p {
+.cardLabel,
+.cardEyebrow {
+    color: rgba(232, 198, 129, 0.86);
     font-size: 12px;
-    line-height: 1.65;
-    color: rgba(160, 175, 210, 0.55);
-    margin: 0;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
 }
 
-/* === Card Container === */
-.cardOverflowContainer {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 20px 24px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+.cardEyebrow {
+    color: rgba(239, 224, 187, 0.64);
 }
 
-.cardOverflowContainer::-webkit-scrollbar {
-    width: 3px;
-}
-
-.cardOverflowContainer::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 4px;
-}
-
-.cardContainer {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-/* === Cards === */
-.card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 14px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    overflow: hidden;
+.cardImageWrap {
     position: relative;
-}
-
-.card:hover {
-    background: rgba(255, 255, 255, 0.055);
-    border-color: rgba(255, 255, 255, 0.1);
-    transform: translateX(3px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
-}
-
-.cardActive {
-    background: linear-gradient(135deg, rgba(25, 55, 100, 0.35), rgba(15, 30, 60, 0.5));
-    border-color: rgba(100, 170, 255, 0.35);
-    box-shadow:
-        inset 0 0 0 1px rgba(100, 170, 255, 0.2),
-        0 8px 24px rgba(0, 30, 80, 0.3);
-}
-
-.cardActive:hover {
-    transform: translateX(0);
-}
-
-.cardButton {
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    gap: 0;
-}
-
-/* === 16:9 Image Container === */
-.amenityImageContainer {
-    width: 100%;
-    aspect-ratio: 16 / 9;
     overflow: hidden;
-    position: relative;
-    border-radius: 14px 14px 0 0;
-    background: rgba(0, 0, 0, 0.3);
-    flex-shrink: 0;
+    aspect-ratio: 16 / 9.4;
+    border-radius: 18px;
+    background: rgba(0, 0, 0, 0.28);
 }
 
-.amenityImage {
+.cardImageWrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 36%, rgba(0, 0, 0, 0.24) 100%);
+    pointer-events: none;
+}
+
+.cardImage {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
-    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.card:hover .amenityImage {
-    transform: scale(1.04);
+.cardContent {
+    padding-top: 16px;
 }
 
-.cardActive .amenityImage {
-    transform: scale(1.02);
+.cardTitle {
+    margin: 0;
+    color: #f1dfba;
+    font-family: var(--font-hero), Georgia, "Times New Roman", serif;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: clamp(1.5rem, 1.4vw, 2rem);
+    font-weight: 400;
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    min-height: 1.96em;
 }
 
-/* Gradient overlay on image */
-.amenityImageContainer::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        180deg,
-        rgba(0, 0, 0, 0) 40%,
-        rgba(0, 0, 0, 0.5) 100%
-    );
-    pointer-events: none;
-}
-
-/* === Card Info Row === */
-.cardInfoRow {
-    display: flex;
-    align-items: center;
-    padding: 12px 14px;
-    gap: 10px;
-}
-
-.amenityName {
-    flex: 1;
+.cardDescription {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 12px 0 0;
+    color: rgba(234, 224, 201, 0.74);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     font-size: 13px;
-    font-weight: 500;
-    color: rgba(220, 230, 250, 0.85);
-    letter-spacing: 0.01em;
-    transition: color 0.3s;
+    line-height: 1.48;
+    min-height: 2.96em;
 }
 
-.cardActive .amenityName {
-    color: #fff;
-    font-weight: 600;
-}
-
-/* === Play Label === */
-.amenityPlayLabel {
+.cardProgressRow {
     display: flex;
     align-items: center;
-    gap: 5px;
-    font-size: 10px;
-    font-weight: 700;
+    gap: 10px;
+    padding-top: 18px;
+}
+
+.cardProgressSegment {
+    width: 54px;
+    height: 2px;
+    border-radius: 999px;
+    background: rgba(233, 215, 178, 0.22);
+}
+
+.cardProgressSegmentActive {
+    background: linear-gradient(90deg, rgba(225, 182, 94, 1) 0%, rgba(244, 223, 176, 0.92) 100%);
+}
+
+.carouselFooter {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    position: relative;
+    z-index: 8;
+    width: min(100%, 1560px);
+    margin: 0 auto;
+    gap: clamp(18px, 18vw, 260px);
+    padding: 0 0 12px;
+    pointer-events: auto;
+}
+
+.carouselHint {
+    color: rgba(232, 218, 184, 0.58);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 5px 10px;
-    border-radius: 20px;
-    transition: all 0.3s;
 }
 
-.inactiveButton {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(180, 195, 220, 0.5);
-}
-
-.activeButton {
-    background: rgba(100, 170, 255, 0.2);
-    color: rgba(150, 200, 255, 0.9);
-    border: 1px solid rgba(100, 170, 255, 0.25);
-}
-
-.playPauseIcon {
-    font-size: 9px;
-}
-
-/* === Mobile Backdrop === */
-.mobileBackdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 520;
-    pointer-events: none;
-    background: linear-gradient(180deg, rgba(4, 7, 12, 0.28) 0%, rgba(4, 7, 12, 0.56) 100%);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+.carouselButtons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 @media (max-width: 1279px) {
-    .mobileBackdrop {
-        display: block;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.3s ease;
+    .container {
+        position: relative;
+        min-height: 100svh;
+        overflow-y: auto;
     }
 
-    .mobileBackdrop.visible {
-        opacity: 1;
-        pointer-events: auto;
-    }
-}
-
-/* === Responsive === */
-@media (max-width: 1279px) {
-    .sidebarRevealBtn {
-        top: max(96px, calc(env(safe-area-inset-top, 0px) + 78px));
-        transform: none;
+    .copyPanel {
+        display: none;
     }
 
-    .sidebar {
-        position: fixed;
-        top: max(74px, calc(env(safe-area-inset-top, 0px) + 66px));
-        left: 18px;
-        right: auto;
-        width: min(390px, calc(100vw - 36px));
-        max-width: none;
-        height: auto;
-        max-height: min(78dvh, calc(100vh - 120px));
-        transform: translateX(0);
-        opacity: 0;
-        pointer-events: none;
-        background: linear-gradient(180deg, rgba(10, 15, 23, 0.9) 0%, rgba(8, 12, 19, 0.82) 100%);
-        border: 1px solid rgba(184, 205, 238, 0.14);
-        border-radius: 22px;
-        box-shadow:
-            0 24px 60px rgba(0, 0, 0, 0.42),
-            inset 0 1px 0 rgba(255, 255, 255, 0.07);
-        transition: opacity 0.32s ease, transform 0.32s ease, filter 0.32s ease;
-        filter: blur(0px);
+    .carouselDock {
+        --amenity-card-width: clamp(180px, 34vw, 248px);
+        --amenity-stage-height: clamp(252px, calc(var(--amenity-card-width) * 1.24), 330px);
+        position: relative;
+        inset: auto;
+        min-height: 100svh;
+        padding: 96px 18px calc(env(safe-area-inset-bottom, 0px) + 96px);
+        gap: 10px;
     }
 
-    .sidebar.mobileOpen {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateX(0);
+    .carouselShell,
+    .carouselFooter {
+        width: 100%;
     }
 
-    .sidebar.mobileClosed {
-        opacity: 0;
-        pointer-events: none;
-        transform: translateX(-18px);
-        filter: blur(2px);
+    .carouselViewport {
+        perspective: 1200px;
     }
 
-    .header {
-        padding: 24px 22px 18px;
+    .carouselStage {
+        width: 100%;
     }
 
-    .header h2 {
-        font-size: 24px;
+    .carouselCard {
+        margin-top: calc(var(--amenity-card-width) * -0.54);
     }
 
-    .cardOverflowContainer {
-        padding: 14px 16px 18px;
-    }
-}
-
-@media (max-width: 480px) {
-    .sidebarRevealBtn {
-        top: max(92px, calc(env(safe-area-inset-top, 0px) + 74px));
-        width: 32px;
-        height: 52px;
+    .cardChrome {
+        padding: 14px 14px 12px;
+        border-radius: 20px;
     }
 
-    .sidebar {
-        top: max(68px, calc(env(safe-area-inset-top, 0px) + 60px));
-        left: 12px;
-        right: 12px;
-        width: auto;
-        height: auto;
-        max-height: calc(100svh - 112px);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.3s ease, transform 0.3s ease;
+    .cardTopRow {
+        margin-bottom: 12px;
     }
 
-    .sidebar.mobileOpen {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateX(0);
-    }
-
-    .sidebar.mobileClosed {
-        opacity: 0;
-        pointer-events: none;
-        transform: translateX(-14px);
-    }
-
-    .header {
-        padding: 22px 18px 16px;
-    }
-
-    .headerTop {
-        margin-bottom: 6px;
-    }
-
-    .header h2 {
-        font-size: 22px;
-        margin-bottom: 10px;
-    }
-
-    .header p {
-        font-size: 11px;
-        line-height: 1.6;
-    }
-
-    .cardOverflowContainer {
-        padding: 12px 12px 16px;
-    }
-
-    .cardInfoRow {
-        padding: 10px 12px;
-    }
-
-    .amenityName {
+    .cardDescription {
+        margin-top: 10px;
         font-size: 12px;
+        line-height: 1.46;
+    }
+
+    .cardTitle {
+        font-size: clamp(1.24rem, 2.2vw, 1.7rem);
+        min-height: 1.9em;
+    }
+
+    .cardLabel,
+    .cardEyebrow {
+        font-size: 10px;
+        letter-spacing: 0.16em;
+    }
+
+    .carouselFooter {
+        align-items: center;
+        justify-content: flex-start;
+        gap: 18px;
+        padding: 0;
+    }
+
+    .carouselButtons {
+        display: none;
+    }
+
+    .carouselHint {
+        font-size: 10px;
+        letter-spacing: 0.16em;
+    }
+}
+
+@media (max-width: 640px) {
+    .carouselDock {
+        --amenity-card-width: clamp(158px, 52vw, 214px);
+        --amenity-stage-height: clamp(214px, calc(var(--amenity-card-width) * 1.18), 286px);
+        padding: 88px 12px calc(env(safe-area-inset-bottom, 0px) + 82px);
+        gap: 8px;
+    }
+
+    .carouselButton {
+        width: 44px;
+        height: 44px;
+    }
+
+    .carouselViewport {
+        min-height: var(--amenity-stage-height);
+    }
+
+    .carouselStage {
+        height: var(--amenity-stage-height);
+    }
+
+    .cardChrome {
+        padding: 12px 12px 10px;
+        border-radius: 18px;
+    }
+
+    .cardLabel,
+    .cardEyebrow {
+        font-size: 9px;
+        letter-spacing: 0.14em;
+    }
+
+    .cardContent {
+        padding-top: 12px;
+    }
+
+    .cardTitle {
+        font-size: clamp(1.02rem, 5vw, 1.32rem);
+        min-height: 1.86em;
+    }
+
+    .cardDescription {
+        margin-top: 8px;
+        font-size: 10px;
+        line-height: 1.34;
+        min-height: 2.68em;
+    }
+
+    .cardProgressRow {
+        gap: 6px;
+        padding-top: 12px;
+    }
+
+    .cardProgressSegment {
+        width: 30px;
+    }
+
+    .carouselHint {
+        font-size: 9px;
+        letter-spacing: 0.12em;
+    }
+
+    .carouselFooter {
+        gap: 0;
+        justify-content: flex-start;
+        padding: 0;
     }
 }

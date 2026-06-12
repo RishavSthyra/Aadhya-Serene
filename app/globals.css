@@ -29,6 +29,10 @@ select {
     font-family: var(--font-display), Georgia, "Times New Roman", serif;
 }
 
+.font-hero {
+    font-family: var(--font-hero), Georgia, "Times New Roman", serif;
+}
+
 body::before {
     content: "";
     opacity: 0.15;

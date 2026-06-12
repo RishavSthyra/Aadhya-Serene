@@ -14,9 +14,10 @@ export const metadata = createPageMetadata({
   ],
 });
 
-export default function Page({ searchParams }) {
-  const initialAmenity = typeof searchParams?.amenity === 'string'
-    ? searchParams.amenity
+export default async function Page({ searchParams }) {
+  const resolvedSearchParams = await searchParams;
+  const initialAmenity = typeof resolvedSearchParams?.amenity === 'string'
+    ? resolvedSearchParams.amenity
     : null;
 
   return <Amenities initialAmenity={initialAmenity} />;

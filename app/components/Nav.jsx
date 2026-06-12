@@ -14,7 +14,6 @@ import {
   FileText,
   Info,
   MapPin,
-  Phone,
   PlayCircle,
   Sparkles,
 } from "lucide-react";
@@ -30,6 +29,14 @@ const NAV_LINKS = [
   { href: "/location", label: "Location", icon: MapPin },
 ];
 
+const HOME_DESKTOP_NAV_LINKS = [
+  { href: "/apartments", label: "Residences" },
+  { href: "/amenities", label: "Amenities", menuKey: "amenities" },
+  { href: "/walkthrough", label: "Gallery" },
+  { href: "/location", label: "Location" },
+  { href: "/about", label: "About" },
+];
+
 const PREFETCH_ROUTES = [
   "/",
   "/about",
@@ -39,6 +46,9 @@ const PREFETCH_ROUTES = [
   "/location",
   "/contact",
 ];
+
+const BROCHURE_URL =
+  "https://aadhya-serene-assets-v2.s3.ap-south-1.amazonaws.com/brochure/Aadhya_Serene_brochure.pdf";
 
 const AMENITIES_DROPDOWN_ITEMS = [
   {
@@ -110,7 +120,6 @@ export default function Nav() {
   const router = useRouter();
   const { isTabletOrBelow, isConstrainedDevice, shouldReduceMotion } = usePerformanceProfile();
   const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
-  const isAboutRoute = pathname.startsWith("/about");
   const isApartmentsRoute = pathname.startsWith("/apartments");
   const [openMenu, setOpenMenu] = useState(null);
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -123,6 +132,7 @@ export default function Nav() {
     isApartmentsRoute ||
     isInteriorPanosRoute;
 
+  const desktopNavLinks = HOME_DESKTOP_NAV_LINKS;
   const maxAmenitiesStartIndex = Math.max(
     0,
     AMENITIES_DROPDOWN_ITEMS.length - AMENITIES_VISIBLE_COUNT,
@@ -292,7 +302,7 @@ export default function Nav() {
     <>
       {shouldAutoHideNav ? (
         <div
-          className={`fixed left-1/2 top-0 z-[490] hidden h-[88px] w-[min(100%,1820px)]  -translate-x-1/2 xl:block ${
+          className={`fixed left-1/2 top-0 z-[490] hidden h-[88px] w-[min(100%,1560px)] -translate-x-1/2 xl:block ${
             isNavVisible ? "pointer-events-none" : "pointer-events-auto"
           }`}
           onMouseEnter={showNav}
@@ -301,7 +311,7 @@ export default function Nav() {
       ) : null}
 
       <motion.header
-        className={`fixed left-1/2 top-0 z-[500] hidden w-[min(100%,1820px)] will-change-transform xl:block ${
+        className={`fixed left-1/2 top-0 z-[500] hidden w-[min(100%,1560px)] will-change-transform xl:block ${
           shouldAutoHideNav && !isNavVisible ? "pointer-events-none" : "pointer-events-auto"
         }`}
         initial={false}
@@ -330,37 +340,24 @@ export default function Nav() {
           scheduleHideNav();
         }}
       >
-        <div className="relative w-full px-4 pb-2 pt-4 xl:px-8 xl:pb-3 xl:pt-5">
+        <div className="relative w-full px-4 pb-2 pt-4 xl:px-6 xl:pb-3 xl:pt-5">
           <div
             data-nav-shell
-            className={`relative overflow-hidden rounded-full px-4 py-3 text-[#17191f] md:px-6 xl:px-8 ${
-              isAboutRoute
-                ? "border border-white/90 bg-[linear-gradient(145deg,#ffffff_0%,#fffdf8_62%,#fffaf0_100%)] shadow-[0_2px_4px_rgba(0,0,0,0.18),0_16px_32px_-14px_rgba(99,74,31,0.16),0_28px_68px_-34px_rgba(151,116,52,0.14),inset_0_-3px_0_rgba(126,94,38,0.06),inset_0_1px_0_rgba(255,255,255,1)]"
-                : "border border-white/42 bg-[linear-gradient(180deg,rgba(249,245,236,0.76)_0%,rgba(242,236,226,0.62)_100%)] shadow-[0_18px_42px_rgba(10,12,18,0.12),inset_0_1px_0_rgba(255,255,255,0.56)] backdrop-blur-[28px] supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(249,245,236,0.64)_0%,rgba(242,236,226,0.48)_100%)]"
-            }`}
+            className="relative px-2 py-2 text-white md:px-3 xl:px-4"
           >
-            {isAboutRoute ? (
-              <>
-                <div className="pointer-events-none absolute -left-16 -top-16 h-32 w-52 rounded-full bg-[#9a752f]/10 blur-2xl" />
-                <div className="pointer-events-none absolute -right-14 -bottom-16 h-32 w-52 rounded-full bg-[#c4a15a]/10 blur-2xl" />
-                <div className="pointer-events-none absolute left-[28%] -top-12 h-20 w-36 rounded-full bg-[#8a6424]/6 blur-2xl" />
-                <div className="pointer-events-none absolute right-[32%] -bottom-12 h-20 w-36 rounded-full bg-[#c4a15a]/6 blur-2xl" />
-              </>
-            ) : null}
-
-            <div className="relative z-[1] flex items-center justify-between gap-4">
+            <div className="relative z-[1] flex min-h-[88px] items-center justify-between gap-4">
               <Link
                 href="/"
-                className="flex min-w-[210px] items-center text-left text-[#121319] no-underline"
+                className="flex min-w-[160px] items-center justify-start text-left text-white no-underline"
               >
                 <AadhyaLogo
                   aria-label="Aadhya Serene"
-                  className="h-[34px] w-auto object-contain md:h-[38px]"
+                  className="h-[44px] w-auto object-contain md:h-[48px]"
                 />
               </Link>
 
-              <nav className="hidden items-center gap-1 lg:flex">
-                {NAV_LINKS.map(({ href, label, menuKey }) => {
+              <nav className="hidden items-center gap-5 lg:flex xl:gap-7">
+                {desktopNavLinks.map(({ href, label, menuKey }) => {
                   const active = pathname === href;
                   const isMenuOpen = openMenu === menuKey;
 
@@ -391,13 +388,11 @@ export default function Nav() {
 
                         handleRouteNavigation(href);
                       }}
-                      className={`inline-flex min-h-[42px] items-center gap-1.5 rounded-full px-4 transition ${
-                        active || isMenuOpen
-                          ? "bg-[#17191f] text-[#f7f3eb] shadow-[0_10px_18px_rgba(10,12,18,0.16)]"
-                          : "text-[#343740] hover:bg-black/[0.045]"
+                      className={`inline-flex min-h-[42px] items-center gap-1.5 px-0 text-white/78 transition hover:text-white ${
+                        active || isMenuOpen ? "text-white" : ""
                       }`}
                     >
-                      <span className="text-[12px] font-medium uppercase tracking-[0.12em]">
+                      <span className="text-[13px] font-medium uppercase tracking-[0.16em]">
                         {label}
                       </span>
                       {menuKey ? (
@@ -412,30 +407,29 @@ export default function Nav() {
                 })}
               </nav>
 
-              <div className="hidden min-w-[210px] items-center justify-end gap-2 md:flex">
+              <div className="hidden min-w-[160px] items-center justify-end gap-2 md:flex">
+                <Link
+                  href={BROCHURE_URL}
+                  target="_blank"
+                  className="inline-flex min-h-[42px] cursor-pointer items-center gap-1.5 rounded-[18px] border border-[#86b7ff]/45 bg-[linear-gradient(90deg,rgba(112,73,255,0.2)_0%,rgba(74,154,255,0.42)_50%,rgba(255,69,168,0.24)_100%)] px-5 text-white shadow-[0_10px_26px_rgba(29,52,110,0.2),inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-[#9ec4ff]/70 hover:bg-[linear-gradient(90deg,rgba(112,73,255,0.28)_0%,rgba(74,154,255,0.52)_50%,rgba(255,69,168,0.3)_100%)]"
+                >
+                  <FileText className="h-3 w-3" />
+                  <span className="text-[12px] font-medium uppercase tracking-[0.14em]">
+                    Brochure
+                  </span>
+                </Link>
+
                 <button
                   type="button"
                   onClick={() => router.push("/contact")}
                   onPointerEnter={() => primeRoute("/contact")}
                   onFocus={() => primeRoute("/contact")}
-                  className="inline-flex min-h-[42px] cursor-pointer items-center gap-1.5 rounded-full bg-[#17191f] px-4 text-[#f7f3eb] shadow-[0_10px_18px_rgba(10,12,18,0.16)] transition hover:-translate-y-0.5"
+                  className="inline-flex min-h-[42px] cursor-pointer items-center rounded-[18px] border border-white/44 bg-white/[0.03] px-6 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
                 >
-                  <Phone className="h-3 w-3" />
-                  <span className="text-[12px] font-medium uppercase tracking-[0.12em]">
+                  <span className="text-[12px] font-medium uppercase tracking-[0.14em]">
                     Contact Us
                   </span>
                 </button>
-                <Link href={'https://aadhya-serene-assets-v2.s3.ap-south-1.amazonaws.com/brochure/Aadhya_Serene_brochure.pdf'} target="_blank">
-                <button
-                  type="button"
-                  className="inline-flex cursor-pointer min-h-[42px] items-center gap-1.5 rounded-full border border-black/7 bg-white/74 px-4 text-[#20232b] transition hover:bg-white"
-                >
-                  <FileText className="h-3 w-3" />
-                  <span className="text-[12px] font-medium uppercase tracking-[0.12em]">
-                    Brochure
-                  </span>
-                </button>
-                </Link>
               </div>
             </div>
           </div>
@@ -467,98 +461,98 @@ export default function Nav() {
             }`}
             style={{ transformOrigin: "top center" }}
           >
-                <div className="grid grid-cols-[260px_minmax(0,1fr)] gap-6">
-                  <div className="pt-1">
-                    <h3 className="font-display m-0 text-[2.2rem] font-semibold leading-[0.92] tracking-[-0.05em] text-[#17191f]">
-                      Amenities
-                    </h3>
-                    <p className="mt-4 max-w-[24ch] text-[14px] leading-[1.85] text-[#2a2e37]/72">
-                      Discover the signature spaces at Aadhya Serene, from rooftop
-                      leisure and poolside relaxation to fitness and recreation.
-                    </p>
+            <div className="grid grid-cols-[260px_minmax(0,1fr)] gap-6">
+              <div className="pt-1">
+                <h3 className="font-display m-0 text-[2.2rem] font-semibold leading-[0.92] tracking-[-0.05em] text-[#17191f]">
+                  Amenities
+                </h3>
+                <p className="mt-4 max-w-[24ch] text-[14px] leading-[1.85] text-[#2a2e37]/72">
+                  Discover the signature spaces at Aadhya Serene, from rooftop
+                  leisure and poolside relaxation to fitness and recreation.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => router.push("/amenities")}
+                  onPointerEnter={() => primeRoute("/amenities")}
+                  onFocus={() => primeRoute("/amenities")}
+                  className="mt-6 inline-flex min-h-[40px] items-center rounded-full border border-white/45 bg-white/36 px-5 text-[12px] font-medium uppercase tracking-[0.12em] text-[#17191f] backdrop-blur-xl transition hover:bg-white/52"
+                >
+                  View All
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="m-0 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#2a2e37]/48">
+                    Signature Spaces
+                  </p>
+
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => router.push("/amenities")}
-                      onPointerEnter={() => primeRoute("/amenities")}
-                      onFocus={() => primeRoute("/amenities")}
-                      className="mt-6 inline-flex min-h-[40px] items-center rounded-full border border-white/45 bg-white/36 px-5 text-[12px] font-medium uppercase tracking-[0.12em] text-[#17191f] backdrop-blur-xl transition hover:bg-white/52"
+                      onClick={handlePrevAmenities}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/30 text-[#17191f]/78 transition hover:bg-white/45 disabled:opacity-35"
+                      disabled={amenitiesCarouselIndex === 0}
+                      aria-label="Previous amenities"
                     >
-                      View All
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNextAmenities}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/30 text-[#17191f]/78 transition hover:bg-white/45 disabled:opacity-35"
+                      disabled={amenitiesCarouselIndex === maxAmenitiesStartIndex}
+                      aria-label="Next amenities"
+                    >
+                      <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="m-0 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#2a2e37]/48">
-                        Signature Spaces
-                      </p>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handlePrevAmenities}
-                          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/30 text-[#17191f]/78 transition hover:bg-white/45 disabled:opacity-35"
-                          disabled={amenitiesCarouselIndex === 0}
-                          aria-label="Previous amenities"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleNextAmenities}
-                          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/30 text-[#17191f]/78 transition hover:bg-white/45 disabled:opacity-35"
-                          disabled={amenitiesCarouselIndex === maxAmenitiesStartIndex}
-                          aria-label="Next amenities"
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="overflow-hidden rounded-[22px]">
-                      <motion.div
-                        animate={{ x: amenitiesTrackOffset }}
-                        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                        className="flex gap-[10px] will-change-transform"
-                      >
-                        {AMENITIES_DROPDOWN_ITEMS.map((item) => (
-                          <Link
-                            key={item.label}
-                            href={{
-                              pathname: "/amenities",
-                              query: { amenity: item.url },
-                            }}
-                            style={{ flex: `0 0 ${amenitiesCardBasis}` }}
-                            className="group block overflow-hidden rounded-[18px] border border-white/18 bg-black/18 transition duration-300 hover:-translate-y-0.5 hover:bg-black/24"
-                            onClick={() => {
-                              setOpenMenu(null);
-                              scheduleHideNav();
-                            }}
-                          >
-                            <div className="relative h-[274px] overflow-hidden">
-                              <img
-                                src={item.image}
-                                alt={item.label}
-                                className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                                loading="lazy"
-                                decoding="async"
-                                fetchPriority="low"
-                              />
-                              <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,transparent_0%,rgba(12,14,18,0.92)_100%)] px-3.5 pb-3.5 pt-14">
-                                <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/58">
-                                  {item.sublabel}
-                                </p>
-                                <p className="font-display mt-2 text-[1.22rem] font-semibold leading-[1.08] tracking-[-0.03em] text-white">
-                                  {item.label}
-                                </p>
-                              </div>
-                            </div>
-                          </Link>
-                        ))}
-                      </motion.div>
-                    </div>
-                  </div>
                 </div>
+
+                <div className="overflow-hidden rounded-[22px]">
+                  <motion.div
+                    animate={{ x: amenitiesTrackOffset }}
+                    transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                    className="flex gap-[10px] will-change-transform"
+                  >
+                    {AMENITIES_DROPDOWN_ITEMS.map((item) => (
+                      <Link
+                        key={item.label}
+                        href={{
+                          pathname: "/amenities",
+                          query: { amenity: item.url },
+                        }}
+                        style={{ flex: `0 0 ${amenitiesCardBasis}` }}
+                        className="group block overflow-hidden rounded-[18px] border border-white/18 bg-black/18 transition duration-300 hover:-translate-y-0.5 hover:bg-black/24"
+                        onClick={() => {
+                          setOpenMenu(null);
+                          scheduleHideNav();
+                        }}
+                      >
+                        <div className="relative h-[274px] overflow-hidden">
+                          <img
+                            src={item.image}
+                            alt={item.label}
+                            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                            loading="lazy"
+                            decoding="async"
+                            fetchPriority="low"
+                          />
+                          <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,transparent_0%,rgba(12,14,18,0.92)_100%)] px-3.5 pb-3.5 pt-14">
+                            <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/58">
+                              {item.sublabel}
+                            </p>
+                            <p className="font-display mt-2 text-[1.22rem] font-semibold leading-[1.08] tracking-[-0.03em] text-white">
+                              {item.label}
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </motion.div>
+                </div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </motion.header>

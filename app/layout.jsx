@@ -2,7 +2,7 @@ import './globals.css';
 import Nav from './components/Nav';
 import GlobalBackground from '@/components/GlobalBackground';
 import { rootMetadata } from '@/lib/seo';
-import { DM_Sans, Quicksand } from 'next/font/google';
+import { Cormorant_Garamond, DM_Sans, Quicksand } from 'next/font/google';
 
 const sansFont = DM_Sans({
   subsets: ['latin'],
@@ -17,6 +17,13 @@ const displayFont = Quicksand({
   display: 'swap',
 });
 
+const heroFont = Cormorant_Garamond({
+  subsets: ['latin'],
+  variable: '--font-hero',
+  weight: ['400', '500', '600'],
+  display: 'swap',
+});
+
 export const metadata = rootMetadata;
 
 export default function RootLayout({ children }) {
@@ -24,7 +31,7 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${sansFont.variable} ${displayFont.variable}`}
+        className={`${sansFont.variable} ${displayFont.variable} ${heroFont.variable}`}
       >
         <GlobalBackground />
         <Nav />

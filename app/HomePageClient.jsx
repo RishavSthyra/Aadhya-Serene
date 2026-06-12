@@ -1,8 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  Building2,
+  MapPin,
+  Sparkles,
+  Trees,
+} from "lucide-react";
 import usePerformanceProfile from "@/hooks/usePerformanceProfile";
 import LuxuryPreloader from "@/components/Home/LuxuryPreloader";
 import {
@@ -12,11 +19,12 @@ import {
 } from "@/lib/home-loader";
 import styles from "./home.module.css";
 
-const HERO_TITLE_LINES = ["Quiet luxury,", "shaped for harmony."];
-const HERO_MARKERS = [
-  "132 curated residences",
-  "Sky leisure amenities",
-  "North Bengaluru address",
+const HERO_TITLE_LINES = ["The art of", "thoughtful living"];
+const HERO_STATS = [
+  { icon: Building2, value: "136", label: "Flats" },
+  { icon: Sparkles, value: "20+", label: "World Class Amenities" },
+  { icon: Trees, value: "1.2", label: "Acres" },
+  { icon: MapPin, value: "1", label: "Prestige Address" },
 ];
 const WHEEL_NAV_THRESHOLD = 4;
 
@@ -54,9 +62,7 @@ function AnimatedHeroTitle({ isActive, disableAnimation = false }) {
             return (
               <motion.span
                 key={key}
-                className={
-                  isSpace ? styles.heroTitleSpace : styles.heroTitleLetter
-                }
+                className={isSpace ? styles.heroTitleSpace : styles.heroTitleLetter}
                 initial={false}
                 animate={isActive ? "visible" : "hidden"}
                 variants={{
@@ -65,7 +71,7 @@ function AnimatedHeroTitle({ isActive, disableAnimation = false }) {
                 }}
                 transition={{
                   duration: 0.92,
-                  delay: 0.36 + lineIndex * 0.24 + charIndex * 0.045,
+                  delay: 0.32 + lineIndex * 0.2 + charIndex * 0.04,
                   ease: [0.22, 1, 0.36, 1],
                 }}
               >
@@ -176,10 +182,10 @@ export default function HomePageClient() {
     let accumulatedWheelY = 0;
     let wheelResetTimeoutId = 0;
 
-    const onWheel = (e) => {
+    const onWheel = (event) => {
       if (isNavigatingRef.current) return;
 
-      accumulatedWheelY += e.deltaY;
+      accumulatedWheelY += event.deltaY;
       window.clearTimeout(wheelResetTimeoutId);
       wheelResetTimeoutId = window.setTimeout(() => {
         accumulatedWheelY = 0;
@@ -193,13 +199,15 @@ export default function HomePageClient() {
 
     let touchStartY = 0;
 
-    const onTouchStart = (e) => {
-      touchStartY = e.touches[0].clientY;
+    const onTouchStart = (event) => {
+      touchStartY = event.touches[0].clientY;
     };
 
-    const onTouchEnd = (e) => {
-      const dy = touchStartY - e.changedTouches[0].clientY;
-      if (dy > 60) navigateTo("/about");
+    const onTouchEnd = (event) => {
+      const deltaY = touchStartY - event.changedTouches[0].clientY;
+      if (deltaY > 60) {
+        navigateTo("/about");
+      }
     };
 
     window.addEventListener("wheel", onWheel, { passive: true });
@@ -225,6 +233,7 @@ export default function HomePageClient() {
           onCycleComplete={() => setShowPreloader(false)}
         />
       ) : null}
+
       <section id="home-inner" className={styles.heroInner}>
         <div className={styles.heroContent}>
           <motion.div
@@ -234,8 +243,7 @@ export default function HomePageClient() {
             transition={{ ...heroRevealTransition, delay: 0.12 }}
             className={styles.heroEyebrow}
           >
-            {/* <span className={styles.heroEyebrowDot} /> */}
-            Aadhya Serene, Thanisandra
+            Aadhya Serene
           </motion.div>
 
           <h1 className={styles.heroTitle}>
@@ -245,36 +253,21 @@ export default function HomePageClient() {
             />
           </h1>
 
-          {/* <motion.p
-            initial="hidden"
+          <motion.p
+            initial={false}
             animate={heroAnimationActive ? "visible" : "hidden"}
             variants={heroRevealVariants}
-            transition={{ ...heroRevealTransition, delay: 1.05 }}
+            transition={{ ...heroRevealTransition, delay: 0.94 }}
             className={styles.heroSubtitle}
           >
-            A calmer expression of premium living, with open skies, elevated leisure,
-            and beautifully composed homes designed for a more serene daily rhythm.
-          </motion.p> */}
+            Premium residences. Curated amenities. A life in perfect balance.
+          </motion.p>
 
           <motion.div
             initial={false}
             animate={heroAnimationActive ? "visible" : "hidden"}
             variants={heroRevealVariants}
-            transition={{ duration: 0.85, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
-            className={styles.heroMarkerRow}
-          >
-            {HERO_MARKERS.map((marker) => (
-              <span key={marker} className={styles.heroMarker}>
-                {marker}
-              </span>
-            ))}
-          </motion.div>
-
-          <motion.div
-            initial={false}
-            animate={heroAnimationActive ? "visible" : "hidden"}
-            variants={heroRevealVariants}
-            transition={{ ...heroRevealTransition, delay: 1.34 }}
+            transition={{ ...heroRevealTransition, delay: 1.12 }}
             className={styles.heroActions}
           >
             <button
@@ -285,7 +278,7 @@ export default function HomePageClient() {
               className={styles.heroPrimaryCta}
             >
               <span>Explore Residences</span>
-              <span className={styles.heroCtaArrow}>↗</span>
+              <ArrowRight className={styles.heroCtaArrow} aria-hidden="true" />
             </button>
 
             <button
@@ -296,21 +289,30 @@ export default function HomePageClient() {
               View Project Story
             </button>
           </motion.div>
-
-          <motion.div
-            initial={false}
-            animate={heroAnimationActive ? "visible" : "hidden"}
-            variants={heroRevealVariants}
-            transition={{ duration: 0.85, delay: 1.5, ease: [0.22, 1, 0.36, 1] }}
-            className={styles.heroScrollRow}
-          >
-            {/* <span className={styles.desktopScroll}>Scroll to continue</span> */}
-          </motion.div>
         </div>
+
+        <motion.div
+          initial={false}
+          animate={heroAnimationActive ? "visible" : "hidden"}
+          variants={heroRevealVariants}
+          transition={{ duration: 0.85, delay: 1.3, ease: [0.22, 1, 0.36, 1] }}
+          className={styles.heroStatsDock}
+        >
+          <div className={styles.heroStatsPanel}>
+            {HERO_STATS.map(({ icon: Icon, value, label }) => (
+              <div key={label} className={styles.heroStat}>
+                <span className={styles.heroStatIconWrap}>
+                  <Icon className={styles.heroStatIcon} aria-hidden="true" />
+                </span>
+                <div className={styles.heroStatText}>
+                  <span className={styles.heroStatValue}>{value}</span>
+                  <span className={styles.heroStatLabel}>{label}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
       </section>
-      {!isTabletOrBelow ? (
-        <div className={styles.heroScrollCue} aria-hidden="true" />
-      ) : null}
     </main>
   );
 }
