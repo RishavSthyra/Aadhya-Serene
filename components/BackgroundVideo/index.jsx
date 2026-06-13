@@ -59,6 +59,7 @@ const BACKGROUND_POSTERS = {
     apartments: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_3_1%20(1).jpg',
     contact: '/assets/background-video/posters/about.jpg',
     amenities: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/umbrella-chair2.jpg',
+    'project-overview': '/assets/background-video/posters/home.jpg',
 };
 
 function getAmenityVideoSource(amenity) {
@@ -120,6 +121,12 @@ const LAYOUT_CONFIG = {
         loop: ABOUT_LOOP,
         transitionAssetId: '2-1',
         loopAssetId: '2-2',
+    },
+    'project-overview': {
+        transition: HOME_TRANSITION,
+        loop: HOME_LOOP,
+        transitionAssetId: '1-1',
+        loopAssetId: '1-2',
     },
     amenities: {
         transition: getAmenityVideoSource('rooftopLeisureDeck'),
@@ -290,7 +297,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const shouldWaitForStartupBuffer = !shouldConserveData;
     const shouldEagerlyPrepareLoop = veryHighCapabilityDesktop && !transitionIsHls;
     const shouldDeferLoopPreloadForHls = !shouldConserveData && transitionIsHls && layout !== 'home';
-    const shouldHideBackground = layout === 'location';
+    const shouldHideBackground = layout === 'location' || layout === 'project-overview';
     const posterSrc = BACKGROUND_POSTERS[layout] ?? BACKGROUND_POSTERS.home;
     const transitionReadyEvent = shouldConserveData ? 'loadedmetadata' : 'loadeddata';
     const transitionReadyStateThreshold = shouldConserveData ? 1 : 2;

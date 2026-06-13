@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 const NAV_LINKS = [
-  { href: "/about", label: "About", icon: Info },
+  { href: "/project-overview", label: "Overview", icon: Info },
   { href: "/apartments", label: "Apartments", icon: Building2 },
   { href: "/amenities", label: "Amenities", icon: Sparkles },
   { href: "/walkthrough", label: "Walkthrough", icon: PlayCircle },
@@ -28,12 +28,12 @@ const HOME_DESKTOP_NAV_LINKS = [
   { href: "/amenities", label: "Amenities" },
   { href: "/walkthrough", label: "Gallery" },
   { href: "/location", label: "Location" },
-  { href: "/about", label: "About" },
+  { href: "/project-overview", label: "Project Overview" },
 ];
 
 const PREFETCH_ROUTES = [
   "/",
-  "/about",
+  "/project-overview",
   "/apartments",
   "/amenities",
   "/walkthrough",
@@ -46,7 +46,7 @@ const BROCHURE_URL =
 
 function getContainerId(pathname) {
   if (pathname === "/") return "home-inner";
-  if (pathname.startsWith("/about")) return "about-container";
+  if (pathname.startsWith("/project-overview")) return "project-overview-container";
   return null;
 }
 
@@ -152,8 +152,8 @@ export default function Nav() {
   };
 
   const handleRouteNavigation = (href) => {
-    if (href === "/about") {
-      navigateWithTransition("/about", "about");
+    if (href === "/project-overview") {
+      navigateWithTransition("/project-overview");
       return;
     }
 

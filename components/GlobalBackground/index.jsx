@@ -20,7 +20,8 @@ export default function GlobalBackground() {
     useEffect(() => {
         // Sync layout with current route unless eager transition fired
         let newLayout = 'home';                                     
-        if (pathname.includes('/about')) newLayout = 'about';
+        if (pathname.includes('/project-overview')) newLayout = 'project-overview';
+        else if (pathname.includes('/about')) newLayout = 'about';
         else if (pathname.includes('/apartments')) newLayout = 'apartments';
         else if (pathname.includes('/amenities')) newLayout = 'amenities';
         else if (pathname.includes('/walkthrough')) newLayout = 'walkthrough';

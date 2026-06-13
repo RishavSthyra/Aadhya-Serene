@@ -6,6 +6,11 @@ import {
   prefetchAssetsInChunks,
   registerAssetCacheServiceWorker,
 } from '@/lib/client-asset-cache';
+import {
+  getProjectOverviewCriticalAssets,
+  warmProjectOverviewModules,
+} from '@/lib/project-overview-assets';
+import ProjectOverviewWarmup from '@/components/ProjectOverviewBook/Warmup';
 import styles from '../../app/home.module.css';
 
 const MIN_PRELOADER_DURATION_MS = 1800;
@@ -86,6 +91,7 @@ function getCriticalAssets() {
     sources.apartmentsTransition,
     sources.homeLoop,
     APARTMENTS_LOOP,
+    ...getProjectOverviewCriticalAssets(),
     ...scrubFrameAssets,
   ];
 }
@@ -106,8 +112,15 @@ function getIdleWarmAssets() {
 export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
   const completionReportedRef = useRef(false);
   const revealReportedRef = useRef(false);
+  const onRevealStartRef = useRef(onRevealStart);
+  const onCycleCompleteRef = useRef(onCycleComplete);
   const [progress, setProgress] = useState(0);
   const [isRevealing, setIsRevealing] = useState(false);
+
+  useEffect(() => {
+    onRevealStartRef.current = onRevealStart;
+    onCycleCompleteRef.current = onCycleComplete;
+  }, [onCycleComplete, onRevealStart]);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,7 +141,7 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
       revealReportedRef.current = true;
       setProgress(1);
       setIsRevealing(true);
-      onRevealStart?.();
+      onRevealStartRef.current?.();
 
       prefetchAssetsInChunks(getIdleWarmAssets(), {
         chunkSize: 5,
@@ -141,7 +154,7 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
       window.setTimeout(() => {
         if (cancelled || completionReportedRef.current) return;
         completionReportedRef.current = true;
-        onCycleComplete?.();
+        onCycleCompleteRef.current?.();
       }, REVEAL_DURATION_MS);
     };
 
@@ -171,6 +184,7 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
     };
 
     void registerAssetCacheServiceWorker();
+    void warmProjectOverviewModules();
     const criticalQueue = [...criticalAssets];
     const criticalWorkers = Array.from({ length: 2 }, async () => {
       while (!cancelled && criticalQueue.length > 0) {
@@ -194,7 +208,7 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
       window.clearTimeout(timeoutId);
       window.cancelAnimationFrame(frameId);
     };
-  }, [onCycleComplete, onRevealStart]);
+  }, []);
 
   const progressPercent = Math.round(progress * 100);
 
@@ -208,6 +222,7 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
       }}
     >
       <div className={styles.luxuryLoaderBackdrop} />
+      <ProjectOverviewWarmup />
 
       <div className={styles.luxuryLoaderInner}>
         <div className={styles.luxuryLoaderMarkWrap} aria-hidden="true">

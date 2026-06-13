@@ -275,7 +275,7 @@ export default function Contact() {
             <div className={styles.footerInfoColumn}>
               <nav className={styles.footerNav} aria-label="Aadhya Serene footer navigation">
                 <Link href="/" className={styles.footerNavLink}>Home</Link>
-                <Link href="/about" className={styles.footerNavLink}>About</Link>
+                <Link href="/project-overview" className={styles.footerNavLink}>Project Overview</Link>
                 <Link href="/apartments" className={styles.footerNavLink}>Apartments</Link>
                 <Link href="/amenities" className={styles.footerNavLink}>Amenities</Link>
                 <Link href="/location" className={styles.footerNavLink}>Location</Link>

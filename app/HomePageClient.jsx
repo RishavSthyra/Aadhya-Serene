@@ -110,8 +110,17 @@ export default function HomePageClient() {
     router.prefetch("/apartments");
   }, [router]);
 
+  const handlePreloaderRevealStart = useCallback(() => {
+    markHomeRefreshLoaderSeen();
+    setHomePreloaderComplete(true);
+  }, []);
+
+  const handlePreloaderCycleComplete = useCallback(() => {
+    setShowPreloader(false);
+  }, []);
+
   useEffect(() => {
-    router.prefetch("/about");
+    router.prefetch("/project-overview");
     router.prefetch("/apartments");
   }, [router]);
 
@@ -150,8 +159,9 @@ export default function HomePageClient() {
       if (isNavigatingRef.current) return;
       isNavigatingRef.current = true;
 
-      const targetLayout = path === "/apartments" ? "apartments" : "about";
-      window.dispatchEvent(new CustomEvent("bg-layout", { detail: targetLayout }));
+      if (path === "/apartments") {
+        window.dispatchEvent(new CustomEvent("bg-layout", { detail: "apartments" }));
+      }
 
       if (path === "/apartments") {
         primeApartmentsRoute();
@@ -200,7 +210,7 @@ export default function HomePageClient() {
 
       if (accumulatedWheelY > WHEEL_NAV_THRESHOLD) {
         accumulatedWheelY = 0;
-        navigateTo("/about");
+        navigateTo("/project-overview");
       }
     };
 
@@ -213,7 +223,7 @@ export default function HomePageClient() {
     const onTouchEnd = (event) => {
       const deltaY = touchStartY - event.changedTouches[0].clientY;
       if (deltaY > 60) {
-        navigateTo("/about");
+        navigateTo("/project-overview");
       }
     };
 
@@ -233,11 +243,8 @@ export default function HomePageClient() {
     <main className={styles.heroSection}>
       {showPreloader ? (
         <LuxuryPreloader
-          onRevealStart={() => {
-            markHomeRefreshLoaderSeen();
-            setHomePreloaderComplete(true);
-          }}
-          onCycleComplete={() => setShowPreloader(false)}
+          onRevealStart={handlePreloaderRevealStart}
+          onCycleComplete={handlePreloaderCycleComplete}
         />
       ) : null}
 
@@ -290,7 +297,7 @@ export default function HomePageClient() {
 
             <button
               type="button"
-              onClick={() => navigateTo("/about")}
+              onClick={() => navigateTo("/project-overview")}
               className={styles.heroSecondaryCta}
             >
               View Project Story
