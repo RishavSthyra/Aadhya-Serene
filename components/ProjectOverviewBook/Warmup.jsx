@@ -2,11 +2,13 @@
 
 const warmupAssets = [
   '/BROCHUREIMAGE2.avif',
-  '/FlipbookPages/Coverpage.png',
-  '/FlipbookPages/Page1.png',
+  '/FlipbookPages/page1new.png',
+  '/FlipbookPages/page1.png',
   '/FlipbookPages/Page2.png',
-  '/FlipbookPages/Page3.png',
-  '/FlipbookPages/Page4.png',
+  '/FlipbookPages/page3new2.png',
+  '/FlipbookPages/page4new.png',
+  '/FlipbookPages/page7new.png',
+  '/FlipbookPages/page9new.png',
   '/FlipbookPages/Page5_And_6.png',
 ];
 

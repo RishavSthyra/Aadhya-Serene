@@ -1,4 +1,5 @@
-const coverPage = '/FlipbookPages/Coverpage.png';
+const coverPage = '/FlipbookPages/coverpagenew.png';
+const backCover = '/FlipbookPages/page8.png'
 const spreadPage = '/FlipbookPages/Page5_And_6.png';
 
 export const flipbookPages = [
@@ -10,7 +11,7 @@ export const flipbookPages = [
   },
   {
     key: 'page-1',
-    src: '/FlipbookPages/Page1.png',
+    src: '/FlipbookPages/page1.png',
     alt: 'Project overview page 1',
   },
   {
@@ -20,13 +21,23 @@ export const flipbookPages = [
   },
   {
     key: 'page-3',
-    src: '/FlipbookPages/Page3.png',
+    src: '/FlipbookPages/page3new2.png',
     alt: 'Project overview page 3',
   },
   {
     key: 'page-4',
-    src: '/FlipbookPages/Page4.png',
+    src: '/FlipbookPages/page4new.png',
     alt: 'Project overview page 4',
+  },
+  {
+    key: 'page-7',
+    src: '/FlipbookPages/page7new.png',
+    alt: 'Project overview page 7',
+  },
+  {
+    key: 'page-8',
+    src: '/FlipbookPages/page9new.png',
+    alt: 'Project overview page 8',
   },
   {
     key: 'spread-left',
@@ -42,7 +53,7 @@ export const flipbookPages = [
   },
   {
     key: 'back-cover',
-    src: coverPage,
+    src: backCover,
     alt: 'Project overview back cover',
     hard: true,
   },

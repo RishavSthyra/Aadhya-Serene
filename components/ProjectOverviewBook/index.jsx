@@ -78,10 +78,6 @@ export default function ProjectOverviewBook() {
   );
 
   useEffect(() => {
-    setCurrentPage(0);
-  }, [bookSize.height, bookSize.width]);
-
-  useEffect(() => {
     document.body.style.opacity = '1';
     document.body.style.transition = '';
 
@@ -110,11 +106,19 @@ export default function ProjectOverviewBook() {
 
   const lastPageIndex = flipbookPages.length - 1;
   const totalBookWidth = bookSize.isMobile ? bookSize.width : bookSize.width * 2;
+  const flipbookKey = bookSize.isMobile
+    ? `mobile-${bookSize.width}`
+    : `desktop-${bookSize.width}-${bookSize.height}`;
   const isFrontCoverView = !bookSize.isMobile && currentPage === 0;
   const isBackCoverView = !bookSize.isMobile && currentPage === lastPageIndex;
   const showLeftSide = bookSize.isMobile ? true : !isFrontCoverView;
   const showRightSide = bookSize.isMobile ? true : !isBackCoverView;
   const hideTransitionStacks = !bookSize.isMobile && bookState !== 'read';
+
+  useEffect(() => {
+    setCurrentPage(0);
+    setBookState('read');
+  }, [flipbookKey]);
 
   return (
     <main
@@ -170,22 +174,24 @@ export default function ProjectOverviewBook() {
 
               <div className="relative z-30 [filter:drop-shadow(0_22px_46px_rgba(0,0,0,0.28))]">
                 <HTMLFlipBook
-                  key={`${bookSize.width}-${bookSize.height}-${bookSize.isMobile ? 'mobile' : 'desktop'}`}
+                  key={flipbookKey}
                   ref={bookRef}
                   width={bookSize.width}
                   height={bookSize.height}
                   size="fixed"
-                  drawShadow
-                  flippingTime={1000}
-                  maxShadowOpacity={0.28}
-                  showCover
+                  drawShadow={!bookSize.isMobile}
+                  flippingTime={bookSize.isMobile ? 700 : 1000}
+                  maxShadowOpacity={bookSize.isMobile ? 0.18 : 0.28}
+                  showCover={!bookSize.isMobile}
                   mobileScrollSupport
                   usePortrait={bookSize.isMobile}
                   startPage={0}
                   autoSize={false}
-                  swipeDistance={24}
+                  swipeDistance={bookSize.isMobile ? 12 : 24}
                   clickEventForward
                   useMouseEvents
+                  showPageCorners={!bookSize.isMobile}
+                  disableFlipByClick={bookSize.isMobile}
                   startZIndex={5}
                   onFlip={handleFlip}
                   onChangeState={(event) => setBookState(event.data)}
@@ -197,7 +203,7 @@ export default function ProjectOverviewBook() {
                       image={page.src}
                       alt={page.alt}
                       crop={page.crop}
-                      hard={page.hard}
+                      hard={!bookSize.isMobile && page.hard}
                     />
                   ))}
                 </HTMLFlipBook>
