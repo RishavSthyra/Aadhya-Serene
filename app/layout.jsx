@@ -1,7 +1,9 @@
 import './globals.css';
+import { headers } from 'next/headers';
 import Nav from './components/Nav';
 import GlobalBackground from '@/components/GlobalBackground';
 import { rootMetadata } from '@/lib/seo';
+import { getSiteVariantFromHost } from '@/lib/site-variant';
 import { Cormorant_Garamond, DM_Sans, Quicksand } from 'next/font/google';
 
 const sansFont = DM_Sans({
@@ -26,15 +28,18 @@ const heroFont = Cormorant_Garamond({
 
 export const metadata = rootMetadata;
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const headerStore = await headers();
+  const siteVariant = getSiteVariantFromHost(headerStore.get('host'));
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
         className={`${sansFont.variable} ${displayFont.variable} ${heroFont.variable}`}
       >
-        <GlobalBackground />
-        <Nav />
+        <GlobalBackground siteVariant={siteVariant} />
+        <Nav siteVariant={siteVariant} />
         {children}
       </body>
     </html>

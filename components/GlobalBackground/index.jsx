@@ -3,15 +3,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import BackgroundVideo from '../BackgroundVideo';
+import { isReadyToMoveExperience } from '@/lib/site-variant';
 import {
     consumeSkipNextApartmentsReplay,
     isBackgroundTransitionActive,
     setBackgroundTransitionState,
 } from '@/lib/background-transition';
 
-export default function GlobalBackground() {
+export default function GlobalBackground({ siteVariant }) {
     const pathname = usePathname();
-    const isLandingRoute = pathname.startsWith('/ready-to-move');
+    const isLandingRoute = isReadyToMoveExperience(pathname, siteVariant);
     const [layout, setLayout] = useState('home');
     const [playing, setPlaying] = useState(true);
     const [replayKey, setReplayKey] = useState(0);

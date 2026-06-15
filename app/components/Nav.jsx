@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import usePerformanceProfile from "@/hooks/usePerformanceProfile";
 import AadhyaLogo from "@/components/Home/AadhyaLogo";
+import { isReadyToMoveExperience } from "@/lib/site-variant";
 import {
   Building2,
   FileText,
@@ -50,13 +51,13 @@ function getContainerId(pathname) {
   return null;
 }
 
-export default function Nav() {
+export default function Nav({ siteVariant }) {
   const pathname = usePathname();
   const router = useRouter();
   const { isTabletOrBelow, shouldReduceMotion } = usePerformanceProfile();
   const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
   const isApartmentsRoute = pathname.startsWith("/apartments");
-  const isLandingRoute = pathname.startsWith("/ready-to-move");
+  const isLandingRoute = isReadyToMoveExperience(pathname, siteVariant);
   const [isNavVisible, setIsNavVisible] = useState(true);
   const hideTimeoutRef = useRef(null);
 

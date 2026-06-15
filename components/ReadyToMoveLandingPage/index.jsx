@@ -41,6 +41,7 @@ import {
 
 const PHONE_DISPLAY = '+91 96209 93333';
 const PHONE_LINK = 'tel:+919620993333';
+const PROJECT_APP_URL = 'https://app.aadhyaserene.com';
 const FORM_IMAGE = '/landing%20page%20images/interiorimage7.avif';
 const LANDING_IMAGES = {
   heroLeft: '/landing%20page%20images/image1.avif',
@@ -806,6 +807,17 @@ export default function ReadyToMoveLandingPage() {
           </div>
         </section>
       </main>
+
+      <motion.a
+        href={PROJECT_APP_URL}
+        whileHover={{ y: -2, scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+        className="fixed bottom-4 right-4 z-[90] inline-flex min-h-[54px] items-center gap-3 rounded-[1.2rem] border border-[#d9bc88] bg-[linear-gradient(180deg,#fff8ed_0%,#fff0d9_100%)] px-5 text-sm font-semibold uppercase tracking-[0.14em] text-[#2c2111] shadow-[0_18px_40px_rgba(83,55,15,0.18)] transition sm:bottom-6 sm:right-6"
+      >
+        <Building2 className="h-4 w-4 text-[#b37a2d]" />
+        <span>View Project</span>
+        <ArrowRight className="h-4 w-4 text-[#b37a2d]" />
+      </motion.a>
 
       <AnimatePresence>
         {isFormOpen ? (
