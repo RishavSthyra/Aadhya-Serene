@@ -19,23 +19,9 @@ import usePerformanceProfile from '@/hooks/usePerformanceProfile';
 import styles from './background-video.module.css';
 
 const S3_BUCKET = 'https://aadhya-serene-assets-v2.s3.amazonaws.com';
+const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/4K%202.mp4';
+const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/first_frame.avif';
 
-const HOME_TRANSITION = {
-    safe: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-1_1920w_60fps_h264_safe.mp4',
-    premium: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-1_2560w_60fps_h264_premium.mp4',
-    ultra: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-1_3200w_60fps_h264_ultra.mp4',
-};
-const HOME_LOOP = {
-    safe: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-2_1920w_60fps_h264_safe.mp4',
-    premium: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-2_2560w_60fps_h264_premium.mp4',
-    ultra: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-2_3200w_60fps_h264_ultra.mp4',
-};
-const ABOUT_TRANSITION = {
-    safe: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/2-1_1920w_60fps_h264_safe.mp4',
-    premium: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/2-1_2560w_60fps_h264_premium.mp4',
-    ultra: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/2-1_3200w_60fps_h264_ultra.mp4',
-};
-const ABOUT_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-2-av1.mp4';
 const APARTMENTS_TRANSITION = {
     safe: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_1920w_60fps_h264_safe.mp4',
     premium: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_2560w_60fps_h264_premium.mp4',
@@ -45,21 +31,18 @@ const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.m
 const AMENITY_VIDEO_QUALITY = '1080p';
 
 const LOCAL_VIDEO_FALLBACKS = {
-    '1-1': '/assets/background-video/mobile/home-transition.mp4',
-    '1-2': '/assets/background-video/mobile/home-loop.mp4',
-    '2-1': '/assets/background-video/mobile/about-transition.mp4',
-    '2-2': '/assets/background-video/mobile/about-loop.mp4',
     '3-1': '/assets/background-video/mobile/apartments-transition.mp4',
     '3-2': '/assets/background-video/mobile/apartments-loop.mp4',
 };
 
 const BACKGROUND_POSTERS = {
-    home: '/assets/background-video/posters/home.jpg',
-    about: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_2_1.jpg',
+    home: HOME_POSTER,
+    about: HOME_POSTER,
     apartments: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_3_1%20(1).jpg',
-    contact: '/assets/background-video/posters/about.jpg',
+    contact: HOME_POSTER,
     amenities: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/umbrella-chair2.jpg',
-    'project-overview': '/assets/background-video/posters/home.jpg',
+    location: HOME_POSTER,
+    'project-overview': HOME_POSTER,
 };
 
 function getAmenityVideoSource(amenity) {
@@ -86,16 +69,12 @@ const HOME_HLS_CONFIG = {
 
 const LAYOUT_CONFIG = {
     home: {
-        transition: HOME_TRANSITION,
-        loop: HOME_LOOP,
-        transitionAssetId: '1-1',
-        loopAssetId: '1-2',
+        transition: HOME_VIDEO,
+        loop: HOME_VIDEO,
     },
     about: {
-        transition: ABOUT_TRANSITION,
-        loop: ABOUT_LOOP,
-        transitionAssetId: '2-1',
-        loopAssetId: '2-2',
+        transition: HOME_VIDEO,
+        loop: HOME_VIDEO,
     },
     apartments: {
         transition: APARTMENTS_TRANSITION,
@@ -111,22 +90,16 @@ const LAYOUT_CONFIG = {
         loopAssetId: '3-2',
     },
     location: {
-        transition: ABOUT_TRANSITION,
-        loop: ABOUT_LOOP,
-        transitionAssetId: '2-1',
-        loopAssetId: '2-2',
+        transition: HOME_VIDEO,
+        loop: HOME_VIDEO,
     },
     contact: {
-        transition: ABOUT_TRANSITION,
-        loop: ABOUT_LOOP,
-        transitionAssetId: '2-1',
-        loopAssetId: '2-2',
+        transition: HOME_VIDEO,
+        loop: HOME_VIDEO,
     },
     'project-overview': {
-        transition: HOME_TRANSITION,
-        loop: HOME_LOOP,
-        transitionAssetId: '1-1',
-        loopAssetId: '1-2',
+        transition: HOME_VIDEO,
+        loop: HOME_VIDEO,
     },
     amenities: {
         transition: getAmenityVideoSource('rooftopLeisureDeck'),
@@ -167,15 +140,13 @@ const LAYOUT_CONFIG = {
 };
 
 const DEFAULT_CONFIG = {
-    transition: HOME_TRANSITION,
-    loop: HOME_LOOP,
-    transitionAssetId: '1-1',
-    loopAssetId: '1-2',
+    transition: HOME_VIDEO,
+    loop: HOME_VIDEO,
 };
 const PRELOAD_LAYOUTS = {
-    home: ['about', 'apartments'],
+    home: ['apartments'],
     about: ['apartments', 'home'],
-    apartments: ['about'],
+    apartments: ['home'],
 };
 
 function buildResolutionVariantUrl(source, quality) {

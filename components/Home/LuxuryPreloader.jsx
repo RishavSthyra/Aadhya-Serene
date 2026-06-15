@@ -18,13 +18,8 @@ const MAX_PRELOADER_DURATION_MS = 4600;
 const REVEAL_DURATION_MS = 980;
 const EASE_OUT_CUBIC = (value) => 1 - ((1 - value) ** 3);
 
-const HOME_VIDEO_SAFE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-1_1920w_60fps_h264_safe.mp4';
-const HOME_VIDEO_PREMIUM = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-1_2560w_60fps_h264_premium.mp4';
-const HOME_LOOP_SAFE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-2_1920w_60fps_h264_safe.mp4';
-const HOME_LOOP_PREMIUM = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/1-2_2560w_60fps_h264_premium.mp4';
-const ABOUT_VIDEO_SAFE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/2-1_1920w_60fps_h264_safe.mp4';
-const ABOUT_VIDEO_PREMIUM = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/2-1_2560w_60fps_h264_premium.mp4';
-const ABOUT_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/2-2-av1.mp4';
+const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/4K%202.mp4';
+const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/first_frame.avif';
 const APARTMENTS_VIDEO_SAFE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_1920w_60fps_h264_safe.mp4';
 const APARTMENTS_VIDEO_PREMIUM = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_2560w_60fps_h264_premium.mp4';
 const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
@@ -67,13 +62,11 @@ function shouldUseSafeMedia() {
 }
 
 function getSelectedMediaSources() {
-  const useSafeMedia = shouldUseSafeMedia();
-
   return {
-    homeTransition: useSafeMedia ? HOME_VIDEO_SAFE : HOME_VIDEO_PREMIUM,
-    homeLoop: useSafeMedia ? HOME_LOOP_SAFE : HOME_LOOP_PREMIUM,
-    aboutTransition: useSafeMedia ? ABOUT_VIDEO_SAFE : ABOUT_VIDEO_PREMIUM,
-    apartmentsTransition: useSafeMedia ? APARTMENTS_VIDEO_SAFE : APARTMENTS_VIDEO_PREMIUM,
+    homeVideo: HOME_VIDEO,
+    apartmentsTransition: shouldUseSafeMedia()
+      ? APARTMENTS_VIDEO_SAFE
+      : APARTMENTS_VIDEO_PREMIUM,
   };
 }
 
@@ -85,11 +78,9 @@ function getCriticalAssets() {
 
   return [
     '/favicon.ico',
-    '/assets/background-video/posters/home.jpg',
-    sources.homeTransition,
-    sources.aboutTransition,
+    HOME_POSTER,
+    sources.homeVideo,
     sources.apartmentsTransition,
-    sources.homeLoop,
     APARTMENTS_LOOP,
     ...getProjectOverviewCriticalAssets(),
     ...scrubFrameAssets,
@@ -101,9 +92,8 @@ function getIdleWarmAssets() {
   const frameSeeds = getPreloaderScrubFrames();
 
   return [
-    ABOUT_LOOP,
-    '/assets/background-video/posters/about.jpg',
-    'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_2_1.jpg',
+    HOME_POSTER,
+    sources.homeVideo,
     'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_3_1%20(1).jpg',
     ...frameSeeds.map(frameUrl),
   ];
