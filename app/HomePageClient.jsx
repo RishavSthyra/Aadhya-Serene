@@ -250,59 +250,71 @@ export default function HomePageClient() {
 
       <section id="home-inner" className={styles.heroInner}>
         <div className={styles.heroContent}>
-          <motion.div
-            initial={false}
-            animate={heroAnimationActive ? "visible" : "hidden"}
-            variants={heroRevealVariants}
-            transition={{ ...heroRevealTransition, delay: 0.12 }}
-            className={styles.heroEyebrow}
-          >
-            Aadhya Serene
-          </motion.div>
-
-          <h1 className={styles.heroTitle}>
-            <AnimatedHeroTitle
-              isActive={heroAnimationActive}
-              disableAnimation={shouldUseLightMotion}
-            />
-          </h1>
-
-          <motion.p
-            initial={false}
-            animate={heroAnimationActive ? "visible" : "hidden"}
-            variants={heroRevealVariants}
-            transition={{ ...heroRevealTransition, delay: 0.94 }}
-            className={styles.heroSubtitle}
-          >
-            Premium residences. Curated amenities. A life in perfect balance.
-          </motion.p>
-
-          <motion.div
-            initial={false}
-            animate={heroAnimationActive ? "visible" : "hidden"}
-            variants={heroRevealVariants}
-            transition={{ ...heroRevealTransition, delay: 1.12 }}
-            className={styles.heroActions}
-          >
-            <button
-              type="button"
-              onClick={() => navigateTo("/apartments")}
-              onMouseEnter={primeApartmentsRoute}
-              onTouchStart={primeApartmentsRoute}
-              className={styles.heroPrimaryCta}
+          <div className={styles.heroContentPanel}>
+            <motion.div
+              initial={false}
+              animate={heroAnimationActive ? "visible" : "hidden"}
+              variants={heroRevealVariants}
+              transition={{ ...heroRevealTransition, delay: 0.12 }}
+              className={styles.heroEyebrow}
             >
-              <span>Explore Residences</span>
-              <ArrowRight className={styles.heroCtaArrow} aria-hidden="true" />
-            </button>
+              Aadhya Serene
+            </motion.div>
 
-            <button
-              type="button"
-              onClick={() => navigateTo("/project-overview")}
-              className={styles.heroSecondaryCta}
+            <motion.p
+              initial={false}
+              animate={heroAnimationActive ? "visible" : "hidden"}
+              variants={heroRevealVariants}
+              transition={{ ...heroRevealTransition, delay: 0.2 }}
+              className={styles.heroIntro}
             >
-              View Project Story
-            </button>
-          </motion.div>
+              Ready residences in Thanisandra, Bengaluru
+            </motion.p>
+
+            <h1 className={styles.heroTitle}>
+              <AnimatedHeroTitle
+                isActive={heroAnimationActive}
+                disableAnimation={shouldUseLightMotion}
+              />
+            </h1>
+
+            <motion.p
+              initial={false}
+              animate={heroAnimationActive ? "visible" : "hidden"}
+              variants={heroRevealVariants}
+              transition={{ ...heroRevealTransition, delay: 0.94 }}
+              className={styles.heroSubtitle}
+            >
+              Premium residences, curated amenities, and a more balanced rhythm of living in North Bengaluru.
+            </motion.p>
+
+            <motion.div
+              initial={false}
+              animate={heroAnimationActive ? "visible" : "hidden"}
+              variants={heroRevealVariants}
+              transition={{ ...heroRevealTransition, delay: 1.12 }}
+              className={styles.heroActions}
+            >
+              <button
+                type="button"
+                onClick={() => navigateTo("/apartments")}
+                onMouseEnter={primeApartmentsRoute}
+                onTouchStart={primeApartmentsRoute}
+                className={styles.heroPrimaryCta}
+              >
+                <span>Explore Residences</span>
+                <ArrowRight className={styles.heroCtaArrow} aria-hidden="true" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigateTo("/project-overview")}
+                className={styles.heroSecondaryCta}
+              >
+                View Project Story
+              </button>
+            </motion.div>
+          </div>
         </div>
 
         <motion.div

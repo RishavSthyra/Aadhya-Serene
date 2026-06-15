@@ -36,7 +36,7 @@
 .heroContent {
     position: relative;
     z-index: 1;
-    width: min(100%, 860px);
+    width: min(100%, 780px);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -46,20 +46,42 @@
     text-align: left;
 }
 
+.heroContentPanel {
+    width: min(100%, 720px);
+    padding: clamp(22px, 2vw, 30px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 28px;
+    background:
+        linear-gradient(180deg, rgba(11, 15, 22, 0.38), rgba(11, 15, 22, 0.18));
+    box-shadow:
+        0 22px 60px rgba(5, 8, 12, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
+}
+
 .heroEyebrow {
     display: inline-flex;
     align-items: center;
-    margin-bottom: 18px;
-    color: rgba(245, 246, 248, 0.82);
+    margin-bottom: 12px;
+    color: rgba(245, 246, 248, 0.78);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+}
+
+.heroIntro {
+    margin: 0 0 18px;
+    color: rgba(240, 243, 247, 0.7);
     font-size: 12px;
     font-weight: 500;
-    letter-spacing: 0.34em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
 }
 
 .heroTitle {
     margin: 0;
-    max-width: 12ch;
+    max-width: 10.5ch;
 }
 
 .heroTitleStack {
@@ -79,23 +101,23 @@
 .heroTitleSpace {
     display: inline-block;
     font-family: var(--font-hero), Georgia, "Times New Roman", serif;
-    font-size: clamp(4rem, 8vw, 7.65rem);
+    font-size: clamp(3.5rem, 6.2vw, 5.95rem);
     font-weight: 400;
-    line-height: 0.88;
-    letter-spacing: -0.05em;
+    line-height: 0.92;
+    letter-spacing: -0.045em;
     text-transform: uppercase;
     color: #f8f2eb;
-    text-shadow: 0 18px 48px rgba(5, 8, 12, 0.28);
+    text-shadow: 0 16px 42px rgba(5, 8, 12, 0.24);
     will-change: transform, opacity, filter;
 }
 
 .heroSubtitle {
-    width: min(100%, 35rem);
-    margin: 26px 0 0;
-    color: rgba(239, 241, 244, 0.88);
-    font-size: clamp(18px, 1.8vw, 22px);
-    line-height: 1.55;
-    letter-spacing: -0.015em;
+    width: min(100%, 31rem);
+    margin: 22px 0 0;
+    color: rgba(239, 241, 244, 0.84);
+    font-size: clamp(16px, 1.35vw, 18px);
+    line-height: 1.62;
+    letter-spacing: -0.01em;
     text-wrap: pretty;
 }
 
@@ -104,8 +126,8 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-start;
-    gap: 16px;
-    margin-top: 34px;
+    gap: 14px;
+    margin-top: 28px;
 }
 
 .heroPrimaryCta,
@@ -114,13 +136,13 @@
     align-items: center;
     justify-content: center;
     gap: 12px;
-    min-height: 58px;
-    padding: 0 28px;
-    font-size: 12px;
+    min-height: 54px;
+    padding: 0 24px;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    border-radius: 18px;
+    border-radius: 16px;
     cursor: pointer;
     transition:
         transform 0.25s ease,
@@ -179,26 +201,26 @@
     align-items: center;
     justify-content: center;
     flex-wrap: wrap;
-    width: min(100%, 1420px);
-    max-width: min(100%, 1420px);
+    width: min(100%, 1240px);
+    max-width: min(100%, 1240px);
     margin: 0 auto;
-    padding: 20px 22px;
+    padding: 16px 18px;
     border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 28px;
-    background: linear-gradient(180deg, rgba(15, 17, 22, 0.54), rgba(15, 17, 22, 0.36));
+    border-radius: 24px;
+    background: linear-gradient(180deg, rgba(15, 17, 22, 0.46), rgba(15, 17, 22, 0.28));
     box-shadow:
-        0 18px 50px rgba(4, 6, 10, 0.22),
+        0 18px 44px rgba(4, 6, 10, 0.18),
         inset 0 1px 0 rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(24px);
 }
 
 .heroStat {
     display: flex;
-    flex: 1 1 240px;
+    flex: 1 1 220px;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     min-width: 0;
-    padding: 10px 24px;
+    padding: 10px 20px;
 }
 
 .heroStat + .heroStat {
@@ -209,16 +231,16 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.05);
     color: rgba(248, 244, 239, 0.88);
 }
 
 .heroStatIcon {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
 }
 
 .heroStatText {
@@ -231,8 +253,8 @@
 
 .heroStatValue {
     color: #f8f3ee;
-    font-size: clamp(2rem, 2.7vw, 2.5rem);
-    font-weight: 300;
+    font-size: clamp(1.85rem, 2.2vw, 2.2rem);
+    font-weight: 400;
     line-height: 0.94;
     letter-spacing: -0.04em;
     text-transform: uppercase;
@@ -254,24 +276,29 @@
         padding: clamp(110px, 12vh, 138px) clamp(24px, 4vw, 48px) 26px;
     }
 
+    .heroContentPanel {
+        padding: 20px 22px;
+        border-radius: 24px;
+    }
+
     .heroTitleLetter,
     .heroTitleSpace {
-        font-size: clamp(3.7rem, 7vw, 6.1rem);
+        font-size: clamp(3.2rem, 5.8vw, 5rem);
     }
 
     .heroSubtitle {
-        margin-top: 22px;
-        font-size: 18px;
+        margin-top: 18px;
+        font-size: 16px;
         line-height: 1.5;
     }
 
     .heroActions {
-        margin-top: 28px;
+        margin-top: 24px;
     }
 
     .heroPrimaryCta,
     .heroSecondaryCta {
-        min-height: 50px;
+        min-height: 48px;
         padding: 0 22px;
         font-size: 10.5px;
         letter-spacing: 0.15em;
@@ -282,7 +309,7 @@
     }
 
     .heroStat {
-        min-width: 198px;
+        min-width: 190px;
         gap: 12px;
         padding: 8px 18px;
     }
@@ -293,7 +320,7 @@
     }
 
     .heroStatValue {
-        font-size: clamp(1.75rem, 2.3vw, 2.15rem);
+        font-size: clamp(1.6rem, 2.1vw, 2rem);
     }
 
     .heroStatLabel {
@@ -302,18 +329,22 @@
 }
 
 @media (min-width: 901px) and (max-height: 720px) {
+    .heroContentPanel {
+        padding: 18px 20px;
+    }
+
     .heroTitleLetter,
     .heroTitleSpace {
-        font-size: clamp(3rem, 5.3vw, 4.7rem);
+        font-size: clamp(2.8rem, 4.8vw, 4.2rem);
     }
 
     .heroSubtitle {
-        margin-top: 18px;
-        font-size: 16px;
+        margin-top: 16px;
+        font-size: 15px;
     }
 
     .heroActions {
-        margin-top: 22px;
+        margin-top: 18px;
     }
 
     .heroStatsPanel {
@@ -331,6 +362,12 @@
         padding: 118px 20px calc(116px + env(safe-area-inset-bottom, 0px));
     }
 
+    .heroContentPanel {
+        width: min(100%, 640px);
+        padding: 20px;
+        border-radius: 24px;
+    }
+
     .heroTitle {
         width: 100%;
     }
@@ -341,19 +378,19 @@
 
     .heroTitleLetter,
     .heroTitleSpace {
-        font-size: clamp(3.15rem, 12vw, 5.1rem);
-        line-height: 0.92;
+        font-size: clamp(2.95rem, 10vw, 4.5rem);
+        line-height: 0.95;
     }
 
     .heroSubtitle {
-        width: min(100%, 560px);
-        margin-top: 24px;
-        font-size: 16px;
+        width: min(100%, 30rem);
+        margin-top: 18px;
+        font-size: 15px;
         line-height: 1.6;
     }
 
     .heroActions {
-        margin-top: 30px;
+        margin-top: 24px;
     }
 
     .heroStatsPanel {
@@ -411,22 +448,34 @@
         padding: clamp(104px, 18vw, 126px) 18px calc(118px + env(safe-area-inset-bottom, 0px));
     }
 
+    .heroContentPanel {
+        width: 100%;
+        padding: 18px 16px;
+        border-radius: 22px;
+    }
+
     .heroEyebrow {
-        margin-bottom: 16px;
+        margin-bottom: 10px;
         font-size: 9px;
-        letter-spacing: 0.3em;
+        letter-spacing: 0.24em;
+    }
+
+    .heroIntro {
+        margin-bottom: 14px;
+        font-size: 9px;
+        letter-spacing: 0.16em;
     }
 
     .heroTitleLetter,
     .heroTitleSpace {
-        font-size: clamp(2.2rem, 11.5vw, 3.55rem);
-        letter-spacing: -0.045em;
+        font-size: clamp(2.1rem, 10vw, 3.2rem);
+        letter-spacing: -0.04em;
     }
 
     .heroSubtitle {
         width: min(100%, 28rem);
-        font-size: 13px;
-        line-height: 1.56;
+        font-size: 12.5px;
+        line-height: 1.6;
     }
 
     .heroActions {
@@ -439,7 +488,7 @@
     .heroSecondaryCta {
         flex: 1 1 0;
         min-width: 0;
-        min-height: 46px;
+        min-height: 44px;
         padding: 0 12px;
         font-size: 8.5px;
         letter-spacing: 0.11em;
