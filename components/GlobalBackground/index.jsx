@@ -11,6 +11,7 @@ import {
 
 export default function GlobalBackground() {
     const pathname = usePathname();
+    const isLandingRoute = pathname.startsWith('/ready-to-move');
     const [layout, setLayout] = useState('home');
     const [playing, setPlaying] = useState(true);
     const [replayKey, setReplayKey] = useState(0);
@@ -18,6 +19,10 @@ export default function GlobalBackground() {
     const eagerApartmentsTransitionRef = useRef(false);
 
     useEffect(() => {
+        if (isLandingRoute) {
+            return;
+        }
+
         // Sync layout with current route unless eager transition fired
         let newLayout = 'home';                                     
         if (pathname.includes('/project-overview')) newLayout = 'project-overview';
@@ -76,9 +81,13 @@ export default function GlobalBackground() {
         // Keep the global background actively playing across routes unless
         // a page explicitly pauses it.
         setPlaying(true);
-    }, [pathname]); // <-- IMPORTANT: 'layout' removed to prevent overwriting custom events
+    }, [isLandingRoute, pathname]); // <-- IMPORTANT: 'layout' removed to prevent overwriting custom events
 
     useEffect(() => {
+        if (isLandingRoute) {
+            return undefined;
+        }
+
         const handleLayout = (e) => {
             eagerApartmentsTransitionRef.current = e.detail === 'apartments';
             setBackgroundTransitionState(e.detail, true);
@@ -96,7 +105,11 @@ export default function GlobalBackground() {
             window.removeEventListener('bg-play', handlePlay);
             window.removeEventListener('bg-pause', handlePause);
         };
-    }, []);
+    }, [isLandingRoute]);
+
+    if (isLandingRoute) {
+        return null;
+    }
 
     return <BackgroundVideo layout={layout} playing={playing} replayKey={replayKey} />;
 }

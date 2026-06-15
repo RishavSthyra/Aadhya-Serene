@@ -8,7 +8,8 @@ const REQUEST_TYPE_LABELS = {
   brochure: 'Request Brochure',
 };
 
-const REQUIRED_ENV_KEYS = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_TO'];
+const DEFAULT_TO_EMAIL = 'sales@abhignaconstructions.com';
+const DEFAULT_FROM_EMAIL = 'website@aadhyaserene.com';
 
 function cleanValue(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -36,14 +37,67 @@ function buildInfoRow(label, value) {
   `;
 }
 
-function getMissingEnvKeys() {
-  return REQUIRED_ENV_KEYS.filter((key) => !cleanValue(process.env[key]));
+function getMailConfig() {
+  const host = cleanValue(process.env.SMTP_HOST || process.env.MAILTRAP_HOST);
+  const portValue = cleanValue(process.env.SMTP_PORT || process.env.MAILTRAP_PORT);
+  const user = cleanValue(process.env.SMTP_USER || process.env.MAILTRAP_USER);
+  const pass = cleanValue(process.env.SMTP_PASS || process.env.MAILTRAP_PASS);
+  const to = cleanValue(
+    process.env.SMTP_TO ||
+      process.env.CONTACT_TO_EMAIL ||
+      process.env.MAILTRAP_TO ||
+      DEFAULT_TO_EMAIL
+  );
+  const from = cleanValue(
+    process.env.SMTP_FROM ||
+      process.env.CONTACT_FROM_EMAIL ||
+      process.env.MAILTRAP_FROM ||
+      DEFAULT_FROM_EMAIL
+  );
+
+  return {
+    host,
+    port: Number(portValue),
+    portValue,
+    user,
+    pass,
+    to,
+    from,
+  };
+}
+
+function getMissingConfigFields(mailConfig) {
+  const missingFields = [];
+
+  if (!mailConfig.host) {
+    missingFields.push('host');
+  }
+
+  if (!mailConfig.portValue || Number.isNaN(mailConfig.port)) {
+    missingFields.push('port');
+  }
+
+  if (!mailConfig.user) {
+    missingFields.push('user');
+  }
+
+  if (!mailConfig.pass) {
+    missingFields.push('pass');
+  }
+
+  if (!mailConfig.to) {
+    missingFields.push('to');
+  }
+
+  return missingFields;
 }
 
 export async function POST(request) {
-  const missingEnvKeys = getMissingEnvKeys();
+  const mailConfig = getMailConfig();
+  const missingConfigFields = getMissingConfigFields(mailConfig);
 
-  if (missingEnvKeys.length) {
+  if (missingConfigFields.length) {
+    console.error('Contact mail service is not configured yet:', missingConfigFields);
     return NextResponse.json(
       { error: 'Contact mail service is not configured yet.' },
       { status: 500 }
@@ -65,6 +119,7 @@ export async function POST(request) {
     requestType: cleanValue(payload?.requestType),
     preferredTime: cleanValue(payload?.preferredTime),
     message: cleanValue(payload?.message),
+    source: cleanValue(payload?.source),
   };
 
   if (!submission.name || !submission.phone || !submission.email || !submission.requestType) {
@@ -81,6 +136,7 @@ export async function POST(request) {
   }
 
   const requestLabel = REQUEST_TYPE_LABELS[submission.requestType] || 'General Enquiry';
+  const enquirySource = submission.source || 'website';
   const submittedAt = new Date().toLocaleString('en-IN', {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -88,12 +144,12 @@ export async function POST(request) {
   });
 
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    secure: Number(process.env.SMTP_PORT) === 465,
+    host: mailConfig.host,
+    port: mailConfig.port,
+    secure: mailConfig.port === 465,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: mailConfig.user,
+      pass: mailConfig.pass,
     },
   });
 
@@ -115,6 +171,7 @@ export async function POST(request) {
         <div style="padding:18px 32px 32px;">
           <table style="width:100%;border-collapse:collapse;">
             <tbody>
+              ${buildInfoRow('Source', enquirySource)}
               ${buildInfoRow('Name', submission.name)}
               ${buildInfoRow('Phone', submission.phone)}
               ${buildInfoRow('Email', submission.email)}
@@ -140,6 +197,7 @@ export async function POST(request) {
   const text = [
     `Aadhya Serene contact enquiry`,
     ``,
+    `Source: ${enquirySource}`,
     `Request: ${requestLabel}`,
     `Name: ${submission.name}`,
     `Phone: ${submission.phone}`,
@@ -153,10 +211,10 @@ export async function POST(request) {
 
   try {
     await transporter.sendMail({
-      from: 'Aadhya Serene <noreply@aadhyaserene.dev>',
-      to: process.env.SMTP_TO,
+      from: `Aadhya Serene <${mailConfig.from}>`,
+      to: mailConfig.to,
       replyTo: submission.email,
-      subject: `[Aadhya Serene] ${requestLabel} - ${submission.name}`,
+      subject: `[Aadhya Serene] ${requestLabel} - ${submission.name} (${enquirySource})`,
       text,
       html,
     });

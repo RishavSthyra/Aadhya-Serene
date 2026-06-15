@@ -56,6 +56,7 @@ export default function Nav() {
   const { isTabletOrBelow, shouldReduceMotion } = usePerformanceProfile();
   const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
   const isApartmentsRoute = pathname.startsWith("/apartments");
+  const isLandingRoute = pathname.startsWith("/ready-to-move");
   const [isNavVisible, setIsNavVisible] = useState(true);
   const hideTimeoutRef = useRef(null);
 
@@ -170,7 +171,7 @@ export default function Nav() {
     router.push(href);
   };
 
-  if (isInteriorPanosRoute) {
+  if (isInteriorPanosRoute || isLandingRoute) {
     return null;
   }
 
