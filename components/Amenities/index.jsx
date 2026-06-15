@@ -180,6 +180,8 @@ export default function Amenities({ initialAmenity = null }) {
         pointerId: null,
         startX: 0,
         startY: 0,
+        axis: null,
+        moved: false,
     });
     const defaultAmenity = 'rooftopLeisureDeck';
     const isValidRequestedAmenity = AMENITIES_LIST.some((item) => item.url === initialAmenity);
@@ -198,6 +200,8 @@ export default function Amenities({ initialAmenity = null }) {
 
         return width >= 1850 ? 3 : 2;
     }, [isTabletOrBelow, width]);
+
+    const swipeThreshold = isTabletOrBelow ? 24 : 56;
 
     useEffect(() => {
         activeIndexRef.current = activeIndex;
@@ -277,11 +281,49 @@ export default function Amenities({ initialAmenity = null }) {
             pointerId: event.pointerId,
             startX: event.clientX,
             startY: event.clientY,
+            axis: null,
+            moved: false,
         };
     }, []);
 
+    const handlePointerMove = useCallback((event) => {
+        const { pointerId, startX, startY, axis, moved } = dragStateRef.current;
+
+        if (pointerId !== event.pointerId || moved) {
+            return;
+        }
+
+        const deltaX = event.clientX - startX;
+        const deltaY = event.clientY - startY;
+        const absDeltaX = Math.abs(deltaX);
+        const absDeltaY = Math.abs(deltaY);
+
+        if (!axis) {
+            if (absDeltaX < 8 && absDeltaY < 8) {
+                return;
+            }
+
+            dragStateRef.current.axis = absDeltaX > absDeltaY ? 'x' : 'y';
+        }
+
+        if (dragStateRef.current.axis !== 'x') {
+            return;
+        }
+
+        if (absDeltaX < swipeThreshold || absDeltaX <= absDeltaY) {
+            return;
+        }
+
+        dragStateRef.current.moved = true;
+        queueMove(deltaX < 0 ? 1 : -1);
+
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+    }, [queueMove, swipeThreshold]);
+
     const finishPointerGesture = useCallback((event) => {
-        const { pointerId, startX, startY } = dragStateRef.current;
+        const { pointerId, startX, startY, moved } = dragStateRef.current;
 
         if (pointerId !== event.pointerId) {
             return;
@@ -298,14 +340,16 @@ export default function Amenities({ initialAmenity = null }) {
             pointerId: null,
             startX: 0,
             startY: 0,
+            axis: null,
+            moved: false,
         };
 
-        if (Math.abs(deltaX) < 56 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+        if (moved || Math.abs(deltaX) < swipeThreshold || Math.abs(deltaX) <= Math.abs(deltaY)) {
             return;
         }
 
         queueMove(deltaX < 0 ? 1 : -1);
-    }, [queueMove]);
+    }, [queueMove, swipeThreshold]);
 
     const cancelPointerGesture = useCallback((event) => {
         if (dragStateRef.current.pointerId !== event.pointerId) {
@@ -320,6 +364,8 @@ export default function Amenities({ initialAmenity = null }) {
             pointerId: null,
             startX: 0,
             startY: 0,
+            axis: null,
+            moved: false,
         };
     }, []);
 
@@ -354,6 +400,7 @@ export default function Amenities({ initialAmenity = null }) {
                         className={styles.carouselViewport}
                         onWheel={handleWheel}
                         onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
                         onPointerUp={finishPointerGesture}
                         onPointerCancel={cancelPointerGesture}
                         onPointerLeave={cancelPointerGesture}

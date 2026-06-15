@@ -96,14 +96,6 @@ export default function ProjectOverviewBook() {
     setCurrentPage(event.data);
   };
 
-  const goToPreviousPage = () => {
-    bookRef.current?.pageFlip()?.flipPrev('bottom');
-  };
-
-  const goToNextPage = () => {
-    bookRef.current?.pageFlip()?.flipNext('bottom');
-  };
-
   const lastPageIndex = flipbookPages.length - 1;
   const totalBookWidth = bookSize.isMobile ? bookSize.width : bookSize.width * 2;
   const flipbookKey = bookSize.isMobile
@@ -114,6 +106,25 @@ export default function ProjectOverviewBook() {
   const showLeftSide = bookSize.isMobile ? true : !isFrontCoverView;
   const showRightSide = bookSize.isMobile ? true : !isBackCoverView;
   const hideTransitionStacks = !bookSize.isMobile && bookState !== 'read';
+  const isBookBusy = bookState !== 'read';
+  const canGoToPreviousPage = currentPage > 0 && !isBookBusy;
+  const canGoToNextPage = currentPage < lastPageIndex && !isBookBusy;
+
+  const goToPage = (nextPage, corner) => {
+    if (nextPage < 0 || nextPage > lastPageIndex || isBookBusy) {
+      return;
+    }
+
+    bookRef.current?.pageFlip()?.flip(nextPage, corner);
+  };
+
+  const goToPreviousPage = () => {
+    goToPage(currentPage - 1, 'top');
+  };
+
+  const goToNextPage = () => {
+    goToPage(currentPage + 1, 'bottom');
+  };
 
   useEffect(() => {
     setCurrentPage(0);
@@ -191,7 +202,7 @@ export default function ProjectOverviewBook() {
                   clickEventForward
                   useMouseEvents
                   showPageCorners={!bookSize.isMobile}
-                  disableFlipByClick={bookSize.isMobile}
+                  disableFlipByClick={false}
                   startZIndex={5}
                   onFlip={handleFlip}
                   onChangeState={(event) => setBookState(event.data)}
@@ -215,21 +226,17 @@ export default function ProjectOverviewBook() {
             <button
               type="button"
               onClick={goToPreviousPage}
-              disabled={currentPage <= 0}
+              disabled={!canGoToPreviousPage}
               aria-label="Turn page left"
               className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-[0_18px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-200 hover:bg-white/16 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ChevronLeft className="h-5 w-5" strokeWidth={2.3} />
             </button>
 
-            <div className="rounded-full border border-white/12 bg-black/22 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-white/70 shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-              Swipe or click page corners
-            </div>
-
             <button
               type="button"
               onClick={goToNextPage}
-              disabled={currentPage >= lastPageIndex}
+              disabled={!canGoToNextPage}
               aria-label="Turn page right"
               className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-[0_18px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-200 hover:bg-white/16 disabled:cursor-not-allowed disabled:opacity-40"
             >
