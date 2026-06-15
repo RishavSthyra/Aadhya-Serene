@@ -10,16 +10,6 @@ export const flipbookPages = [
     hard: true,
   },
   {
-    key: 'page-1',
-    src: '/FlipbookPages/page1.png',
-    alt: 'Project overview page 1',
-  },
-  {
-    key: 'page-2',
-    src: '/FlipbookPages/Page2.png',
-    alt: 'Project overview page 2',
-  },
-  {
     key: 'page-3',
     src: '/FlipbookPages/page3new2.png',
     alt: 'Project overview page 3',
