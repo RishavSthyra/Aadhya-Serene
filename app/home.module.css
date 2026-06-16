@@ -28,15 +28,15 @@
     position: absolute;
     inset: 0;
     background:
-        linear-gradient(90deg, rgba(7, 11, 16, 0.78) 0%, rgba(7, 11, 16, 0.58) 28%, rgba(7, 11, 16, 0.18) 54%, rgba(7, 11, 16, 0.04) 74%, rgba(7, 11, 16, 0) 100%),
-        linear-gradient(180deg, rgba(6, 9, 14, 0.42) 0%, rgba(6, 9, 14, 0.12) 32%, rgba(6, 9, 14, 0.2) 100%);
+        linear-gradient(90deg, rgba(7, 11, 16, 0.86) 0%, rgba(7, 11, 16, 0.78) 18%, rgba(7, 11, 16, 0.58) 34%, rgba(7, 11, 16, 0.24) 48%, rgba(7, 11, 16, 0.08) 58%, rgba(7, 11, 16, 0) 68%),
+        linear-gradient(180deg, rgba(6, 9, 14, 0.38) 0%, rgba(6, 9, 14, 0.1) 30%, rgba(6, 9, 14, 0.16) 100%);
     pointer-events: none;
 }
 
 .heroContent {
     position: relative;
     z-index: 1;
-    width: min(100%, 780px);
+    width: min(100%, 960px);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -46,42 +46,47 @@
     text-align: left;
 }
 
-.heroContentPanel {
-    width: min(100%, 720px);
-    padding: clamp(22px, 2vw, 30px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 28px;
-    background:
-        linear-gradient(180deg, rgba(11, 15, 22, 0.38), rgba(11, 15, 22, 0.18));
-    box-shadow:
-        0 22px 60px rgba(5, 8, 12, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(16px);
-}
-
 .heroEyebrow {
     display: inline-flex;
     align-items: center;
-    margin-bottom: 12px;
-    color: rgba(245, 246, 248, 0.78);
+    margin-bottom: 10px;
     font-size: 11px;
     font-weight: 500;
-    letter-spacing: 0.28em;
+    letter-spacing: 0.24em;
     text-transform: uppercase;
+    background: linear-gradient(90deg, #8f63ff, #ff5fb7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 .heroIntro {
-    margin: 0 0 18px;
-    color: rgba(240, 243, 247, 0.7);
-    font-size: 12px;
+    position: relative;
+    margin: 0 0 42px;
+    font-size: 11px;
     font-weight: 500;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
+    background: linear-gradient(90deg, rgba(143, 99, 255, 0.96), rgba(255, 95, 183, 0.92));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.heroIntro::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -18px;
+    width: 58px;
+    height: 2px;
+    background: linear-gradient(90deg, #8f63ff, #ff5fb7);
+    box-shadow: 20px 0 0 rgba(191, 113, 255, 0.12);
 }
 
 .heroTitle {
     margin: 0;
-    max-width: 10.5ch;
+    max-width: 10.1ch;
 }
 
 .heroTitleStack {
@@ -93,7 +98,11 @@
 
 .heroTitleLine {
     display: block;
-    overflow: hidden;
+    overflow: visible;
+    padding-top: 0.08em;
+    padding-bottom: 0.12em;
+    margin-top: -0.08em;
+    margin-bottom: -0.12em;
     white-space: nowrap;
 }
 
@@ -101,24 +110,35 @@
 .heroTitleSpace {
     display: inline-block;
     font-family: var(--font-hero), Georgia, "Times New Roman", serif;
-    font-size: clamp(3.5rem, 6.2vw, 5.95rem);
-    font-weight: 400;
-    line-height: 0.92;
-    letter-spacing: -0.045em;
+    font-size: clamp(3.9rem, 6.6vw, 6.1rem);
+    font-weight: 500;
+    line-height: 0.9;
+    letter-spacing: -0.048em;
     text-transform: uppercase;
     color: #f8f2eb;
-    text-shadow: 0 16px 42px rgba(5, 8, 12, 0.24);
+    text-shadow: 0 14px 36px rgba(5, 8, 12, 0.16);
     will-change: transform, opacity, filter;
 }
 
 .heroSubtitle {
-    width: min(100%, 31rem);
-    margin: 22px 0 0;
-    color: rgba(239, 241, 244, 0.84);
-    font-size: clamp(16px, 1.35vw, 18px);
-    line-height: 1.62;
+    position: relative;
+    width: min(100%, 36rem);
+    margin: 46px 0 0;
+    color: rgba(239, 241, 244, 0.9);
+    font-size: clamp(15px, 1.08vw, 17px);
+    line-height: 1.72;
     letter-spacing: -0.01em;
     text-wrap: pretty;
+}
+
+.heroSubtitle::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: -24px;
+    width: 92px;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(143, 99, 255, 0.96), rgba(255, 95, 183, 0.82));
 }
 
 .heroActions {
@@ -126,64 +146,59 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-start;
-    gap: 14px;
-    margin-top: 28px;
+    gap: 48px;
+    margin-top: 38px;
 }
 
 .heroPrimaryCta,
 .heroSecondaryCta {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
-    min-height: 54px;
-    padding: 0 24px;
+    justify-content: flex-start;
+    gap: 18px;
+    min-height: auto;
+    padding: 0 0 14px;
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
-    border-radius: 16px;
+    border: none;
+    border-radius: 0;
     cursor: pointer;
+    background: transparent;
+    box-shadow: none;
+    position: relative;
     transition:
         transform 0.25s ease,
-        border-color 0.25s ease,
-        background-color 0.25s ease,
-        box-shadow 0.25s ease;
+        color 0.25s ease,
+        opacity 0.25s ease;
 }
 
-.heroPrimaryCta {
-    border: 1px solid rgba(255, 246, 236, 0.86);
-    background: linear-gradient(180deg, rgba(255, 250, 245, 0.98), rgba(247, 239, 231, 0.96));
-    box-shadow: 0 18px 40px rgba(8, 13, 22, 0.18);
-    color: #1b2028;
-}
-
+.heroPrimaryCta,
 .heroSecondaryCta {
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    background: rgba(10, 15, 24, 0.14);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
-    backdrop-filter: blur(18px);
-    color: rgba(248, 251, 255, 0.92);
+    color: rgba(248, 251, 255, 0.94);
+}
+
+.heroPrimaryCta::after,
+.heroSecondaryCta::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: min(100%, 230px);
+    height: 1px;
+    background: linear-gradient(90deg, rgba(143, 99, 255, 0.98), rgba(255, 95, 183, 0.3));
 }
 
 .heroPrimaryCta:hover,
 .heroSecondaryCta:hover {
     transform: translateY(-2px);
-}
-
-.heroPrimaryCta:hover {
-    border-color: rgba(255, 249, 243, 1);
-    background: linear-gradient(180deg, rgba(255, 251, 247, 1), rgba(248, 241, 234, 0.98));
-}
-
-.heroSecondaryCta:hover {
-    border-color: rgba(255, 255, 255, 0.3);
-    background: rgba(10, 15, 24, 0.18);
+    color: rgba(255, 188, 239, 0.98);
 }
 
 .heroCtaArrow {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     flex: 0 0 auto;
 }
 
@@ -191,7 +206,7 @@
     position: relative;
     z-index: 1;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     width: 100%;
     margin-top: auto;
 }
@@ -199,48 +214,51 @@
 .heroStatsPanel {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     flex-wrap: wrap;
-    width: min(100%, 1240px);
-    max-width: min(100%, 1240px);
-    margin: 0 auto;
-    padding: 16px 18px;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 24px;
-    background: linear-gradient(180deg, rgba(15, 17, 22, 0.46), rgba(15, 17, 22, 0.28));
-    box-shadow:
-        0 18px 44px rgba(4, 6, 10, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(24px);
+    gap: 0;
+    width: min(100%, 1280px);
+    max-width: min(100%, 1280px);
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
 }
 
 .heroStat {
     display: flex;
-    flex: 1 1 220px;
+    flex: 0 1 auto;
     align-items: center;
     gap: 14px;
     min-width: 0;
-    padding: 10px 20px;
+    padding: 0 28px;
 }
 
 .heroStat + .heroStat {
-    border-left: 1px solid rgba(255, 255, 255, 0.12);
+    border-left: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .heroStatIconWrap {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 50px;
+    height: 50px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(248, 244, 239, 0.88);
+    border: 1px solid rgba(187, 115, 255, 0.48);
+    background: rgba(14, 18, 25, 0.16);
+    color: rgba(233, 171, 255, 0.96);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 0 0 1px rgba(255, 95, 183, 0.08);
 }
 
 .heroStatIcon {
-    width: 20px;
-    height: 20px;
+    width: 21px;
+    height: 21px;
 }
 
 .heroStatText {
@@ -253,7 +271,7 @@
 
 .heroStatValue {
     color: #f8f3ee;
-    font-size: clamp(1.85rem, 2.2vw, 2.2rem);
+    font-size: clamp(1.85rem, 2vw, 2.15rem);
     font-weight: 400;
     line-height: 0.94;
     letter-spacing: -0.04em;
@@ -261,57 +279,284 @@
 }
 
 .heroStatLabel {
-    color: rgba(240, 242, 245, 0.72);
-    font-size: 12px;
-    font-weight: 300;
-    letter-spacing: 0.2em;
+    color: rgba(240, 242, 245, 0.82);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-@media (min-width: 901px) and (max-height: 860px) {
-    .heroInner {
-        padding: clamp(110px, 12vh, 138px) clamp(24px, 4vw, 48px) 26px;
+@media (max-width: 1680px) {
+    .heroContent {
+        width: min(100%, 900px);
     }
 
-    .heroContentPanel {
-        padding: 20px 22px;
-        border-radius: 24px;
+    .heroTitle {
+        max-width: 9.6ch;
     }
 
     .heroTitleLetter,
     .heroTitleSpace {
-        font-size: clamp(3.2rem, 5.8vw, 5rem);
+        font-size: clamp(3.5rem, 5.6vw, 5.3rem);
     }
 
     .heroSubtitle {
-        margin-top: 18px;
-        font-size: 16px;
-        line-height: 1.5;
+        width: min(100%, 32rem);
+        margin-top: 38px;
+        font-size: 15px;
+        line-height: 1.66;
     }
 
     .heroActions {
-        margin-top: 24px;
+        gap: 34px;
+        margin-top: 30px;
+    }
+}
+
+@media (max-width: 1440px) {
+    .heroInner {
+        padding: 118px 28px 28px;
+    }
+
+    .heroContent {
+        width: min(100%, 760px);
+    }
+
+    .heroTitle {
+        max-width: 8.9ch;
+    }
+
+    .heroTitleLetter,
+    .heroTitleSpace {
+        font-size: clamp(3rem, 4.8vw, 4.5rem);
+    }
+
+    .heroSubtitle {
+        width: min(100%, 28rem);
+        margin-top: 28px;
+        font-size: 14px;
+        line-height: 1.58;
+    }
+
+    .heroActions {
+        gap: 22px;
+        margin-top: 22px;
     }
 
     .heroPrimaryCta,
     .heroSecondaryCta {
-        min-height: 48px;
-        padding: 0 22px;
+        gap: 14px;
+        padding-bottom: 12px;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+    }
+
+    .heroPrimaryCta::after,
+    .heroSecondaryCta::after {
+        width: min(100%, 170px);
+    }
+
+    .heroStatsPanel {
+        width: min(100%, 1080px);
+    }
+
+    .heroStat {
+        gap: 12px;
+        padding: 0 20px;
+    }
+
+    .heroStatIconWrap {
+        width: 44px;
+        height: 44px;
+    }
+
+    .heroStatValue {
+        font-size: clamp(1.55rem, 1.8vw, 1.9rem);
+    }
+
+    .heroStatLabel {
+        font-size: 9.5px;
+        letter-spacing: 0.12em;
+    }
+}
+
+@media (max-width: 1200px) {
+    .heroInner {
+        padding: 108px 24px 24px;
+    }
+
+    .heroContent {
+        width: min(100%, 620px);
+    }
+
+    .heroEyebrow {
+        font-size: 10px;
+        letter-spacing: 0.2em;
+    }
+
+    .heroIntro {
+        margin-bottom: 28px;
+        font-size: 10px;
+        letter-spacing: 0.15em;
+    }
+
+    .heroIntro::after {
+        bottom: -14px;
+        width: 42px;
+    }
+
+    .heroTitle {
+        max-width: 8.2ch;
+    }
+
+    .heroTitleLetter,
+    .heroTitleSpace {
+        font-size: clamp(2.45rem, 4.2vw, 3.8rem);
+        line-height: 0.96;
+    }
+
+    .heroSubtitle {
+        width: min(100%, 24rem);
+        margin-top: 22px;
+        font-size: 13px;
+        line-height: 1.52;
+    }
+
+    .heroSubtitle::before {
+        top: -18px;
+        width: 62px;
+    }
+
+    .heroActions {
+        gap: 18px;
+        margin-top: 18px;
+    }
+
+    .heroPrimaryCta,
+    .heroSecondaryCta {
+        gap: 12px;
+        font-size: 9px;
+        letter-spacing: 0.12em;
+    }
+
+    .heroCtaArrow {
+        width: 18px;
+        height: 18px;
+    }
+
+    .heroStatsDock {
+        padding-bottom: 12px;
+    }
+
+    .heroStatsPanel {
+        width: min(100%, 900px);
+    }
+
+    .heroStat {
+        gap: 10px;
+        padding: 0 16px;
+    }
+
+    .heroStatIconWrap {
+        width: 38px;
+        height: 38px;
+    }
+
+    .heroStatIcon {
+        width: 17px;
+        height: 17px;
+    }
+
+    .heroStatValue {
+        font-size: 1.4rem;
+    }
+
+    .heroStatLabel {
+        font-size: 8.5px;
+        letter-spacing: 0.08em;
+    }
+}
+
+@media (max-width: 1024px) {
+    .heroInner {
+        padding: 102px 22px calc(110px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .heroContent {
+        width: min(100%, 520px);
+    }
+
+    .heroTitle {
+        max-width: 7.6ch;
+    }
+
+    .heroTitleLine {
+        white-space: normal;
+    }
+
+    .heroTitleLetter,
+    .heroTitleSpace {
+        font-size: clamp(2rem, 5vw, 3.1rem);
+        line-height: 0.98;
+    }
+
+    .heroSubtitle {
+        width: min(100%, 21rem);
+        margin-top: 18px;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .heroActions {
+        gap: 14px;
+        margin-top: 16px;
+    }
+
+    .heroPrimaryCta,
+    .heroSecondaryCta {
+        font-size: 8.5px;
+        letter-spacing: 0.1em;
+    }
+
+    .heroPrimaryCta::after,
+    .heroSecondaryCta::after {
+        width: min(100%, 136px);
+    }
+}
+
+@media (min-width: 1441px) and (max-height: 860px) {
+    .heroInner {
+        padding: clamp(110px, 12vh, 138px) clamp(24px, 4vw, 48px) 26px;
+    }
+
+    .heroTitleLetter,
+    .heroTitleSpace {
+        font-size: clamp(3.9rem, 6.3vw, 5.7rem);
+    }
+
+    .heroSubtitle {
+        margin-top: 16px;
+        font-size: 16px;
+        line-height: 1.56;
+    }
+
+    .heroActions {
+        gap: 38px;
+        margin-top: 30px;
+    }
+
+    .heroPrimaryCta,
+    .heroSecondaryCta {
         font-size: 10.5px;
         letter-spacing: 0.15em;
     }
 
-    .heroStatsPanel {
-        padding: 14px 16px;
-    }
-
     .heroStat {
-        min-width: 190px;
         gap: 12px;
-        padding: 8px 18px;
+        padding: 0 20px;
     }
 
     .heroStatIconWrap {
@@ -328,32 +573,24 @@
     }
 }
 
-@media (min-width: 901px) and (max-height: 720px) {
-    .heroContentPanel {
-        padding: 18px 20px;
-    }
-
+@media (min-width: 1441px) and (max-height: 720px) {
     .heroTitleLetter,
     .heroTitleSpace {
-        font-size: clamp(2.8rem, 4.8vw, 4.2rem);
+        font-size: clamp(3.3rem, 5.4vw, 4.8rem);
     }
 
     .heroSubtitle {
-        margin-top: 16px;
+        margin-top: 14px;
         font-size: 15px;
     }
 
     .heroActions {
-        margin-top: 18px;
-    }
-
-    .heroStatsPanel {
-        padding: 10px 14px;
+        gap: 28px;
+        margin-top: 24px;
     }
 
     .heroStat {
-        min-width: 184px;
-        padding: 6px 16px;
+        padding: 0 16px;
     }
 }
 
@@ -362,14 +599,13 @@
         padding: 118px 20px calc(116px + env(safe-area-inset-bottom, 0px));
     }
 
-    .heroContentPanel {
-        width: min(100%, 640px);
-        padding: 20px;
-        border-radius: 24px;
+    .heroContent {
+        width: min(100%, 100%);
     }
 
     .heroTitle {
         width: 100%;
+        max-width: 6.8ch;
     }
 
     .heroTitleLine {
@@ -378,27 +614,26 @@
 
     .heroTitleLetter,
     .heroTitleSpace {
-        font-size: clamp(2.95rem, 10vw, 4.5rem);
-        line-height: 0.95;
+        font-size: clamp(2.4rem, 8.8vw, 4.2rem);
+        line-height: 0.94;
     }
 
     .heroSubtitle {
-        width: min(100%, 30rem);
-        margin-top: 18px;
-        font-size: 15px;
-        line-height: 1.6;
+        width: min(100%, 22rem);
+        margin-top: 16px;
+        font-size: 13px;
+        line-height: 1.54;
     }
 
     .heroActions {
-        margin-top: 24px;
+        gap: 18px;
+        margin-top: 22px;
     }
 
     .heroStatsPanel {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         width: min(100%, 620px);
-        padding: 14px 12px;
-        border-radius: 24px;
     }
 
     .heroStatsDock {
@@ -408,7 +643,7 @@
 
     .heroStat {
         gap: 12px;
-        padding: 10px 12px;
+        padding: 12px 12px;
     }
 
     .heroStat + .heroStat {
@@ -448,12 +683,6 @@
         padding: clamp(104px, 18vw, 126px) 18px calc(118px + env(safe-area-inset-bottom, 0px));
     }
 
-    .heroContentPanel {
-        width: 100%;
-        padding: 18px 16px;
-        border-radius: 22px;
-    }
-
     .heroEyebrow {
         margin-bottom: 10px;
         font-size: 9px;
@@ -461,59 +690,50 @@
     }
 
     .heroIntro {
-        margin-bottom: 14px;
+        margin-bottom: 30px;
         font-size: 9px;
         letter-spacing: 0.16em;
     }
 
+    .heroIntro::after {
+        bottom: -14px;
+        width: 46px;
+    }
+
     .heroTitleLetter,
     .heroTitleSpace {
-        font-size: clamp(2.1rem, 10vw, 3.2rem);
-        letter-spacing: -0.04em;
+        font-size: clamp(2rem, 9vw, 3rem);
+        letter-spacing: -0.045em;
     }
 
     .heroSubtitle {
-        width: min(100%, 28rem);
-        font-size: 12.5px;
-        line-height: 1.6;
+        width: min(100%, 18.5rem);
+        font-size: 12px;
+        line-height: 1.52;
+    }
+
+    .heroSubtitle::before {
+        top: -18px;
+        width: 64px;
     }
 
     .heroActions {
-        width: min(100%, 28rem);
-        flex-wrap: nowrap;
-        gap: 10px;
+        width: min(100%, 18.5rem);
+        flex-wrap: wrap;
+        gap: 14px;
     }
 
     .heroPrimaryCta,
     .heroSecondaryCta {
-        flex: 1 1 0;
+        flex: 0 0 auto;
         min-width: 0;
-        min-height: 44px;
-        padding: 0 12px;
         font-size: 8.5px;
         letter-spacing: 0.11em;
         white-space: nowrap;
     }
 
-    .heroPrimaryCta {
-        gap: 8px;
-    }
-
-    .heroSecondaryCta {
-        padding: 0 10px;
-    }
-
-    .heroPrimaryCta span,
-    .heroSecondaryCta span {
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
     .heroStatsPanel {
         width: 100%;
-        padding: 10px 8px;
-        border-radius: 22px;
     }
 
     .heroStat {

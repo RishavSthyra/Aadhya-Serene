@@ -47,6 +47,7 @@ const BROCHURE_URL =
 
 function getContainerId(pathname) {
   if (pathname === "/") return "home-inner";
+  if (pathname.startsWith("/app-home-preview")) return "home-inner";
   if (pathname.startsWith("/project-overview")) return "project-overview-container";
   return null;
 }
