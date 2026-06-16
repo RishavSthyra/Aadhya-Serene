@@ -25,11 +25,11 @@ const NAV_LINKS = [
 ];
 
 const HOME_DESKTOP_NAV_LINKS = [
+  { href: "/project-overview", label: "Project Overview" },
   { href: "/apartments", label: "Residences" },
   { href: "/amenities", label: "Amenities" },
-  { href: "/walkthrough", label: "Gallery" },
+  { href: "/walkthrough", label: "Walkthrough" },
   { href: "/location", label: "Location" },
-  { href: "/project-overview", label: "Project Overview" },
 ];
 
 const PREFETCH_ROUTES = [
