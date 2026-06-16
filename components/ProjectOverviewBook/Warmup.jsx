@@ -10,6 +10,9 @@ const warmupAssets = [
   '/FlipbookPages/page7new.png',
   '/FlipbookPages/page9new.png',
   '/FlipbookPages/Page5_And_6.png',
+  '/FlipbookPages/Masterplan%20Page.png',
+  '/FlipbookPages/Spec%20Left%20section%20Image.png',
+  '/FlipbookPages/Specificaitions%20Right%20Page.png',
 ];
 
 export default function ProjectOverviewWarmup() {

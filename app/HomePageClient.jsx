@@ -250,7 +250,7 @@ export default function HomePageClient() {
               disableAnimation={shouldUseLightMotion}
             />
           </h1>
-
+ 
           <motion.p
             initial={false}
             animate={heroAnimationActive ? "visible" : "hidden"}

@@ -8,6 +8,8 @@ import DeckPage from './DeckPage';
 import { flipbookPages } from './book-data';
 
 const FLIP_AUDIO_URL = '/project-overview-book/audios/page-flip-01a.mp3';
+const FLOATING_ILLUSTRATION_URL = '/project_overview_page_illustration1.png';
+const FLOATING_PLANT_URL = '/landing%20page%20images/marble-pothos-indoor-hanging-plant-Photoroom.png';
 const PAGE_ASPECT_RATIO = 1.414;
 
 function useViewport() {
@@ -140,7 +142,25 @@ export default function ProjectOverviewBook() {
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/BROCHUREIMAGE2.avif')" }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(20,14,8,0.1)_0%,rgba(20,14,8,0.2)_45%,rgba(20,14,8,0.36)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(20,14,8,0.2)_0%,rgba(20,14,8,0.34)_45%,rgba(20,14,8,0.52)_100%)]" />
+      <motion.img
+        src={FLOATING_ILLUSTRATION_URL}
+        alt=""
+        aria-hidden="true"
+        initial={{ opacity: 0, x: -42, y: 52, scaleX: -0.86, scaleY: 0.86, rotate: -4 }}
+        animate={{ opacity: 1, x: 0, y: 0, scaleX: -1, scaleY: 1, rotate: 0 }}
+        transition={{ duration: 0.76, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
+        className="pointer-events-none absolute bottom-0 left-0 z-20 w-[clamp(180px,18vw,340px)] select-none brightness-[1.08] contrast-[1.04] drop-shadow-[0_22px_48px_rgba(0,0,0,0.24)] sm:w-[clamp(220px,20vw,420px)]"
+      />
+      {/* <motion.img
+        src={FLOATING_PLANT_URL}
+        alt=""
+        aria-hidden="true"
+        initial={{ opacity: 0, x: 40, y: -36, scale: 0.82, rotate: 7 }}
+        animate={{ opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 }}
+        transition={{ duration: 0.82, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        className="pointer-events-none absolute right-[clamp(18px,3.2vw,52px)] top-0 z-20 w-[clamp(130px,13vw,260px)] select-none drop-shadow-[0_18px_40px_rgba(0,0,0,0.16)] sm:w-[clamp(160px,15vw,300px)]"
+      /> */}
 
       <div className="relative flex min-h-dvh flex-col items-center justify-center px-4 py-24 sm:px-6 sm:py-28 lg:px-10">
         <motion.div

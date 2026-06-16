@@ -1,6 +1,9 @@
 const coverPage = '/FlipbookPages/coverpagenew.png';
 const backCover = '/FlipbookPages/page8.png'
 const spreadPage = '/FlipbookPages/Page5_And_6.png';
+const masterplanSpreadPage = '/FlipbookPages/Masterplan%20Page.png';
+const specificationsLeftPage = '/FlipbookPages/Spec%20Left%20section%20Image.png';
+const specificationsRightPage = '/FlipbookPages/Specificaitions%20Right%20Page.png';
 
 export const flipbookPages = [
   {
@@ -40,6 +43,28 @@ export const flipbookPages = [
     src: spreadPage,
     alt: 'Project overview spread pages 5 and 6 right side',
     crop: 'right',
+  },
+  {
+    key: 'masterplan-left',
+    src: masterplanSpreadPage,
+    alt: 'Project overview masterplan spread left side',
+    crop: 'left',
+  },
+  {
+    key: 'masterplan-right',
+    src: masterplanSpreadPage,
+    alt: 'Project overview masterplan spread right side',
+    crop: 'right',
+  },
+  {
+    key: 'specifications-left',
+    src: specificationsLeftPage,
+    alt: 'Project overview specifications spread left side',
+  },
+  {
+    key: 'specifications-right',
+    src: specificationsRightPage,
+    alt: 'Project overview specifications spread right side',
   },
   {
     key: 'back-cover',

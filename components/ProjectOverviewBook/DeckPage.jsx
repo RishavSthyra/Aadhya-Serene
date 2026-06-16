@@ -15,10 +15,12 @@ const pageImageSize = {
 };
 
 const DeckPage = forwardRef(function DeckPage(
-  { image, alt, crop = 'full', hard = false },
+  { image, alt, crop = 'full', hard = false, content = null, pageSide = null },
   ref,
 ) {
   const isSplitSpread = crop === 'left' || crop === 'right';
+  const effectivePageSide = pageSide ?? (isSplitSpread ? crop : 'full');
+  const hasCustomContent = Boolean(content);
 
   return (
     <div
@@ -39,32 +41,35 @@ const DeckPage = forwardRef(function DeckPage(
           transform: 'translateZ(1px)',
         }}
       >
-        {isSplitSpread ? (
-          <div
-            aria-label={alt}
-            role="img"
-            className="h-full w-full bg-no-repeat"
-            style={{
-              backgroundImage: `url(${image})`,
-              backgroundPosition: pageImagePosition[crop],
-              backgroundSize: pageImageSize[crop],
-            }}
-          />
-        ) : (
-          <img
-            src={image}
-            alt={alt}
-            draggable={false}
-            className="h-full w-full select-none object-fill"
-          />
-        )}
+        {hasCustomContent
+          ? content
+          : isSplitSpread
+            ? (
+              <div
+                aria-label={alt}
+                role="img"
+                className="h-full w-full bg-no-repeat"
+                style={{
+                  backgroundImage: `url("${image}")`,
+                  backgroundPosition: pageImagePosition[crop],
+                  backgroundSize: pageImageSize[crop],
+                }}
+              />
+            ) : (
+              <img
+                src={image}
+                alt={alt}
+                draggable={false}
+                className="h-full w-full select-none object-fill"
+              />
+            )}
 
         <div
           aria-hidden="true"
           className={`pointer-events-none absolute inset-y-0 ${
-            crop === 'left'
+            effectivePageSide === 'left'
               ? 'right-0 w-12 bg-gradient-to-l from-black/16 via-black/7 to-transparent'
-              : crop === 'right'
+              : effectivePageSide === 'right'
                 ? 'left-0 w-12 bg-gradient-to-r from-black/16 via-black/7 to-transparent'
                 : 'inset-x-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent_16%,transparent_84%,rgba(0,0,0,0.05))]'
           }`}
