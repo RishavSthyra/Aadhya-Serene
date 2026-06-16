@@ -13,6 +13,11 @@
     transform: translateZ(0);
 }
 
+.mediaRoot[data-layout="home"] {
+    transform: translateZ(0) scaleX(-1);
+    transform-origin: center;
+}
+
 .video {
     object-fit: cover;
     object-position: center;

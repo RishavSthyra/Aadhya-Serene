@@ -3,14 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Montserrat } from "next/font/google";
-import {
-  ArrowRight,
-  Building2,
-  MapPin,
-  Sparkles,
-  Trees,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import usePerformanceProfile from "@/hooks/usePerformanceProfile";
 import LuxuryPreloader from "@/components/Home/LuxuryPreloader";
 import {
@@ -20,19 +13,10 @@ import {
 } from "@/lib/home-loader";
 import styles from "./home.module.css";
 
-const statsFont = Montserrat({
-  subsets: ["latin"],
-  weight: ["200", "300", "400"],
-  display: "swap",
-});
-
+const HERO_EYEBROW = "Ready homes in Thanisandra";
 const HERO_TITLE_LINES = ["THE ART OF", "THOUGHTFUL LIVING"];
-const HERO_STATS = [
-  { icon: Building2, value: "136", label: "Flats" },
-  { icon: Sparkles, value: "20+", label: "World Class Amenities" },
-  { icon: Trees, value: "1.2", label: "Acres" },
-  { icon: MapPin, value: "1", label: "Prestige Address" },
-];
+const HERO_SUBTITLE =
+  "Finished 2 and 3 BHK residences shaped for open light, quieter mornings, and easy everyday living in North Bengaluru.";
 const WHEEL_NAV_THRESHOLD = 4;
 
 const heroRevealTransition = {
@@ -257,18 +241,8 @@ export default function HomePageClient() {
             transition={{ ...heroRevealTransition, delay: 0.12 }}
             className={styles.heroEyebrow}
           >
-            Aadhya Serene
+            {HERO_EYEBROW}
           </motion.div>
-
-          <motion.p
-            initial={false}
-            animate={heroAnimationActive ? "visible" : "hidden"}
-            variants={heroRevealVariants}
-            transition={{ ...heroRevealTransition, delay: 0.2 }}
-            className={styles.heroIntro}
-          >
-            Ready residences in Thanisandra, Bengaluru
-          </motion.p>
 
           <h1 className={styles.heroTitle}>
             <AnimatedHeroTitle
@@ -281,17 +255,17 @@ export default function HomePageClient() {
             initial={false}
             animate={heroAnimationActive ? "visible" : "hidden"}
             variants={heroRevealVariants}
-            transition={{ ...heroRevealTransition, delay: 0.94 }}
+            transition={{ ...heroRevealTransition, delay: 0.74 }}
             className={styles.heroSubtitle}
           >
-            Premium residences, curated amenities, and a more balanced rhythm of living in North Bengaluru, designed for families who want calm surroundings, thoughtful planning, and everyday comfort without compromise.
+            {HERO_SUBTITLE}
           </motion.p>
 
           <motion.div
             initial={false}
             animate={heroAnimationActive ? "visible" : "hidden"}
             variants={heroRevealVariants}
-            transition={{ ...heroRevealTransition, delay: 1.12 }}
+            transition={{ ...heroRevealTransition, delay: 0.9 }}
             className={styles.heroActions}
           >
             <button
@@ -301,7 +275,7 @@ export default function HomePageClient() {
               onTouchStart={primeApartmentsRoute}
               className={styles.heroPrimaryCta}
             >
-              <span>Explore Residences</span>
+              <span>Explore Homes</span>
               <ArrowRight className={styles.heroCtaArrow} aria-hidden="true" />
             </button>
 
@@ -310,32 +284,10 @@ export default function HomePageClient() {
               onClick={() => navigateTo("/project-overview")}
               className={styles.heroSecondaryCta}
             >
-              View Project Story
+              Project Story
             </button>
           </motion.div>
         </div>
-
-        <motion.div
-          initial={false}
-          animate={heroAnimationActive ? "visible" : "hidden"}
-          variants={heroRevealVariants}
-          transition={{ duration: 0.85, delay: 1.3, ease: [0.22, 1, 0.36, 1] }}
-          className={styles.heroStatsDock}
-        >
-          <div className={styles.heroStatsPanel}>
-            {HERO_STATS.map(({ icon: Icon, value, label }) => (
-              <div key={label} className={styles.heroStat}>
-                <span className={styles.heroStatIconWrap}>
-                  <Icon className={styles.heroStatIcon} aria-hidden="true" />
-                </span>
-                <div className={styles.heroStatText}>
-                  <span className={`${styles.heroStatValue} ${statsFont.className}`}>{value}</span>
-                  <span className={`${styles.heroStatLabel} ${statsFont.className}`}>{label}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
       </section>
     </main>
   );
