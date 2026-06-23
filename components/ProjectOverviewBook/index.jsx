@@ -49,13 +49,14 @@ function getBookSize(width, height) {
   const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1180;
   const horizontalPadding = isMobile ? 28 : isTablet ? 40 : 64;
+  const verticalChromeReserve = isMobile ? 190 : isTablet ? 230 : 260;
   const maxPageWidth = isMobile ? width - horizontalPadding : (width - horizontalPadding) / 2;
   const preferredPageWidth = isMobile
     ? width * 0.9
     : isTablet
       ? Math.min((width - 40) / 2, 620)
       : Math.min((width - 56) / 2, 900);
-  const availableHeight = Math.max(500, height - (isMobile ? 180 : 170));
+  const availableHeight = Math.max(isMobile ? 500 : 540, height - verticalChromeReserve);
   let pageWidth = Math.min(maxPageWidth, preferredPageWidth);
   let pageHeight = pageWidth * PAGE_ASPECT_RATIO;
 
@@ -180,7 +181,7 @@ export default function ProjectOverviewBook() {
         className="pointer-events-none absolute right-[clamp(18px,3.2vw,52px)] top-0 z-20 w-[clamp(130px,13vw,260px)] select-none drop-shadow-[0_18px_40px_rgba(0,0,0,0.16)] sm:w-[clamp(160px,15vw,300px)]"
       /> */}
 
-      <div className="relative flex min-h-dvh flex-col items-center justify-center px-4 py-24 sm:px-6 sm:py-28 lg:px-10 lg:py-12">
+      <div className="relative flex min-h-dvh flex-col items-center justify-center px-4 pb-16 pt-28 sm:px-6 sm:pb-20 sm:pt-32 lg:px-10 lg:pb-20 lg:pt-36 xl:pt-40">
         <motion.div
           initial={{ opacity: 0, y: 24, scale: 0.985 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}

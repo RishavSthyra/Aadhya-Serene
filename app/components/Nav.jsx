@@ -58,6 +58,7 @@ export default function Nav({ siteVariant }) {
   const { isTabletOrBelow, shouldReduceMotion } = usePerformanceProfile();
   const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
   const isApartmentsRoute = pathname.startsWith("/apartments");
+  const isProjectOverviewRoute = pathname.startsWith("/project-overview");
   const isLandingRoute = isReadyToMoveExperience(pathname, siteVariant);
   const [isNavVisible, setIsNavVisible] = useState(true);
   const hideTimeoutRef = useRef(null);
@@ -177,6 +178,17 @@ export default function Nav({ siteVariant }) {
     return null;
   }
 
+  const desktopNavTextClass = isProjectOverviewRoute
+    ? "text-[#5a4634] transition hover:text-[#2f2419]"
+    : "text-white/78 transition hover:text-white";
+  const desktopNavActiveTextClass = isProjectOverviewRoute ? "text-[#2f2419]" : "text-white";
+  const brochureButtonClass = isProjectOverviewRoute
+    ? "inline-flex min-h-[42px] cursor-pointer items-center gap-1.5 rounded-[18px] border border-[#3c2d22]/22 bg-[linear-gradient(135deg,rgba(47,36,25,0.9)_0%,rgba(74,54,37,0.88)_100%)] px-5 text-[#fff4e8] shadow-[0_12px_28px_rgba(34,22,13,0.22),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-[#2f2419]/35 hover:bg-[linear-gradient(135deg,rgba(39,29,20,0.96)_0%,rgba(63,46,32,0.94)_100%)]"
+    : "inline-flex min-h-[42px] cursor-pointer items-center gap-1.5 rounded-[18px] border border-[#86b7ff]/45 bg-[linear-gradient(90deg,rgba(112,73,255,0.2)_0%,rgba(74,154,255,0.42)_50%,rgba(255,69,168,0.24)_100%)] px-5 text-white shadow-[0_10px_26px_rgba(29,52,110,0.2),inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-[#9ec4ff]/70 hover:bg-[linear-gradient(90deg,rgba(112,73,255,0.28)_0%,rgba(74,154,255,0.52)_50%,rgba(255,69,168,0.3)_100%)]";
+  const contactButtonClass = isProjectOverviewRoute
+    ? "inline-flex min-h-[42px] cursor-pointer items-center rounded-[18px] border border-[#3c2d22]/22 bg-[#2f2419]/86 px-6 text-[#fff4e8] shadow-[0_12px_28px_rgba(34,22,13,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-[#261c14]/94"
+    : "inline-flex min-h-[42px] cursor-pointer items-center rounded-[18px] border border-white/44 bg-white/[0.03] px-6 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/[0.08]";
+
   return (
     <>
       {shouldAutoHideNav ? (
@@ -217,15 +229,17 @@ export default function Nav({ siteVariant }) {
         <div className="relative w-full px-6 pb-2 pt-4 xl:px-8 xl:pb-3 xl:pt-5 2xl:px-10">
           <div className="relative py-2 text-white">
             <div className="relative z-[1] flex min-h-[88px] items-center justify-between gap-6">
-              <Link
-                href="/"
-                className="relative z-[2] flex items-center justify-start text-left text-white no-underline"
-              >
-                <AadhyaLogo
-                  aria-label="Aadhya Serene"
-                  className="h-[44px] w-auto object-contain md:h-[48px]"
-                />
-              </Link>
+              {isProjectOverviewRoute ? null : (
+                <Link
+                  href="/"
+                  className="relative z-[2] flex items-center justify-start text-left text-white no-underline"
+                >
+                  <AadhyaLogo
+                    aria-label="Aadhya Serene"
+                    className="h-[44px] w-auto object-contain md:h-[48px]"
+                  />
+                </Link>
+              )}
 
               <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-7 lg:flex xl:gap-9 2xl:gap-10">
                 {desktopNavLinks.map(({ href, label }) => {
@@ -238,8 +252,8 @@ export default function Nav({ siteVariant }) {
                       onMouseEnter={() => primeRoute(href)}
                       onFocus={() => primeRoute(href)}
                       onClick={() => handleRouteNavigation(href)}
-                      className={`inline-flex min-h-[42px] items-center gap-1.5 px-0 text-white/78 transition hover:text-white ${
-                        active ? "text-white" : ""
+                      className={`inline-flex min-h-[42px] items-center gap-1.5 px-0 ${
+                        active ? desktopNavActiveTextClass : desktopNavTextClass
                       }`}
                     >
                       <span className="text-[13px] font-medium uppercase tracking-[0.16em]">
@@ -254,7 +268,7 @@ export default function Nav({ siteVariant }) {
                 <Link
                   href={BROCHURE_URL}
                   target="_blank"
-                  className="inline-flex min-h-[42px] cursor-pointer items-center gap-1.5 rounded-[18px] border border-[#86b7ff]/45 bg-[linear-gradient(90deg,rgba(112,73,255,0.2)_0%,rgba(74,154,255,0.42)_50%,rgba(255,69,168,0.24)_100%)] px-5 text-white shadow-[0_10px_26px_rgba(29,52,110,0.2),inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-[#9ec4ff]/70 hover:bg-[linear-gradient(90deg,rgba(112,73,255,0.28)_0%,rgba(74,154,255,0.52)_50%,rgba(255,69,168,0.3)_100%)]"
+                  className={brochureButtonClass}
                 >
                   <FileText className="h-3 w-3" />
                   <span className="text-[12px] font-medium uppercase tracking-[0.14em]">
@@ -267,7 +281,7 @@ export default function Nav({ siteVariant }) {
                   onClick={() => router.push("/contact")}
                   onPointerEnter={() => primeRoute("/contact")}
                   onFocus={() => primeRoute("/contact")}
-                  className="inline-flex min-h-[42px] cursor-pointer items-center rounded-[18px] border border-white/44 bg-white/[0.03] px-6 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
+                  className={contactButtonClass}
                 >
                   <span className="text-[12px] font-medium uppercase tracking-[0.14em]">
                     Contact Us
