@@ -27,9 +27,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background:
-        radial-gradient(circle at 88% 82%, rgba(24, 15, 10, 0.54) 0%, rgba(24, 15, 10, 0.38) 22%, rgba(24, 15, 10, 0.14) 42%, rgba(24, 15, 10, 0.03) 58%, transparent 72%),
-        linear-gradient(180deg, rgba(10, 10, 12, 0.06) 0%, rgba(10, 10, 12, 0.02) 34%, rgba(10, 10, 12, 0.16) 100%);
+    background: none;
     pointer-events: none;
 }
 

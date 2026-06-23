@@ -2,15 +2,16 @@
 
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HTMLFlipBook from 'react-pageflip';
+import ProjectOverviewWarmup from './Warmup';
 import DeckPage from './DeckPage';
 import { flipbookPages } from './book-data';
 
 const FLIP_AUDIO_URL = '/project-overview-book/audios/page-flip-01a.mp3';
-const FLOATING_ILLUSTRATION_URL = '/project_overview_page_illustration1.png';
-const FLOATING_PLANT_URL = '/landing%20page%20images/marble-pothos-indoor-hanging-plant-Photoroom.png';
-const PAGE_ASPECT_RATIO = 1.414;
+const PAGE_ASPECT_RATIO = 1.08;
+const ButterflyOverlay = dynamic(() => import('./ButterflyOverlay'), { ssr: false });
 
 function useViewport() {
   const [viewport, setViewport] = useState({
@@ -49,11 +50,11 @@ function getBookSize(width, height) {
   const horizontalPadding = isMobile ? 28 : isTablet ? 40 : 64;
   const maxPageWidth = isMobile ? width - horizontalPadding : (width - horizontalPadding) / 2;
   const preferredPageWidth = isMobile
-    ? width * 0.82
+    ? width * 0.9
     : isTablet
-      ? Math.min((width - 52) / 2, 520)
-      : Math.min((width - 72) / 2, 820);
-  const availableHeight = Math.max(500, height - (isMobile ? 220 : 210));
+      ? Math.min((width - 40) / 2, 620)
+      : Math.min((width - 56) / 2, 900);
+  const availableHeight = Math.max(500, height - (isMobile ? 180 : 170));
   let pageWidth = Math.min(maxPageWidth, preferredPageWidth);
   let pageHeight = pageWidth * PAGE_ASPECT_RATIO;
 
@@ -138,12 +139,14 @@ export default function ProjectOverviewBook() {
       id="project-overview-container"
       className="fixed inset-0 z-10 overflow-hidden bg-[#110d08] text-white"
     >
+      <ProjectOverviewWarmup />
       <div
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/BROCHUREIMAGE2.avif')" }}
+        style={{ backgroundImage: "url('/Brochure_Bg.avif')" }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(20,14,8,0.2)_0%,rgba(20,14,8,0.34)_45%,rgba(20,14,8,0.52)_100%)]" />
-      <motion.img
+      <ButterflyOverlay />
+      {/* <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(20,14,8,0.2)_0%,rgba(20,14,8,0.34)_45%,rgba(20,14,8,0.52)_100%)]" /> */}
+      {/* <motion.img
         src={FLOATING_ILLUSTRATION_URL}
         alt=""
         aria-hidden="true"
@@ -151,7 +154,7 @@ export default function ProjectOverviewBook() {
         animate={{ opacity: 1, x: 0, y: 0, scaleX: -1, scaleY: 1, rotate: 0 }}
         transition={{ duration: 0.76, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
         className="pointer-events-none absolute bottom-0 left-0 z-20 w-[clamp(180px,18vw,340px)] select-none brightness-[1.08] contrast-[1.04] drop-shadow-[0_22px_48px_rgba(0,0,0,0.24)] sm:w-[clamp(220px,20vw,420px)]"
-      />
+      /> */}
       {/* <motion.img
         src={FLOATING_PLANT_URL}
         alt=""
@@ -162,12 +165,12 @@ export default function ProjectOverviewBook() {
         className="pointer-events-none absolute right-[clamp(18px,3.2vw,52px)] top-0 z-20 w-[clamp(130px,13vw,260px)] select-none drop-shadow-[0_18px_40px_rgba(0,0,0,0.16)] sm:w-[clamp(160px,15vw,300px)]"
       /> */}
 
-      <div className="relative flex min-h-dvh flex-col items-center justify-center px-4 py-24 sm:px-6 sm:py-28 lg:px-10">
+      <div className="relative flex min-h-dvh flex-col items-center justify-center px-4 py-24 sm:px-6 sm:py-28 lg:px-10 lg:py-12">
         <motion.div
           initial={{ opacity: 0, y: 24, scale: 0.985 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="flex w-full flex-col items-center"
+          className="relative flex w-full flex-col items-center"
         >
           {/* <div className="mb-5 inline-flex items-center gap-3 rounded-full border border-white/14 bg-black/24 px-4 py-2 text-[10px] uppercase tracking-[0.34em] text-white/74 shadow-[0_18px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:mb-6 sm:text-[11px]">
             <span>Project Overview</span>
@@ -203,7 +206,7 @@ export default function ProjectOverviewBook() {
                 </>
               ) : null}
 
-              <div className="relative z-30 [filter:drop-shadow(0_22px_46px_rgba(0,0,0,0.28))]">
+              <div className="relative z-[80] [filter:drop-shadow(0_22px_46px_rgba(0,0,0,0.28))]">
                 <HTMLFlipBook
                   key={flipbookKey}
                   ref={bookRef}
@@ -242,7 +245,7 @@ export default function ProjectOverviewBook() {
             </div>
           </div>
 
-          <div className="mt-6 flex items-center gap-3 sm:mt-7">
+          <div className="mt-6 flex items-center gap-3 sm:mt-7 lg:absolute lg:bottom-[-88px] lg:left-1/2 lg:mt-0 lg:-translate-x-1/2">
             <button
               type="button"
               onClick={goToPreviousPage}

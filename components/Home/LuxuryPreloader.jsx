@@ -14,16 +14,24 @@ import ProjectOverviewWarmup from '@/components/ProjectOverviewBook/Warmup';
 import styles from '../../app/home.module.css';
 
 const MIN_PRELOADER_DURATION_MS = 1800;
-const MAX_PRELOADER_DURATION_MS = 4600;
+const MAX_PRELOADER_DURATION_MS = 8000;
 const REVEAL_DURATION_MS = 980;
 const EASE_OUT_CUBIC = (value) => 1 - ((1 - value) ** 3);
 
-const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/4K%202.mp4';
-const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/first_frame.avif';
+const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/Aadhya%20Serene%20Home%20Page.mp4';
+const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya%20Serene%20Home%20Page%20-%20First%20Frame.avif';
 const APARTMENTS_VIDEO_SAFE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_1920w_60fps_h264_safe.mp4';
 const APARTMENTS_VIDEO_PREMIUM = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_2560w_60fps_h264_premium.mp4';
+const APARTMENTS_VIDEO_ULTRA = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_3200w_60fps_h264_ultra.mp4';
 const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
 const ROT360_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp';
+const VIDEO_WARMUP_SOURCES = [
+  HOME_VIDEO,
+  APARTMENTS_VIDEO_SAFE,
+  APARTMENTS_VIDEO_PREMIUM,
+  APARTMENTS_VIDEO_ULTRA,
+  APARTMENTS_LOOP,
+];
 
 function frameUrl(frameNumber) {
   return `${ROT360_BASE}/frame_${String(frameNumber).padStart(4, '0')}.webp`;
@@ -71,7 +79,6 @@ function getSelectedMediaSources() {
 }
 
 function getCriticalAssets() {
-  const sources = getSelectedMediaSources();
   const scrubFrameAssets = getPreloaderScrubFrames()
     .slice(0, shouldUseSafeMedia() ? 18 : 34)
     .map(frameUrl);
@@ -79,8 +86,10 @@ function getCriticalAssets() {
   return [
     '/favicon.ico',
     HOME_POSTER,
-    sources.homeVideo,
-    sources.apartmentsTransition,
+    HOME_VIDEO,
+    APARTMENTS_VIDEO_SAFE,
+    APARTMENTS_VIDEO_PREMIUM,
+    APARTMENTS_VIDEO_ULTRA,
     APARTMENTS_LOOP,
     ...getProjectOverviewCriticalAssets(),
     ...scrubFrameAssets,
@@ -176,7 +185,7 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
     void registerAssetCacheServiceWorker();
     void warmProjectOverviewModules();
     const criticalQueue = [...criticalAssets];
-    const criticalWorkers = Array.from({ length: 2 }, async () => {
+    const criticalWorkers = Array.from({ length: 3 }, async () => {
       while (!cancelled && criticalQueue.length > 0) {
         const nextAsset = criticalQueue.shift();
         await cacheAssetOnce(nextAsset, { priority: 'high' }).finally(reportAssetComplete);
@@ -213,6 +222,20 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
     >
       <div className={styles.luxuryLoaderBackdrop} />
       <ProjectOverviewWarmup />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed left-[-9999px] top-[-9999px] h-px w-px overflow-hidden opacity-0"
+      >
+        {VIDEO_WARMUP_SOURCES.map((src) => (
+          <video
+            key={src}
+            muted
+            playsInline
+            preload="auto"
+            src={src}
+          />
+        ))}
+      </div>
 
       <div className={styles.luxuryLoaderInner}>
         <div className={styles.luxuryLoaderMarkWrap} aria-hidden="true">

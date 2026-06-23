@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import usePerformanceProfile from "@/hooks/usePerformanceProfile";
@@ -77,6 +77,7 @@ function AnimatedHeroTitle({ isActive, disableAnimation = false }) {
 }
 
 export default function HomePageClient() {
+  const pathname = usePathname();
   const router = useRouter();
   const isNavigatingRef = useRef(false);
   const [heroAnimationActive, setHeroAnimationActive] = useState(true);
@@ -221,7 +222,7 @@ export default function HomePageClient() {
       window.removeEventListener("touchend", onTouchEnd);
       window.clearTimeout(wheelResetTimeoutId);
     };
-  }, [navigateTo]);
+  }, [navigateTo, pathname]);
 
   return (
     <main className={styles.heroSection}>

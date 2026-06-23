@@ -1,21 +1,33 @@
 'use client';
 
+import { useEffect } from 'react';
+import { cacheAssetOnce } from '@/lib/client-asset-cache';
+import { getProjectOverviewCriticalAssets, warmProjectOverviewModules } from '@/lib/project-overview-assets';
+
 const warmupAssets = [
-  '/BROCHUREIMAGE2.avif',
+  '/Brochure_Bg.avif',
   '/FlipbookPages/page1new.png',
   '/FlipbookPages/page1.png',
   '/FlipbookPages/Page2.png',
-  '/FlipbookPages/page3new2.png',
-  '/FlipbookPages/page4new.png',
-  '/FlipbookPages/page7new.png',
-  '/FlipbookPages/page9new.png',
-  '/FlipbookPages/Page5_And_6.png',
-  '/FlipbookPages/Masterplan%20Page.png',
-  '/FlipbookPages/Spec%20Left%20section%20Image.png',
-  '/FlipbookPages/Specificaitions%20Right%20Page.png',
+  '/FlipbookPages/page3new2.avif',
+  '/FlipbookPages/page4new.avif',
+  '/FlipbookPages/page7new.avif',
+  '/FlipbookPages/page9new.avif',
+  '/FlipbookPages/Page5_And_6.avif',
+  '/FlipbookPages/Masterplan%20Page.avif',
+  '/FlipbookPages/Spec%20Left%20section%20Image.avif',
+  '/FlipbookPages/Specificaitions%20Right%20Page.avif',
 ];
 
 export default function ProjectOverviewWarmup() {
+  useEffect(() => {
+    void warmProjectOverviewModules();
+
+    getProjectOverviewCriticalAssets().forEach((assetUrl) => {
+      void cacheAssetOnce(assetUrl, { priority: 'high' });
+    });
+  }, []);
+
   return (
     <div
       aria-hidden="true"

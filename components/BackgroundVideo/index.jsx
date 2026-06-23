@@ -19,8 +19,8 @@ import usePerformanceProfile from '@/hooks/usePerformanceProfile';
 import styles from './background-video.module.css';
 
 const S3_BUCKET = 'https://aadhya-serene-assets-v2.s3.amazonaws.com';
-const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/4K%202.mp4';
-const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/first_frame.avif';
+const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/Aadhya%20Serene%20Home%20Page.mp4';
+const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya%20Serene%20Home%20Page%20-%20First%20Frame.avif';
 
 const APARTMENTS_TRANSITION = {
     safe: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_1920w_60fps_h264_safe.mp4',
@@ -946,8 +946,12 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             style={{
                 backgroundColor: '#050608',
                 backgroundImage: posterSrc
-                    ? `linear-gradient(180deg, rgba(7,9,14,0.16), rgba(7,9,14,0.44)), url(${posterSrc})`
-                    : 'linear-gradient(180deg, rgba(7,9,14,0.22), rgba(7,9,14,0.58))',
+                    ? layout === 'home'
+                        ? `url(${posterSrc})`
+                        : `linear-gradient(180deg, rgba(7,9,14,0.16), rgba(7,9,14,0.44)), url(${posterSrc})`
+                    : layout === 'home'
+                        ? 'none'
+                        : 'linear-gradient(180deg, rgba(7,9,14,0.22), rgba(7,9,14,0.58))',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
                 backgroundSize: 'cover',

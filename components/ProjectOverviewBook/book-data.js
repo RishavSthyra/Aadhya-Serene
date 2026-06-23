@@ -1,9 +1,9 @@
-const coverPage = '/FlipbookPages/coverpagenew.png';
-const backCover = '/FlipbookPages/page8.png'
-const spreadPage = '/FlipbookPages/Page5_And_6.png';
-const masterplanSpreadPage = '/FlipbookPages/Masterplan%20Page.png';
-const specificationsLeftPage = '/FlipbookPages/Spec%20Left%20section%20Image.png';
-const specificationsRightPage = '/FlipbookPages/Specificaitions%20Right%20Page.png';
+const coverPage = '/FlipbookPages/coverpagenew.avif';
+const backCover = '/FlipbookPages/page8.avif'
+const spreadPage = '/FlipbookPages/Page5_And_6.avif';
+const masterplanSpreadPage = '/FlipbookPages/Masterplan%20Page.avif';
+const specificationsLeftPage = '/FlipbookPages/Spec%20Left%20section%20Image.avif';
+const specificationsRightPage = '/FlipbookPages/Specificaitions%20Right%20Page.avif';
 
 export const flipbookPages = [
   {
@@ -14,22 +14,22 @@ export const flipbookPages = [
   },
   {
     key: 'page-3',
-    src: '/FlipbookPages/page3new2.png',
+    src: '/FlipbookPages/page3new2.avif',
     alt: 'Project overview page 3',
   },
   {
     key: 'page-4',
-    src: '/FlipbookPages/page4new.png',
+    src: '/FlipbookPages/page4new.avif',
     alt: 'Project overview page 4',
   },
   {
     key: 'page-7',
-    src: '/FlipbookPages/page7new.png',
+    src: '/FlipbookPages/page7new.avif',
     alt: 'Project overview page 7',
   },
   {
     key: 'page-8',
-    src: '/FlipbookPages/page9new.png',
+    src: '/FlipbookPages/page9new.avif',
     alt: 'Project overview page 8',
   },
   {
