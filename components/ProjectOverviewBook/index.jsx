@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import HTMLFlipBook from 'react-pageflip';
 import ProjectOverviewWarmup from './Warmup';
 import DeckPage from './DeckPage';
+import SpreadZoomPage from './SpreadZoomPage';
 import { flipbookPages } from './book-data';
 
 const FLIP_AUDIO_URL = '/project-overview-book/audios/page-flip-01a.mp3';
@@ -134,6 +135,20 @@ export default function ProjectOverviewBook() {
     setBookState('read');
   }, [flipbookKey]);
 
+  const getPageContent = (page) => {
+    if (page.key !== 'spread-left' && page.key !== 'spread-right') {
+      return null;
+    }
+
+    return (
+      <SpreadZoomPage
+        image={page.src}
+        alt={page.alt}
+        crop={page.crop}
+      />
+    );
+  };
+
   return (
     <main
       id="project-overview-container"
@@ -238,6 +253,7 @@ export default function ProjectOverviewBook() {
                       alt={page.alt}
                       crop={page.crop}
                       hard={!bookSize.isMobile && page.hard}
+                      content={getPageContent(page)}
                     />
                   ))}
                 </HTMLFlipBook>
