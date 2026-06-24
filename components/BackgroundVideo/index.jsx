@@ -18,7 +18,8 @@ import {
 import usePerformanceProfile from '@/hooks/usePerformanceProfile';
 import styles from './background-video.module.css';
 
-const S3_BUCKET = 'https://aadhya-serene-assets-v2.s3.amazonaws.com';
+const S3_AMENITIES_BASE = 'https://aadhya-serene-assets-v2.s3.amazonaws.com/videos/amenities';
+const R2_AMENITIES_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/amenities';
 const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/Aadhya%20Serene%20Home%20Page.mp4';
 const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya%20Serene%20Home%20Page%20-%20First%20Frame.avif';
 
@@ -45,8 +46,19 @@ const BACKGROUND_POSTERS = {
     'project-overview': HOME_POSTER,
 };
 
+const R2_AMENITY_SLUGS = new Set([
+    'badminton',
+    'basketball',
+    'gymnasium',
+    'swimmingPool',
+]);
+
 function getAmenityVideoSource(amenity) {
-    return `${S3_BUCKET}/videos/amenities/${amenity}/${AMENITY_VIDEO_QUALITY}/${amenity}-h264.mp4`;
+    const base = R2_AMENITY_SLUGS.has(amenity)
+        ? R2_AMENITIES_BASE
+        : S3_AMENITIES_BASE;
+
+    return `${base}/${amenity}/${AMENITY_VIDEO_QUALITY}/${amenity}-h264.mp4`;
 }
 
 const APARTMENTS_LOOP_HOLD_MS = 0;

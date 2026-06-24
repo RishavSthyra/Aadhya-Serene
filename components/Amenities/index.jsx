@@ -83,6 +83,9 @@ const CAROUSEL_TRANSITION = {
     duration: 0.82,
     ease: [0.22, 1, 0.36, 1],
 };
+const UI_IDLE_HIDE_DELAY_MS = 2000;
+const UI_REVEAL_LOCK_MS = 520;
+const UI_HIDE_LOCK_MS = 760;
 
 function normalizeIndex(index, length) {
     return ((index % length) + length) % length;
@@ -176,6 +179,8 @@ export default function Amenities({ initialAmenity = null }) {
     const activeIndexRef = useRef(0);
     const interactionLockRef = useRef(false);
     const wheelTimeoutRef = useRef(null);
+    const uiHideTimeoutRef = useRef(null);
+    const uiTransitionLockRef = useRef(false);
     const dragStateRef = useRef({
         pointerId: null,
         startX: 0,
@@ -187,6 +192,7 @@ export default function Amenities({ initialAmenity = null }) {
     const isValidRequestedAmenity = AMENITIES_LIST.some((item) => item.url === initialAmenity);
     const selectedAmenityFromUrl = isValidRequestedAmenity ? initialAmenity : defaultAmenity;
     const [activeAmenity, setActiveAmenity] = useState(selectedAmenityFromUrl);
+    const [isUiVisible, setIsUiVisible] = useState(true);
 
     const activeIndex = useMemo(() => {
         const index = AMENITIES_LIST.findIndex((item) => item.url === activeAmenity);
@@ -274,6 +280,67 @@ export default function Amenities({ initialAmenity = null }) {
     useEffect(() => () => {
         window.clearTimeout(wheelTimeoutRef.current);
     }, []);
+
+    useEffect(() => {
+        if (isTabletOrBelow) {
+            window.clearTimeout(uiHideTimeoutRef.current);
+            uiTransitionLockRef.current = false;
+            setIsUiVisible(true);
+            return undefined;
+        }
+
+        const lockUiTransitions = (duration) => {
+            uiTransitionLockRef.current = true;
+            window.setTimeout(() => {
+                uiTransitionLockRef.current = false;
+            }, duration);
+        };
+
+        const scheduleUiHide = () => {
+            window.clearTimeout(uiHideTimeoutRef.current);
+            uiHideTimeoutRef.current = window.setTimeout(() => {
+                setIsUiVisible((current) => {
+                    if (!current || uiTransitionLockRef.current) {
+                        return current;
+                    }
+
+                    lockUiTransitions(UI_HIDE_LOCK_MS);
+                    return false;
+                });
+            }, UI_IDLE_HIDE_DELAY_MS);
+        };
+
+        const revealUi = () => {
+            setIsUiVisible((current) => {
+                if (current || uiTransitionLockRef.current) {
+                    return current;
+                }
+
+                lockUiTransitions(UI_REVEAL_LOCK_MS);
+                return true;
+            });
+
+            scheduleUiHide();
+        };
+
+        const handlePointerMove = () => {
+            revealUi();
+        };
+
+        const handlePointerDown = () => {
+            revealUi();
+        };
+
+        scheduleUiHide();
+        window.addEventListener('pointermove', handlePointerMove, { passive: true });
+        window.addEventListener('pointerdown', handlePointerDown, { passive: true });
+
+        return () => {
+            window.clearTimeout(uiHideTimeoutRef.current);
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerdown', handlePointerDown);
+        };
+    }, [isTabletOrBelow]);
 
     const handlePointerDown = useCallback((event) => {
         event.currentTarget.setPointerCapture(event.pointerId);
@@ -373,7 +440,9 @@ export default function Amenities({ initialAmenity = null }) {
         <main className={styles.container}>
             <div className={styles.sceneOverlay} aria-hidden="true" />
 
-            <section className={styles.copyPanel}>
+            <section
+                className={`${styles.copyPanel} ${!isTabletOrBelow && !isUiVisible ? styles.copyPanelHidden : ''}`}
+            >
                 <div className={styles.copyEyebrow}>Amenities</div>
                 <h1 className={styles.copyTitle}>
                     <span>Curated Spaces.</span>
@@ -394,7 +463,9 @@ export default function Amenities({ initialAmenity = null }) {
                 </button>
             </section>
 
-            <section className={styles.carouselDock}>
+            <section
+                className={`${styles.carouselDock} ${!isTabletOrBelow && !isUiVisible ? styles.carouselDockHidden : ''}`}
+            >
                 <div className={styles.carouselShell}>
                     <div
                         className={styles.carouselViewport}

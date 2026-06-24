@@ -24,14 +24,9 @@ const APARTMENTS_VIDEO_SAFE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AAD
 const APARTMENTS_VIDEO_PREMIUM = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_2560w_60fps_h264_premium.mp4';
 const APARTMENTS_VIDEO_ULTRA = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_3200w_60fps_h264_ultra.mp4';
 const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
+const AMENITIES_VIDEO_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/amenities';
+const AMENITY_WARMUP_SLUGS = ['badminton', 'basketball', 'gymnasium', 'swimmingPool'];
 const ROT360_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp';
-const VIDEO_WARMUP_SOURCES = [
-  HOME_VIDEO,
-  APARTMENTS_VIDEO_SAFE,
-  APARTMENTS_VIDEO_PREMIUM,
-  APARTMENTS_VIDEO_ULTRA,
-  APARTMENTS_LOOP,
-];
 
 function frameUrl(frameNumber) {
   return `${ROT360_BASE}/frame_${String(frameNumber).padStart(4, '0')}.webp`;
@@ -78,6 +73,25 @@ function getSelectedMediaSources() {
   };
 }
 
+function getAmenityWarmupSources() {
+  const quality = shouldUseSafeMedia() ? '720p' : '1080p';
+
+  return AMENITY_WARMUP_SLUGS.map((slug) => (
+    `${AMENITIES_VIDEO_BASE}/${slug}/${quality}/${slug}-h264.mp4`
+  ));
+}
+
+function getVideoWarmupSources() {
+  return [
+    HOME_VIDEO,
+    APARTMENTS_VIDEO_SAFE,
+    APARTMENTS_VIDEO_PREMIUM,
+    APARTMENTS_VIDEO_ULTRA,
+    APARTMENTS_LOOP,
+    ...getAmenityWarmupSources(),
+  ];
+}
+
 function getCriticalAssets() {
   const scrubFrameAssets = getPreloaderScrubFrames()
     .slice(0, shouldUseSafeMedia() ? 18 : 34)
@@ -104,6 +118,7 @@ function getIdleWarmAssets() {
     HOME_POSTER,
     sources.homeVideo,
     'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_3_1%20(1).jpg',
+    ...getAmenityWarmupSources(),
     ...frameSeeds.map(frameUrl),
   ];
 }
@@ -226,7 +241,7 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
         aria-hidden="true"
         className="pointer-events-none fixed left-[-9999px] top-[-9999px] h-px w-px overflow-hidden opacity-0"
       >
-        {VIDEO_WARMUP_SOURCES.map((src) => (
+        {getVideoWarmupSources().map((src) => (
           <video
             key={src}
             muted
