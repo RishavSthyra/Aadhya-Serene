@@ -6,16 +6,10 @@ import {
   prefetchAssetsInChunks,
   registerAssetCacheServiceWorker,
 } from '@/lib/client-asset-cache';
-import {
-  getProjectOverviewCriticalAssets,
-  warmProjectOverviewModules,
-} from '@/lib/project-overview-assets';
-import { getAmenityVideoSources } from '@/lib/amenity-video-sources';
-import ProjectOverviewWarmup from '@/components/ProjectOverviewBook/Warmup';
 import styles from '../../app/home.module.css';
 
-const MIN_PRELOADER_DURATION_MS = 1800;
-const MAX_PRELOADER_DURATION_MS = 30000;
+const MIN_PRELOADER_DURATION_MS = 1200;
+const MAX_PRELOADER_DURATION_MS = 12000;
 const REVEAL_DURATION_MS = 980;
 const EASE_OUT_CUBIC = (value) => 1 - ((1 - value) ** 3);
 
@@ -23,7 +17,6 @@ const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/Aadhya%20Seren
 const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya%20Serene%20Home%20Page%205%20With%20Humans%20-%20First%20Frame.avif';
 const APARTMENTS_VIDEO_SAFE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_1920w_60fps_h264_safe.mp4';
 const APARTMENTS_VIDEO_PREMIUM = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_2560w_60fps_h264_premium.mp4';
-const APARTMENTS_VIDEO_ULTRA = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_3200w_60fps_h264_ultra.mp4';
 const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
 const ROT360_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp';
 
@@ -72,36 +65,17 @@ function getSelectedMediaSources() {
   };
 }
 
-function getAmenityWarmupSources() {
-  return getAmenityVideoSources(['720p', '1080p']);
-}
-
-function getVideoWarmupSources() {
-  return [
-    HOME_VIDEO,
-    APARTMENTS_VIDEO_SAFE,
-    APARTMENTS_VIDEO_PREMIUM,
-    APARTMENTS_VIDEO_ULTRA,
-    APARTMENTS_LOOP,
-    ...getAmenityWarmupSources(),
-  ];
-}
-
 function getCriticalAssets() {
+  const { homeVideo, apartmentsTransition } = getSelectedMediaSources();
   const scrubFrameAssets = getPreloaderScrubFrames()
-    .slice(0, shouldUseSafeMedia() ? 18 : 34)
+    .slice(0, shouldUseSafeMedia() ? 6 : 12)
     .map(frameUrl);
 
   return [
     '/favicon.ico',
     HOME_POSTER,
-    HOME_VIDEO,
-    APARTMENTS_VIDEO_SAFE,
-    APARTMENTS_VIDEO_PREMIUM,
-    APARTMENTS_VIDEO_ULTRA,
-    APARTMENTS_LOOP,
-    ...getAmenityWarmupSources(),
-    ...getProjectOverviewCriticalAssets(),
+    homeVideo,
+    apartmentsTransition,
     ...scrubFrameAssets,
   ];
 }
@@ -113,9 +87,10 @@ function getIdleWarmAssets() {
   return [
     HOME_POSTER,
     sources.homeVideo,
+    sources.apartmentsTransition,
     'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_3_1%20(1).jpg',
-    ...getAmenityWarmupSources(),
-    ...frameSeeds.map(frameUrl),
+    APARTMENTS_LOOP,
+    ...frameSeeds.slice(0, 24).map(frameUrl),
   ];
 }
 
@@ -154,11 +129,11 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
       onRevealStartRef.current?.();
 
       prefetchAssetsInChunks(getIdleWarmAssets(), {
-        chunkSize: 5,
+        chunkSize: 2,
         concurrency: 1,
         priority: 'low',
-        gapMs: 420,
-        idleTimeoutMs: 2200,
+        gapMs: 900,
+        idleTimeoutMs: 2800,
       });
 
       window.setTimeout(() => {
@@ -194,9 +169,8 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
     };
 
     void registerAssetCacheServiceWorker();
-    void warmProjectOverviewModules();
     const criticalQueue = [...criticalAssets];
-    const criticalWorkers = Array.from({ length: 3 }, async () => {
+    const criticalWorkers = Array.from({ length: shouldUseSafeMedia() ? 1 : 2 }, async () => {
       while (!cancelled && criticalQueue.length > 0) {
         const nextAsset = criticalQueue.shift();
         await cacheAssetOnce(nextAsset, { priority: 'high' }).finally(reportAssetComplete);
@@ -232,21 +206,6 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
       }}
     >
       <div className={styles.luxuryLoaderBackdrop} />
-      <ProjectOverviewWarmup />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed left-[-9999px] top-[-9999px] h-px w-px overflow-hidden opacity-0"
-      >
-        {getVideoWarmupSources().map((src) => (
-          <video
-            key={src}
-            muted
-            playsInline
-            preload="auto"
-            src={src}
-          />
-        ))}
-      </div>
 
       <div className={styles.luxuryLoaderInner}>
         <div className={styles.luxuryLoaderMarkWrap} aria-hidden="true">

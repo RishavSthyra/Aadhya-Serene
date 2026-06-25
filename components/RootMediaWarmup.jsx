@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
 import {
-  cacheAssetOnce,
   prefetchAssetsInChunks,
   registerAssetCacheServiceWorker,
 } from '@/lib/client-asset-cache';
@@ -29,6 +29,7 @@ function resolveApartmentsTransition(profile) {
 }
 
 export default function RootMediaWarmup({ enabled = true }) {
+  const pathname = usePathname();
   const profile = usePerformanceProfile();
 
   const selectedTransition = useMemo(
@@ -37,58 +38,31 @@ export default function RootMediaWarmup({ enabled = true }) {
   );
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || pathname === '/') {
       return undefined;
     }
 
-    const criticalAssets = [
-      APARTMENTS_POSTER,
-      selectedTransition,
-      APARTMENTS_LOOP,
-    ];
-    const fallbackAssets = Object.values(APARTMENTS_TRANSITION)
-      .filter((url) => url !== selectedTransition);
+    const timeoutId = window.setTimeout(() => {
+      void registerAssetCacheServiceWorker();
 
-    void registerAssetCacheServiceWorker();
-    criticalAssets.forEach((assetUrl) => {
-      void cacheAssetOnce(assetUrl, { priority: 'high' });
-    });
+      prefetchAssetsInChunks([
+        APARTMENTS_POSTER,
+        selectedTransition,
+        APARTMENTS_LOOP,
+      ], {
+        chunkSize: 1,
+        concurrency: 1,
+        priority: 'low',
+        gapMs: 1400,
+        idleTimeoutMs: 3200,
+        delayMs: 1200,
+      });
+    }, 1800);
 
-    prefetchAssetsInChunks(fallbackAssets, {
-      chunkSize: 1,
-      concurrency: 1,
-      priority: 'low',
-      gapMs: 320,
-      idleTimeoutMs: 1800,
-      delayMs: 220,
-    });
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [enabled, pathname, selectedTransition]);
 
-    return undefined;
-  }, [enabled, selectedTransition]);
-
-  if (!enabled) {
-    return null;
-  }
-
-  return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none fixed left-[-9999px] top-[-9999px] h-px w-px overflow-hidden opacity-0"
-    >
-      <img src={APARTMENTS_POSTER} alt="" fetchPriority="high" />
-      <video
-        key={selectedTransition}
-        muted
-        playsInline
-        preload="auto"
-        src={selectedTransition}
-      />
-      <video
-        muted
-        playsInline
-        preload="auto"
-        src={APARTMENTS_LOOP}
-      />
-    </div>
-  );
+  return null;
 }
