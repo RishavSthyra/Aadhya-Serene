@@ -2,8 +2,9 @@ import './globals.css';
 import { headers } from 'next/headers';
 import Nav from './components/Nav';
 import GlobalBackground from '@/components/GlobalBackground';
+import RootMediaWarmup from '@/components/RootMediaWarmup';
 import { rootMetadata } from '@/lib/seo';
-import { getSiteVariantFromHost } from '@/lib/site-variant';
+import { getSiteVariantFromHost, SITE_VARIANTS } from '@/lib/site-variant';
 import { Cormorant_Garamond, DM_Sans, Quicksand } from 'next/font/google';
 
 const sansFont = DM_Sans({
@@ -38,6 +39,7 @@ export default async function RootLayout({ children }) {
         suppressHydrationWarning
         className={`${sansFont.variable} ${displayFont.variable} ${heroFont.variable}`}
       >
+        <RootMediaWarmup enabled={siteVariant === SITE_VARIANTS.APP} />
         <GlobalBackground siteVariant={siteVariant} />
         <Nav siteVariant={siteVariant} />
         {children}
