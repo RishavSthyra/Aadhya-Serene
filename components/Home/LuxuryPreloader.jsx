@@ -18,8 +18,8 @@ const MAX_PRELOADER_DURATION_MS = 8000;
 const REVEAL_DURATION_MS = 980;
 const EASE_OUT_CUBIC = (value) => 1 - ((1 - value) ** 3);
 
-const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/Aadhya%20Serene%20Home%20Page.mp4';
-const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya%20Serene%20Home%20Page%20-%20First%20Frame.avif';
+const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/Aadhya%20Serene%20Home%20Page%204%20With%20Humans.mp4';
+const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya%20Serene%20Home%20Page%204%20With%20Humans%20-%20First%20Frame.avif';
 const APARTMENTS_VIDEO_SAFE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_1920w_60fps_h264_safe.mp4';
 const APARTMENTS_VIDEO_PREMIUM = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_2560w_60fps_h264_premium.mp4';
 const APARTMENTS_VIDEO_ULTRA = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_3200w_60fps_h264_ultra.mp4';

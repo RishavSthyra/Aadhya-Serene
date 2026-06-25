@@ -20,8 +20,8 @@ import styles from './background-video.module.css';
 
 const S3_AMENITIES_BASE = 'https://aadhya-serene-assets-v2.s3.amazonaws.com/videos/amenities';
 const R2_AMENITIES_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/amenities';
-const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/Aadhya%20Serene%20Home%20Page.mp4';
-const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya%20Serene%20Home%20Page%20-%20First%20Frame.avif';
+const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/Aadhya%20Serene%20Home%20Page%204%20With%20Humans.mp4';
+const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya%20Serene%20Home%20Page%204%20With%20Humans%20-%20First%20Frame.avif';
 
 const APARTMENTS_TRANSITION = {
     safe: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_1920w_60fps_h264_safe.mp4',

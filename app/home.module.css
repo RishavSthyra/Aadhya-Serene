@@ -13,6 +13,7 @@
 
 .heroInner {
     position: relative;
+    isolation: isolate;
     z-index: 1;
     width: 100%;
     min-height: 100dvh;
@@ -27,8 +28,39 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: none;
+    z-index: 0;
+    background:
+        linear-gradient(
+            270deg,
+            rgba(10, 10, 10, 0.88) 0%,
+            rgba(10, 10, 10, 0.68) 12%,
+            rgba(10, 10, 10, 0.34) 24%,
+            rgba(10, 10, 10, 0.08) 38%,
+            rgba(10, 10, 10, 0) 52%
+        ),
+        linear-gradient(
+            0deg,
+            rgba(10, 10, 10, 0.84) 0%,
+            rgba(10, 10, 10, 0.62) 12%,
+            rgba(10, 10, 10, 0.3) 24%,
+            rgba(10, 10, 10, 0.06) 38%,
+            rgba(10, 10, 10, 0) 54%
+        ),
+        radial-gradient(
+            58% 54% at 100% 100%,
+            rgba(10, 10, 10, 0.98) 0%,
+            rgba(10, 10, 10, 0.94) 16%,
+            rgba(10, 10, 10, 0.76) 32%,
+            rgba(10, 10, 10, 0.42) 52%,
+            rgba(10, 10, 10, 0.16) 68%,
+            rgba(10, 10, 10, 0) 82%
+        );
     pointer-events: none;
+}
+
+.heroInner > * {
+    position: relative;
+    z-index: 1;
 }
 
 .heroContent {
@@ -319,6 +351,35 @@
         margin-top: 16px;
     }
 
+    .heroInner::before {
+        background:
+            linear-gradient(
+                270deg,
+                rgba(10, 10, 10, 0.84) 0%,
+                rgba(10, 10, 10, 0.64) 12%,
+                rgba(10, 10, 10, 0.3) 24%,
+                rgba(10, 10, 10, 0.06) 38%,
+                rgba(10, 10, 10, 0) 52%
+            ),
+            linear-gradient(
+                0deg,
+                rgba(10, 10, 10, 0.8) 0%,
+                rgba(10, 10, 10, 0.58) 12%,
+                rgba(10, 10, 10, 0.26) 24%,
+                rgba(10, 10, 10, 0.05) 38%,
+                rgba(10, 10, 10, 0) 54%
+            ),
+            radial-gradient(
+                56% 52% at 100% 100%,
+                rgba(10, 10, 10, 0.96) 0%,
+                rgba(10, 10, 10, 0.92) 16%,
+                rgba(10, 10, 10, 0.72) 32%,
+                rgba(10, 10, 10, 0.38) 52%,
+                rgba(10, 10, 10, 0.14) 68%,
+                rgba(10, 10, 10, 0) 82%
+            );
+    }
+
     .heroPrimaryCta,
     .heroSecondaryCta {
         font-size: 8.5px;
@@ -379,6 +440,35 @@
         width: min(100%, 22rem);
     }
 
+    .heroInner::before {
+        background:
+            linear-gradient(
+                270deg,
+                rgba(10, 10, 10, 0.88) 0%,
+                rgba(10, 10, 10, 0.68) 14%,
+                rgba(10, 10, 10, 0.34) 28%,
+                rgba(10, 10, 10, 0.08) 42%,
+                rgba(10, 10, 10, 0) 58%
+            ),
+            linear-gradient(
+                0deg,
+                rgba(10, 10, 10, 0.86) 0%,
+                rgba(10, 10, 10, 0.64) 14%,
+                rgba(10, 10, 10, 0.3) 28%,
+                rgba(10, 10, 10, 0.06) 42%,
+                rgba(10, 10, 10, 0) 58%
+            ),
+            radial-gradient(
+                72% 58% at 100% 100%,
+                rgba(10, 10, 10, 0.98) 0%,
+                rgba(10, 10, 10, 0.94) 18%,
+                rgba(10, 10, 10, 0.74) 36%,
+                rgba(10, 10, 10, 0.4) 56%,
+                rgba(10, 10, 10, 0.16) 72%,
+                rgba(10, 10, 10, 0) 86%
+            );
+    }
+
     .heroTitleLetter,
     .heroTitleSpace {
         font-size: clamp(2.2rem, 7.8vw, 3.4rem);
@@ -406,6 +496,35 @@
         margin-bottom: 14px;
         font-size: 9px;
         letter-spacing: 0.18em;
+    }
+
+    .heroInner::before {
+        background:
+            linear-gradient(
+                270deg,
+                rgba(10, 10, 10, 0.9) 0%,
+                rgba(10, 10, 10, 0.72) 16%,
+                rgba(10, 10, 10, 0.38) 30%,
+                rgba(10, 10, 10, 0.1) 46%,
+                rgba(10, 10, 10, 0) 62%
+            ),
+            linear-gradient(
+                0deg,
+                rgba(10, 10, 10, 0.88) 0%,
+                rgba(10, 10, 10, 0.68) 16%,
+                rgba(10, 10, 10, 0.34) 30%,
+                rgba(10, 10, 10, 0.08) 46%,
+                rgba(10, 10, 10, 0) 62%
+            ),
+            radial-gradient(
+                86% 66% at 100% 100%,
+                rgba(10, 10, 10, 0.98) 0%,
+                rgba(10, 10, 10, 0.94) 18%,
+                rgba(10, 10, 10, 0.76) 36%,
+                rgba(10, 10, 10, 0.42) 58%,
+                rgba(10, 10, 10, 0.16) 74%,
+                rgba(10, 10, 10, 0) 88%
+            );
     }
 
     .heroTitleLetter,
