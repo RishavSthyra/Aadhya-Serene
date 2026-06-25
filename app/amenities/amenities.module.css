@@ -109,7 +109,7 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 102px clamp(18px, 3vw, 40px) 0;
+    padding: 102px clamp(18px, 3vw, 40px) clamp(44px, 6vh, 72px);
     gap: clamp(10px, 1.6vh, 18px);
     pointer-events: none;
     will-change: transform, opacity;
@@ -171,6 +171,15 @@
     perspective-origin: center center;
     overflow: visible;
     touch-action: pan-y;
+    cursor: grab;
+}
+
+.carouselViewportDragging {
+    cursor: grabbing;
+}
+
+.carouselViewportDragging .carouselCard {
+    cursor: grabbing;
 }
 
 .carouselStage {
@@ -192,7 +201,7 @@
     background: transparent;
     transform-style: preserve-3d;
     transform-origin: center center;
-    cursor: pointer;
+    pointer-events: none;
     will-change: transform, opacity, filter;
 }
 
@@ -209,6 +218,8 @@
     text-align: left;
     transform-style: preserve-3d;
     transition: margin-top 0.82s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 .cardChrome::after {
@@ -225,6 +236,7 @@
         0 30px 64px rgba(0, 0, 0, 0.42),
         0 0 0 1px rgba(232, 196, 129, 0.08),
         inset 0 1px 0 rgba(255, 255, 255, 0.11);
+    cursor: inherit;
 }
 
 .cardTopRow {
@@ -351,7 +363,7 @@
     .carouselDock {
         --amenity-card-width: clamp(148px, 13vw, 198px);
         --amenity-stage-height: clamp(228px, calc(var(--amenity-card-width) * 1.28), 294px);
-        padding: 92px 16px 0;
+        padding: 92px 16px 34px;
         gap: 8px;
     }
 
@@ -405,7 +417,7 @@
         position: relative;
         inset: auto;
         min-height: 100svh;
-        padding: 96px 18px calc(env(safe-area-inset-bottom, 0px) + 96px);
+        padding: 96px 18px calc(env(safe-area-inset-bottom, 0px) + 126px);
         gap: 10px;
     }
 
@@ -420,6 +432,11 @@
 
     .carouselViewport {
         perspective: 1200px;
+        cursor: default;
+    }
+
+    .carouselViewportDragging {
+        cursor: default;
     }
 
     .carouselStage {
@@ -477,7 +494,7 @@
     .carouselDock {
         --amenity-card-width: clamp(158px, 52vw, 214px);
         --amenity-stage-height: clamp(214px, calc(var(--amenity-card-width) * 1.18), 286px);
-        padding: 88px 12px calc(env(safe-area-inset-bottom, 0px) + 82px);
+        padding: 88px 12px calc(env(safe-area-inset-bottom, 0px) + 112px);
         gap: 8px;
     }
 

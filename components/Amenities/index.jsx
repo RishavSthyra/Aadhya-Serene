@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Play } from 'lucide-react';
+import { Play } from 'lucide-react';
 import useResponsiveViewport from '@/hooks/useResponsiveViewport';
 import styles from '../../app/amenities/amenities.module.css';
 
@@ -185,6 +185,7 @@ export default function Amenities({ initialAmenity = null }) {
     const uiHideTimeoutRef = useRef(null);
     const uiTransitionLockRef = useRef(false);
     const uiTransitionUnlockTimeoutRef = useRef(null);
+    const suppressClickRef = useRef(false);
     const dragStateRef = useRef({
         pointerId: null,
         startX: 0,
@@ -197,6 +198,7 @@ export default function Amenities({ initialAmenity = null }) {
     const selectedAmenityFromUrl = isValidRequestedAmenity ? initialAmenity : defaultAmenity;
     const [activeAmenity, setActiveAmenity] = useState(selectedAmenityFromUrl);
     const [isUiVisible, setIsUiVisible] = useState(true);
+    const [isDragging, setIsDragging] = useState(false);
 
     const activeIndex = useMemo(() => {
         const index = AMENITIES_LIST.findIndex((item) => item.url === activeAmenity);
@@ -295,6 +297,30 @@ export default function Amenities({ initialAmenity = null }) {
         scheduleUiHide();
     }, [revealUi, scheduleUiHide]);
 
+    const handleCardSelect = useCallback((index) => {
+        if (suppressClickRef.current) {
+            suppressClickRef.current = false;
+            return;
+        }
+
+        noteUiActivity();
+        updateAmenity(index);
+    }, [noteUiActivity, updateAmenity]);
+
+    const shouldStartDrag = useCallback((target) => {
+        if (!(target instanceof Element)) {
+            return true;
+        }
+
+        const pressedCard = target.closest('[data-amenity-card="true"]');
+
+        if (!pressedCard) {
+            return true;
+        }
+
+        return pressedCard.getAttribute('data-card-active') === 'true';
+    }, []);
+
     const handleWheel = useCallback((event) => {
         const dominantDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
             ? event.deltaX
@@ -366,7 +392,13 @@ export default function Amenities({ initialAmenity = null }) {
     }, []);
 
     const handlePointerDown = useCallback((event) => {
+        if (!shouldStartDrag(event.target)) {
+            return;
+        }
+
         noteUiActivity();
+        suppressClickRef.current = false;
+        setIsDragging(true);
         event.currentTarget.setPointerCapture(event.pointerId);
         dragStateRef.current = {
             pointerId: event.pointerId,
@@ -375,7 +407,7 @@ export default function Amenities({ initialAmenity = null }) {
             axis: null,
             moved: false,
         };
-    }, [noteUiActivity]);
+    }, [noteUiActivity, shouldStartDrag]);
 
     const handlePointerMove = useCallback((event) => {
         const { pointerId, startX, startY, axis, moved } = dragStateRef.current;
@@ -405,6 +437,7 @@ export default function Amenities({ initialAmenity = null }) {
             return;
         }
 
+        suppressClickRef.current = true;
         dragStateRef.current.moved = true;
         queueMove(deltaX < 0 ? 1 : -1);
 
@@ -419,6 +452,8 @@ export default function Amenities({ initialAmenity = null }) {
         if (pointerId !== event.pointerId) {
             return;
         }
+
+        setIsDragging(false);
 
         const deltaX = event.clientX - startX;
         const deltaY = event.clientY - startY;
@@ -447,6 +482,8 @@ export default function Amenities({ initialAmenity = null }) {
         if (dragStateRef.current.pointerId !== event.pointerId) {
             return;
         }
+
+        setIsDragging(false);
 
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
@@ -493,7 +530,7 @@ export default function Amenities({ initialAmenity = null }) {
             >
                 <div className={styles.carouselShell}>
                     <div
-                        className={styles.carouselViewport}
+                        className={`${styles.carouselViewport} ${isDragging ? styles.carouselViewportDragging : ''}`}
                         onWheel={handleWheel}
                         onPointerDown={handlePointerDown}
                         onPointerMove={handlePointerMove}
@@ -514,6 +551,8 @@ export default function Amenities({ initialAmenity = null }) {
                                         key={item.url}
                                         type="button"
                                         className={`${styles.carouselCard} ${isActive ? styles.carouselCardActive : ''}`}
+                                        data-amenity-card="true"
+                                        data-card-active={isActive ? 'true' : 'false'}
                                         animate={{
                                             x: metrics.x,
                                             y: metrics.y,
@@ -525,9 +564,9 @@ export default function Amenities({ initialAmenity = null }) {
                                         transition={CAROUSEL_TRANSITION}
                                         style={{
                                             zIndex: metrics.zIndex,
-                                            pointerEvents: isVisible ? 'auto' : 'none',
+                                            pointerEvents: isVisible ? undefined : 'none',
                                         }}
-                                        onClick={() => updateAmenity(index)}
+                                        onClick={isActive ? undefined : () => handleCardSelect(index)}
                                         aria-pressed={isActive}
                                         aria-label={item.title}
                                     >
@@ -571,28 +610,6 @@ export default function Amenities({ initialAmenity = null }) {
                             })}
                         </div>
                     </div>
-                </div>
-
-                <div className={styles.carouselFooter}>
-                    <div className={styles.carouselButtons}>
-                        <button
-                            type="button"
-                            className={styles.carouselButton}
-                            onClick={() => queueMove(-1)}
-                            aria-label="Previous amenity"
-                        >
-                            <ArrowLeft className={styles.carouselButtonIcon} aria-hidden="true" />
-                        </button>
-                        <button
-                            type="button"
-                            className={styles.carouselButton}
-                            onClick={() => queueMove(1)}
-                            aria-label="Next amenity"
-                        >
-                            <ArrowRight className={styles.carouselButtonIcon} aria-hidden="true" />
-                        </button>
-                    </div>
-                    {/* <span className={styles.carouselHint}>Drag or scroll to explore</span> */}
                 </div>
             </section>
         </main>
