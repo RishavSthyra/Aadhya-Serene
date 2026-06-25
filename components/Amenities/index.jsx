@@ -4,21 +4,23 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Play } from 'lucide-react';
+import {
+    prefetchAssetsInChunks,
+    registerAssetCacheServiceWorker,
+} from '@/lib/client-asset-cache';
 import useResponsiveViewport from '@/hooks/useResponsiveViewport';
 import styles from '../../app/amenities/amenities.module.css';
 
 const AMENITY_POSTERS = {
-    rooftopLeisureDeck: '/assets/amenities/rooftopLeisureDeck.jpg',
-    childrensPlayArea: '/assets/amenities/childrensPlayArea.jpg',
+    rooftopLeisureDeck: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/amenities-first-frames/Rooftopnew%20-%20First%20Frame.avif',
+    childrensPlayArea: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/amenities-first-frames/Kids%20%20Play%20Area%202%20-%20First%20Frame.avif',
     swimmingPool: '/assets/amenities/swimmingPool.jpg',
-    gymnasium: '/assets/amenities/gymnasium.jpg',
+    gymnasium: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/amenities-first-frames/Gym%20-%20First%20Frame.avif',
     indoorGames: '/assets/amenities/indoorGames.jpg',
     clubhouse: '/assets/amenities/clubhouse.jpg',
-    basketball: '/assets/amenities/basketball.jpg',
-    badminton: '/assets/amenities/badminton.jpg',
+    basketball: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/amenities-first-frames/Basketball%20-%20First%20Frame.avif',
+    badminton: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/amenities-first-frames/Badminton%20-%20First%20Frame.avif',
 };
-
-const AMENITY_FALLBACK = '/assets/amenities/rooftopLeisureDeck.jpg';
 
 const AMENITIES_LIST = [
     {
@@ -235,6 +237,20 @@ export default function Amenities({ initialAmenity = null }) {
         setActiveAmenity(selectedAmenityFromUrl);
         window.dispatchEvent(new CustomEvent('bg-layout', { detail: `amenities-${selectedAmenityFromUrl}` }));
     }, [selectedAmenityFromUrl]);
+
+    useEffect(() => {
+        const amenityPosterUrls = [...new Set(Object.values(AMENITY_POSTERS).filter(Boolean))];
+
+        void registerAssetCacheServiceWorker();
+        prefetchAssetsInChunks(amenityPosterUrls, {
+            chunkSize: 2,
+            concurrency: 2,
+            priority: 'low',
+            gapMs: 180,
+            idleTimeoutMs: 1200,
+            delayMs: 180,
+        });
+    }, []);
 
     const updateAmenity = useCallback((nextIndex) => {
         const normalizedIndex = normalizeIndex(nextIndex, AMENITIES_LIST.length);
@@ -544,7 +560,8 @@ export default function Amenities({ initialAmenity = null }) {
                                 const metrics = getCardMetrics(distance, layoutMode, visibleDepth);
                                 const isVisible = Math.abs(distance) <= visibleDepth;
                                 const isActive = distance === 0;
-                                const posterSrc = AMENITY_POSTERS[item.url] || AMENITY_FALLBACK;
+                                const posterSrc = AMENITY_POSTERS[item.url];
+                                const fallbackSrc = AMENITY_POSTERS[item.url];
 
                                 return (
                                     <motion.button
@@ -587,7 +604,11 @@ export default function Amenities({ initialAmenity = null }) {
                                                     loading="lazy"
                                                     decoding="async"
                                                     onError={(event) => {
-                                                        event.currentTarget.src = AMENITY_FALLBACK;
+                                                        event.currentTarget.onerror = null;
+
+                                                        if (event.currentTarget.src !== fallbackSrc) {
+                                                            event.currentTarget.src = fallbackSrc;
+                                                        }
                                                     }}
                                                 />
                                             </div>

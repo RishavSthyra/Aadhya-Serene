@@ -6,6 +6,7 @@ const CACHEABLE_HOSTS = new Set([
 ]);
 const CACHEABLE_PATH_PARTS = [
     '/AADHYA%20SERENE/videos/',
+    '/AADHYA%20SERENE/images/amenities-first-frames/',
     '/AADHYA%20SERENE/images/rot360_webp/',
     '/AADHYA%20SERENE/renders',
     '/videos/amenities/',
