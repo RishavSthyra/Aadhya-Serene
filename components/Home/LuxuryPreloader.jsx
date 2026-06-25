@@ -25,7 +25,14 @@ const APARTMENTS_VIDEO_PREMIUM = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/
 const APARTMENTS_VIDEO_ULTRA = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_3200w_60fps_h264_ultra.mp4';
 const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
 const AMENITIES_VIDEO_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/amenities';
-const AMENITY_WARMUP_SLUGS = ['badminton', 'basketball', 'gymnasium', 'swimmingPool'];
+const AMENITY_WARMUP_SLUGS = [
+  'rooftopLeisureDeck',
+  'childrensPlayArea',
+  'badminton',
+  'basketball',
+  'gymnasium',
+  'swimmingPool',
+];
 const ROT360_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp';
 
 function frameUrl(frameNumber) {

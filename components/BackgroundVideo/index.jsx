@@ -47,6 +47,8 @@ const BACKGROUND_POSTERS = {
 };
 
 const R2_AMENITY_SLUGS = new Set([
+    'rooftopLeisureDeck',
+    'childrensPlayArea',
     'badminton',
     'basketball',
     'gymnasium',
