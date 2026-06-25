@@ -15,11 +15,10 @@ import {
     prefetchAssetsInChunks,
     registerAssetCacheServiceWorker,
 } from '@/lib/client-asset-cache';
+import { getAmenityVideoSource } from '@/lib/amenity-video-sources';
 import usePerformanceProfile from '@/hooks/usePerformanceProfile';
 import styles from './background-video.module.css';
 
-const S3_AMENITIES_BASE = 'https://aadhya-serene-assets-v2.s3.amazonaws.com/videos/amenities';
-const R2_AMENITIES_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/amenities';
 const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/Aadhya%20Serene%20Home%20Page%204%20With%20Humans.mp4';
 const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya%20Serene%20Home%20Page%204%20With%20Humans%20-%20First%20Frame.avif';
 
@@ -29,8 +28,6 @@ const APARTMENTS_TRANSITION = {
     ultra: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_3200w_60fps_h264_ultra.mp4',
 };
 const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
-const AMENITY_VIDEO_QUALITY = '1080p';
-
 const LOCAL_VIDEO_FALLBACKS = {
     '3-1': '/assets/background-video/mobile/apartments-transition.mp4',
     '3-2': '/assets/background-video/mobile/apartments-loop.mp4',
@@ -45,23 +42,6 @@ const BACKGROUND_POSTERS = {
     location: HOME_POSTER,
     'project-overview': HOME_POSTER,
 };
-
-const R2_AMENITY_SLUGS = new Set([
-    'rooftopLeisureDeck',
-    'childrensPlayArea',
-    'badminton',
-    'basketball',
-    'gymnasium',
-    'swimmingPool',
-]);
-
-function getAmenityVideoSource(amenity) {
-    const base = R2_AMENITY_SLUGS.has(amenity)
-        ? R2_AMENITIES_BASE
-        : S3_AMENITIES_BASE;
-
-    return `${base}/${amenity}/${AMENITY_VIDEO_QUALITY}/${amenity}-h264.mp4`;
-}
 
 const APARTMENTS_LOOP_HOLD_MS = 0;
 const HLS_MIN_START_BUFFER_AHEAD_SECONDS = 2.4;

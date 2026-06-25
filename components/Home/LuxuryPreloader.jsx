@@ -10,11 +10,12 @@ import {
   getProjectOverviewCriticalAssets,
   warmProjectOverviewModules,
 } from '@/lib/project-overview-assets';
+import { getAmenityVideoSources } from '@/lib/amenity-video-sources';
 import ProjectOverviewWarmup from '@/components/ProjectOverviewBook/Warmup';
 import styles from '../../app/home.module.css';
 
 const MIN_PRELOADER_DURATION_MS = 1800;
-const MAX_PRELOADER_DURATION_MS = 8000;
+const MAX_PRELOADER_DURATION_MS = 30000;
 const REVEAL_DURATION_MS = 980;
 const EASE_OUT_CUBIC = (value) => 1 - ((1 - value) ** 3);
 
@@ -24,15 +25,6 @@ const APARTMENTS_VIDEO_SAFE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AAD
 const APARTMENTS_VIDEO_PREMIUM = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_2560w_60fps_h264_premium.mp4';
 const APARTMENTS_VIDEO_ULTRA = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_3200w_60fps_h264_ultra.mp4';
 const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
-const AMENITIES_VIDEO_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/amenities';
-const AMENITY_WARMUP_SLUGS = [
-  'rooftopLeisureDeck',
-  'childrensPlayArea',
-  'badminton',
-  'basketball',
-  'gymnasium',
-  'swimmingPool',
-];
 const ROT360_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp';
 
 function frameUrl(frameNumber) {
@@ -81,11 +73,7 @@ function getSelectedMediaSources() {
 }
 
 function getAmenityWarmupSources() {
-  const quality = shouldUseSafeMedia() ? '720p' : '1080p';
-
-  return AMENITY_WARMUP_SLUGS.map((slug) => (
-    `${AMENITIES_VIDEO_BASE}/${slug}/${quality}/${slug}-h264.mp4`
-  ));
+  return getAmenityVideoSources(['720p', '1080p']);
 }
 
 function getVideoWarmupSources() {
@@ -112,6 +100,7 @@ function getCriticalAssets() {
     APARTMENTS_VIDEO_PREMIUM,
     APARTMENTS_VIDEO_ULTRA,
     APARTMENTS_LOOP,
+    ...getAmenityWarmupSources(),
     ...getProjectOverviewCriticalAssets(),
     ...scrubFrameAssets,
   ];
