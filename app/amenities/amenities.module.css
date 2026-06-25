@@ -101,16 +101,16 @@
 }
 
 .carouselDock {
-    --amenity-card-width: clamp(220px, 16.8vw, 320px);
-    --amenity-stage-height: clamp(320px, calc(var(--amenity-card-width) * 1.36), 448px);
+    --amenity-card-width: clamp(176px, 12vw, 236px);
+    --amenity-stage-height: clamp(264px, calc(var(--amenity-card-width) * 1.34), 338px);
     position: absolute;
     inset: 0;
     z-index: 2;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 110px clamp(26px, 3.6vw, 62px) 0;
-    gap: clamp(16px, 2.2vh, 28px);
+    padding: 102px clamp(18px, 3vw, 40px) 0;
+    gap: clamp(10px, 1.6vh, 18px);
     pointer-events: none;
     will-change: transform, opacity;
     transition:
@@ -128,7 +128,7 @@
 
 .carouselShell {
     position: relative;
-    width: min(100%, 1820px);
+    width: min(100%, 1480px);
     margin: 0 auto;
     z-index: 1;
 }
@@ -137,8 +137,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 54px;
-    height: 54px;
+    width: 42px;
+    height: 42px;
     border-radius: 999px;
     border: 1px solid rgba(214, 180, 111, 0.38);
     background: rgba(22, 18, 12, 0.32);
@@ -156,8 +156,8 @@
 }
 
 .carouselButtonIcon {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
 }
 
 .carouselViewport {
@@ -175,7 +175,7 @@
 
 .carouselStage {
     position: relative;
-    width: min(100%, 1720px);
+    width: min(100%, 1380px);
     height: var(--amenity-stage-height);
     transform-style: preserve-3d;
 }
@@ -199,8 +199,8 @@
 .cardChrome {
     position: relative;
     overflow: hidden;
-    padding: 18px 18px 16px;
-    border-radius: 26px;
+    padding: 15px 15px 14px;
+    border-radius: 22px;
     border: 1px solid rgba(217, 181, 113, 0.3);
     background: linear-gradient(180deg, rgba(26, 22, 16, 0.9) 0%, rgba(17, 14, 10, 0.84) 100%);
     box-shadow:
@@ -232,15 +232,15 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .cardLabel,
 .cardEyebrow {
     color: rgba(232, 198, 129, 0.86);
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 500;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
 }
 
@@ -252,7 +252,7 @@
     position: relative;
     overflow: hidden;
     aspect-ratio: 16 / 9.4;
-    border-radius: 18px;
+    border-radius: 15px;
     background: rgba(0, 0, 0, 0.28);
 }
 
@@ -272,7 +272,7 @@
 }
 
 .cardContent {
-    padding-top: 16px;
+    padding-top: 12px;
 }
 
 .cardTitle {
@@ -283,34 +283,34 @@
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
-    font-size: clamp(1.5rem, 1.4vw, 2rem);
+    font-size: clamp(1.16rem, 1.1vw, 1.56rem);
     font-weight: 400;
-    line-height: 0.98;
+    line-height: 1;
     letter-spacing: -0.035em;
-    min-height: 1.96em;
+    min-height: 2em;
 }
 
 .cardDescription {
     display: -webkit-box;
     overflow: hidden;
-    margin: 12px 0 0;
+    margin: 10px 0 0;
     color: rgba(234, 224, 201, 0.74);
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
-    font-size: 13px;
-    line-height: 1.48;
-    min-height: 2.96em;
+    font-size: 11px;
+    line-height: 1.42;
+    min-height: 2.84em;
 }
 
 .cardProgressRow {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding-top: 18px;
+    gap: 8px;
+    padding-top: 14px;
 }
 
 .cardProgressSegment {
-    width: 54px;
+    width: 38px;
     height: 2px;
     border-radius: 999px;
     background: rgba(233, 215, 178, 0.22);
@@ -326,10 +326,10 @@
     justify-content: flex-start;
     position: relative;
     z-index: 8;
-    width: min(100%, 1560px);
+    width: min(100%, 1320px);
     margin: 0 auto;
-    gap: clamp(18px, 18vw, 260px);
-    padding: 0 0 12px;
+    gap: clamp(16px, 8vw, 108px);
+    padding: 0 0 8px;
     pointer-events: auto;
 }
 
@@ -345,6 +345,47 @@
     display: flex;
     align-items: center;
     gap: 12px;
+}
+
+@media (max-width: 1680px) and (min-width: 1280px) {
+    .carouselDock {
+        --amenity-card-width: clamp(148px, 13vw, 198px);
+        --amenity-stage-height: clamp(228px, calc(var(--amenity-card-width) * 1.28), 294px);
+        padding: 92px 16px 0;
+        gap: 8px;
+    }
+
+    .carouselShell {
+        width: min(100%, 1240px);
+    }
+
+    .carouselStage {
+        width: min(100%, 1160px);
+    }
+
+    .cardChrome {
+        padding: 13px 13px 12px;
+        border-radius: 20px;
+    }
+
+    .cardTitle {
+        font-size: clamp(1.02rem, 1.28vw, 1.34rem);
+    }
+
+    .cardDescription {
+        font-size: 10px;
+        line-height: 1.36;
+    }
+
+    .cardProgressSegment {
+        width: 30px;
+    }
+
+    .carouselFooter {
+        width: min(100%, 1120px);
+        gap: 18px;
+        padding-bottom: 6px;
+    }
 }
 
 @media (max-width: 1279px) {
@@ -366,6 +407,10 @@
         min-height: 100svh;
         padding: 96px 18px calc(env(safe-area-inset-bottom, 0px) + 96px);
         gap: 10px;
+    }
+
+    .carouselDockHidden {
+        transform: translate3d(0, calc(100% + 36px), 0);
     }
 
     .carouselShell,
@@ -437,8 +482,13 @@
     }
 
     .carouselButton {
-        width: 44px;
-        height: 44px;
+        width: 38px;
+        height: 38px;
+    }
+
+    .carouselButtonIcon {
+        width: 13px;
+        height: 13px;
     }
 
     .carouselViewport {

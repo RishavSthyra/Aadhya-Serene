@@ -86,6 +86,7 @@ const CAROUSEL_TRANSITION = {
 const UI_IDLE_HIDE_DELAY_MS = 2000;
 const UI_REVEAL_LOCK_MS = 520;
 const UI_HIDE_LOCK_MS = 760;
+const COMPACT_DESKTOP_MAX_WIDTH = 1680;
 
 function normalizeIndex(index, length) {
     return ((index % length) + length) % length;
@@ -105,9 +106,11 @@ function getCircularDistance(index, activeIndex, total) {
     return distance;
 }
 
-function getCardMetrics(distance, isCompact, visibleDepth) {
+function getCardMetrics(distance, layoutMode, visibleDepth) {
     const direction = distance === 0 ? 0 : distance > 0 ? 1 : -1;
     const absDistance = Math.abs(distance);
+    const isMobile = layoutMode === 'mobile';
+    const isCompactDesktop = layoutMode === 'compact';
 
     if (absDistance === 0) {
         return {
@@ -124,52 +127,52 @@ function getCardMetrics(distance, isCompact, visibleDepth) {
 
     if (absDistance === 1) {
         return {
-            x: direction * (isCompact ? 232 : 418),
-            y: isCompact ? 24 : 28,
+            x: direction * (isMobile ? 232 : isCompactDesktop ? 288 : 334),
+            y: isMobile ? 24 : isCompactDesktop ? 22 : 26,
             rotateY: direction * -32,
-            scale: isCompact ? 0.84 : 0.85,
+            scale: isMobile ? 0.84 : isCompactDesktop ? 0.81 : 0.84,
             opacity: 0.95,
             zIndex: 32,
             blur: 0.05,
-            lift: 18,
+            lift: isMobile ? 18 : isCompactDesktop ? 14 : 16,
         };
     }
 
     if (absDistance === 2) {
         return {
-            x: direction * (isCompact ? 378 : 734),
-            y: isCompact ? 44 : 56,
+            x: direction * (isMobile ? 378 : isCompactDesktop ? 464 : 562),
+            y: isMobile ? 44 : isCompactDesktop ? 38 : 50,
             rotateY: direction * -50,
-            scale: isCompact ? 0.71 : 0.73,
+            scale: isMobile ? 0.71 : isCompactDesktop ? 0.68 : 0.71,
             opacity: 0.8,
             zIndex: 18,
             blur: 0.16,
-            lift: 36,
+            lift: isMobile ? 36 : isCompactDesktop ? 28 : 32,
         };
     }
 
     if (absDistance === 3 && visibleDepth >= 3) {
         return {
-            x: direction * (isCompact ? 438 : 918),
-            y: isCompact ? 58 : 74,
+            x: direction * (isMobile ? 438 : isCompactDesktop ? 592 : 734),
+            y: isMobile ? 58 : isCompactDesktop ? 50 : 66,
             rotateY: direction * -64,
-            scale: isCompact ? 0.62 : 0.6,
-            opacity: isCompact ? 0 : 0.58,
+            scale: isMobile ? 0.62 : isCompactDesktop ? 0.58 : 0.58,
+            opacity: isMobile ? 0 : 0.58,
             zIndex: 8,
             blur: 0.22,
-            lift: 52,
+            lift: isMobile ? 52 : isCompactDesktop ? 40 : 48,
         };
     }
 
     return {
-        x: direction * (isCompact ? 438 : 840),
-        y: isCompact ? 58 : 72,
+        x: direction * (isMobile ? 438 : isCompactDesktop ? 592 : 734),
+        y: isMobile ? 58 : isCompactDesktop ? 50 : 64,
         rotateY: direction * -68,
-        scale: isCompact ? 0.64 : 0.66,
+        scale: isMobile ? 0.64 : isCompactDesktop ? 0.6 : 0.62,
         opacity: 0,
         zIndex: 0,
         blur: 0.6,
-        lift: 40,
+        lift: isMobile ? 40 : isCompactDesktop ? 30 : 34,
     };
 }
 
@@ -181,6 +184,7 @@ export default function Amenities({ initialAmenity = null }) {
     const wheelTimeoutRef = useRef(null);
     const uiHideTimeoutRef = useRef(null);
     const uiTransitionLockRef = useRef(false);
+    const uiTransitionUnlockTimeoutRef = useRef(null);
     const dragStateRef = useRef({
         pointerId: null,
         startX: 0,
@@ -205,6 +209,13 @@ export default function Amenities({ initialAmenity = null }) {
         }
 
         return width >= 1850 ? 3 : 2;
+    }, [isTabletOrBelow, width]);
+    const layoutMode = useMemo(() => {
+        if (isTabletOrBelow) {
+            return 'mobile';
+        }
+
+        return width <= COMPACT_DESKTOP_MAX_WIDTH ? 'compact' : 'desktop';
     }, [isTabletOrBelow, width]);
 
     const swipeThreshold = isTabletOrBelow ? 24 : 56;
@@ -246,6 +257,44 @@ export default function Amenities({ initialAmenity = null }) {
         }, 340);
     }, [updateAmenity]);
 
+    const lockUiTransitions = useCallback((duration) => {
+        window.clearTimeout(uiTransitionUnlockTimeoutRef.current);
+        uiTransitionLockRef.current = true;
+        uiTransitionUnlockTimeoutRef.current = window.setTimeout(() => {
+            uiTransitionLockRef.current = false;
+        }, duration);
+    }, []);
+
+    const scheduleUiHide = useCallback(() => {
+        window.clearTimeout(uiHideTimeoutRef.current);
+        uiHideTimeoutRef.current = window.setTimeout(() => {
+            setIsUiVisible((current) => {
+                if (!current || uiTransitionLockRef.current) {
+                    return current;
+                }
+
+                lockUiTransitions(UI_HIDE_LOCK_MS);
+                return false;
+            });
+        }, UI_IDLE_HIDE_DELAY_MS);
+    }, [lockUiTransitions]);
+
+    const revealUi = useCallback(() => {
+        setIsUiVisible((current) => {
+            if (current || uiTransitionLockRef.current) {
+                return current;
+            }
+
+            lockUiTransitions(UI_REVEAL_LOCK_MS);
+            return true;
+        });
+    }, [lockUiTransitions]);
+
+    const noteUiActivity = useCallback(() => {
+        revealUi();
+        scheduleUiHide();
+    }, [revealUi, scheduleUiHide]);
+
     const handleWheel = useCallback((event) => {
         const dominantDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
             ? event.deltaX
@@ -256,16 +305,19 @@ export default function Amenities({ initialAmenity = null }) {
         }
 
         event.preventDefault();
+        noteUiActivity();
         queueMove(dominantDelta > 0 ? 1 : -1);
-    }, [queueMove]);
+    }, [noteUiActivity, queueMove]);
 
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.key === 'ArrowRight') {
+                noteUiActivity();
                 queueMove(1);
             }
 
             if (event.key === 'ArrowLeft') {
+                noteUiActivity();
                 queueMove(-1);
             }
         };
@@ -275,74 +327,46 @@ export default function Amenities({ initialAmenity = null }) {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [queueMove]);
+    }, [noteUiActivity, queueMove]);
 
     useEffect(() => () => {
         window.clearTimeout(wheelTimeoutRef.current);
     }, []);
 
     useEffect(() => {
-        if (isTabletOrBelow) {
-            window.clearTimeout(uiHideTimeoutRef.current);
-            uiTransitionLockRef.current = false;
-            setIsUiVisible(true);
-            return undefined;
-        }
-
-        const lockUiTransitions = (duration) => {
-            uiTransitionLockRef.current = true;
-            window.setTimeout(() => {
-                uiTransitionLockRef.current = false;
-            }, duration);
-        };
-
-        const scheduleUiHide = () => {
-            window.clearTimeout(uiHideTimeoutRef.current);
-            uiHideTimeoutRef.current = window.setTimeout(() => {
-                setIsUiVisible((current) => {
-                    if (!current || uiTransitionLockRef.current) {
-                        return current;
-                    }
-
-                    lockUiTransitions(UI_HIDE_LOCK_MS);
-                    return false;
-                });
-            }, UI_IDLE_HIDE_DELAY_MS);
-        };
-
-        const revealUi = () => {
-            setIsUiVisible((current) => {
-                if (current || uiTransitionLockRef.current) {
-                    return current;
-                }
-
-                lockUiTransitions(UI_REVEAL_LOCK_MS);
-                return true;
-            });
-
-            scheduleUiHide();
+        const handlePointerDown = () => {
+            noteUiActivity();
         };
 
         const handlePointerMove = () => {
-            revealUi();
-        };
+            if (isTabletOrBelow) {
+                return;
+            }
 
-        const handlePointerDown = () => {
-            revealUi();
+            noteUiActivity();
         };
 
         scheduleUiHide();
-        window.addEventListener('pointermove', handlePointerMove, { passive: true });
         window.addEventListener('pointerdown', handlePointerDown, { passive: true });
+
+        if (!isTabletOrBelow) {
+            window.addEventListener('pointermove', handlePointerMove, { passive: true });
+        }
 
         return () => {
             window.clearTimeout(uiHideTimeoutRef.current);
-            window.removeEventListener('pointermove', handlePointerMove);
             window.removeEventListener('pointerdown', handlePointerDown);
+            window.removeEventListener('pointermove', handlePointerMove);
         };
-    }, [isTabletOrBelow]);
+    }, [isTabletOrBelow, noteUiActivity, scheduleUiHide]);
+
+    useEffect(() => () => {
+        window.clearTimeout(uiHideTimeoutRef.current);
+        window.clearTimeout(uiTransitionUnlockTimeoutRef.current);
+    }, []);
 
     const handlePointerDown = useCallback((event) => {
+        noteUiActivity();
         event.currentTarget.setPointerCapture(event.pointerId);
         dragStateRef.current = {
             pointerId: event.pointerId,
@@ -351,7 +375,7 @@ export default function Amenities({ initialAmenity = null }) {
             axis: null,
             moved: false,
         };
-    }, []);
+    }, [noteUiActivity]);
 
     const handlePointerMove = useCallback((event) => {
         const { pointerId, startX, startY, axis, moved } = dragStateRef.current;
@@ -415,8 +439,9 @@ export default function Amenities({ initialAmenity = null }) {
             return;
         }
 
+        noteUiActivity();
         queueMove(deltaX < 0 ? 1 : -1);
-    }, [queueMove, swipeThreshold]);
+    }, [noteUiActivity, queueMove, swipeThreshold]);
 
     const cancelPointerGesture = useCallback((event) => {
         if (dragStateRef.current.pointerId !== event.pointerId) {
@@ -441,7 +466,7 @@ export default function Amenities({ initialAmenity = null }) {
             <div className={styles.sceneOverlay} aria-hidden="true" />
 
             <section
-                className={`${styles.copyPanel} ${!isTabletOrBelow && !isUiVisible ? styles.copyPanelHidden : ''}`}
+                className={`${styles.copyPanel} ${!isUiVisible ? styles.copyPanelHidden : ''}`}
             >
                 <div className={styles.copyEyebrow}>Amenities</div>
                 <h1 className={styles.copyTitle}>
@@ -464,7 +489,7 @@ export default function Amenities({ initialAmenity = null }) {
             </section>
 
             <section
-                className={`${styles.carouselDock} ${!isTabletOrBelow && !isUiVisible ? styles.carouselDockHidden : ''}`}
+                className={`${styles.carouselDock} ${!isUiVisible ? styles.carouselDockHidden : ''}`}
             >
                 <div className={styles.carouselShell}>
                     <div
@@ -479,7 +504,7 @@ export default function Amenities({ initialAmenity = null }) {
                         <div className={styles.carouselStage}>
                             {AMENITIES_LIST.map((item, index) => {
                                 const distance = getCircularDistance(index, activeIndex, AMENITIES_LIST.length);
-                                const metrics = getCardMetrics(distance, isTabletOrBelow, visibleDepth);
+                                const metrics = getCardMetrics(distance, layoutMode, visibleDepth);
                                 const isVisible = Math.abs(distance) <= visibleDepth;
                                 const isActive = distance === 0;
                                 const posterSrc = AMENITY_POSTERS[item.url] || AMENITY_FALLBACK;
