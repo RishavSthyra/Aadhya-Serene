@@ -19,7 +19,7 @@ import { getAmenityVideoSource } from '@/lib/amenity-video-sources';
 import usePerformanceProfile from '@/hooks/usePerformanceProfile';
 import styles from './background-video.module.css';
 
-const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/Aadhya%20Serene%20Home%20Page%205%20With%20Humans.mp4';
+const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/Aadhya%20Serene%20Home%20Page%205%20With%20Humans(2).mp4';
 const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya%20Serene%20Home%20Page%205%20With%20Humans%20-%20First%20Frame.avif';
 
 const APARTMENTS_TRANSITION = {
