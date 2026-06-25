@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import HTMLFlipBook from 'react-pageflip';
 import ProjectOverviewWarmup from './Warmup';
 import DeckPage from './DeckPage';
@@ -74,6 +74,7 @@ function getBookSize(width, height) {
 
 export default function ProjectOverviewBook() {
   const bookRef = useRef(null);
+  const activeSpreadInteractionsRef = useRef(new Set());
   const [currentPage, setCurrentPage] = useState(0);
   const [bookState, setBookState] = useState('read');
   const viewport = useViewport();
@@ -132,9 +133,42 @@ export default function ProjectOverviewBook() {
   };
 
   useEffect(() => {
+    activeSpreadInteractionsRef.current.clear();
     setCurrentPage(0);
     setBookState('read');
   }, [flipbookKey]);
+
+  const syncSpreadInteractionState = useCallback((hasActiveInteraction) => {
+    const pageFlip = bookRef.current?.pageFlip();
+    const settings = pageFlip?.getSettings();
+
+    if (!settings) {
+      return;
+    }
+
+    settings.showPageCorners = bookSize.isMobile ? false : !hasActiveInteraction;
+    settings.disableFlipByClick = hasActiveInteraction;
+
+    if (hasActiveInteraction && pageFlip.getState() === 'fold_corner') {
+      pageFlip.getFlipController()?.showCorner({ x: -1, y: -1 });
+    }
+  }, [bookSize.isMobile]);
+
+  const handleSpreadInteractionChange = useCallback((interactionId, isActive) => {
+    if (!interactionId) {
+      return;
+    }
+
+    const nextActiveInteractions = activeSpreadInteractionsRef.current;
+
+    if (isActive) {
+      nextActiveInteractions.add(interactionId);
+    } else {
+      nextActiveInteractions.delete(interactionId);
+    }
+
+    syncSpreadInteractionState(nextActiveInteractions.size > 0);
+  }, [syncSpreadInteractionState]);
 
   const getPageContent = (page) => {
     if (page.key !== 'spread-left' && page.key !== 'spread-right') {
@@ -146,6 +180,8 @@ export default function ProjectOverviewBook() {
         image={page.src}
         alt={page.alt}
         crop={page.crop}
+        interactionId={page.key}
+        onInteractionChange={handleSpreadInteractionChange}
       />
     );
   };
