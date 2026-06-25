@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { cacheAssetOnce } from '@/lib/client-asset-cache';
 import { getProjectOverviewCriticalAssets, warmProjectOverviewModules } from '@/lib/project-overview-assets';
+import { spreadFloorplanPreviewUrls } from './floorplan-hotspots';
 
 const warmupAssets = [
   '/Brochure_Bg.avif',
@@ -17,6 +18,7 @@ const warmupAssets = [
   '/FlipbookPages/Masterplan%20Page.avif',
   '/FlipbookPages/Spec%20Left%20section%20Image.avif',
   '/FlipbookPages/Specificaitions%20Right%20Page.avif',
+  ...spreadFloorplanPreviewUrls,
 ];
 
 export default function ProjectOverviewWarmup() {
