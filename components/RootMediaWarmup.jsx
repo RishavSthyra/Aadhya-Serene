@@ -36,6 +36,17 @@ export default function RootMediaWarmup({ enabled = true }) {
     () => resolveApartmentsTransition(profile),
     [profile],
   );
+  const warmupConcurrency = profile.shouldConserveData || profile.isConstrainedDevice
+    ? 1
+    : profile.veryHighCapabilityDesktop
+      ? 3
+      : 2;
+  const warmupVideoPreload = profile.shouldConserveData || profile.isConstrainedDevice
+    ? 'metadata'
+    : 'auto';
+  const warmupVideoReadyEvent = warmupVideoPreload === 'auto'
+    ? 'loadeddata'
+    : 'loadedmetadata';
 
   useEffect(() => {
     if (!enabled || pathname === '/') {
@@ -50,19 +61,30 @@ export default function RootMediaWarmup({ enabled = true }) {
         selectedTransition,
         APARTMENTS_LOOP,
       ], {
-        chunkSize: 1,
-        concurrency: 1,
+        chunkSize: 2,
+        concurrency: warmupConcurrency,
         priority: 'low',
-        gapMs: 1400,
-        idleTimeoutMs: 3200,
-        delayMs: 1200,
+        immediate: true,
+        gapMs: 160,
+        idleTimeoutMs: 900,
+        delayMs: 0,
+        videoPreload: warmupVideoPreload,
+        videoReadyEvent: warmupVideoReadyEvent,
+        timeoutMs: warmupVideoPreload === 'auto' ? 9000 : 5000,
       });
-    }, 1800);
+    }, 900);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [enabled, pathname, selectedTransition]);
+  }, [
+    enabled,
+    pathname,
+    selectedTransition,
+    warmupConcurrency,
+    warmupVideoPreload,
+    warmupVideoReadyEvent,
+  ]);
 
   return null;
 }

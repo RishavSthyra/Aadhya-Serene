@@ -511,20 +511,27 @@ export default function FlatDetailPage() {
         if (!hasFlatSpecificVideo) {
             prefetchAssetsInChunks([renderPosterSrc], {
                 chunkSize: 1,
-                concurrency: 1,
+                concurrency: 2,
                 priority: 'low',
-                gapMs: 700,
-                idleTimeoutMs: 2400,
+                immediate: true,
+                gapMs: 120,
+                idleTimeoutMs: 900,
+                delayMs: 0,
             });
             return;
         }
 
         prefetchAssetsInChunks([renderPosterSrc, loopVideoSrc, reverseVideoSrc], {
-            chunkSize: 1,
-            concurrency: 1,
+            chunkSize: 2,
+            concurrency: isTabletOrBelow ? 2 : 3,
             priority: 'low',
-            gapMs: isTabletOrBelow ? 900 : 560,
-            idleTimeoutMs: isTabletOrBelow ? 2800 : 1800,
+            immediate: true,
+            gapMs: isTabletOrBelow ? 220 : 140,
+            idleTimeoutMs: 1200,
+            delayMs: 20,
+            videoPreload: isTabletOrBelow ? 'metadata' : 'auto',
+            videoReadyEvent: isTabletOrBelow ? 'loadedmetadata' : 'loadeddata',
+            timeoutMs: isTabletOrBelow ? 6000 : 9000,
         });
     }, [
         hasFlatSpecificVideo,

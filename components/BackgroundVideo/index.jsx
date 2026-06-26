@@ -10,12 +10,10 @@ import {
     isHomePreloaderComplete,
 } from '@/lib/home-loader';
 import {
-    cacheAssetOnce,
-    isAssetCachePending,
     prefetchAssetsInChunks,
     registerAssetCacheServiceWorker,
 } from '@/lib/client-asset-cache';
-import { getAmenityVideoSource } from '@/lib/amenity-video-sources';
+import { getAmenityVideoVariant } from '@/lib/amenity-video-sources';
 import usePerformanceProfile from '@/hooks/usePerformanceProfile';
 import styles from './background-video.module.css';
 
@@ -96,40 +94,40 @@ const LAYOUT_CONFIG = {
         loop: HOME_VIDEO,
     },
     amenities: {
-        transition: getAmenityVideoSource('rooftopLeisureDeck'),
-        loop: getAmenityVideoSource('rooftopLeisureDeck'),
+        transition: getAmenityVideoVariant('rooftopLeisureDeck'),
+        loop: getAmenityVideoVariant('rooftopLeisureDeck'),
     },
     'amenities-rooftopLeisureDeck': {
-        transition: getAmenityVideoSource('rooftopLeisureDeck'),
-        loop: getAmenityVideoSource('rooftopLeisureDeck'),
+        transition: getAmenityVideoVariant('rooftopLeisureDeck'),
+        loop: getAmenityVideoVariant('rooftopLeisureDeck'),
     },
     'amenities-childrensPlayArea': {
-        transition: getAmenityVideoSource('childrensPlayArea'),
-        loop: getAmenityVideoSource('childrensPlayArea'),
+        transition: getAmenityVideoVariant('childrensPlayArea'),
+        loop: getAmenityVideoVariant('childrensPlayArea'),
     },
     'amenities-swimmingPool': {
-        transition: getAmenityVideoSource('swimmingPool'),
-        loop: getAmenityVideoSource('swimmingPool'),
+        transition: getAmenityVideoVariant('swimmingPool'),
+        loop: getAmenityVideoVariant('swimmingPool'),
     },
     'amenities-gymnasium': {
-        transition: getAmenityVideoSource('gymnasium'),
-        loop: getAmenityVideoSource('gymnasium'),
+        transition: getAmenityVideoVariant('gymnasium'),
+        loop: getAmenityVideoVariant('gymnasium'),
     },
     'amenities-indoorGames': {
-        transition: getAmenityVideoSource('indoorGames'),
-        loop: getAmenityVideoSource('indoorGames'),
+        transition: getAmenityVideoVariant('indoorGames'),
+        loop: getAmenityVideoVariant('indoorGames'),
     },
     'amenities-clubhouse': {
-        transition: getAmenityVideoSource('clubhouse'),
-        loop: getAmenityVideoSource('clubhouse'),
+        transition: getAmenityVideoVariant('clubhouse'),
+        loop: getAmenityVideoVariant('clubhouse'),
     },
     'amenities-basketball': {
-        transition: getAmenityVideoSource('basketball'),
-        loop: getAmenityVideoSource('basketball'),
+        transition: getAmenityVideoVariant('basketball'),
+        loop: getAmenityVideoVariant('basketball'),
     },
     'amenities-badminton': {
-        transition: getAmenityVideoSource('badminton'),
-        loop: getAmenityVideoSource('badminton'),
+        transition: getAmenityVideoVariant('badminton'),
+        loop: getAmenityVideoVariant('badminton'),
     },
 };
 
@@ -256,8 +254,9 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const [showLoop, setShowLoop] = useState(false);
 
     const config = LAYOUT_CONFIG[layout] ?? DEFAULT_CONFIG;
-    const transitionPreloadMode = shouldConserveData ? 'metadata' : 'auto';
-    const loopPreloadMode = shouldConserveData ? 'metadata' : 'auto';
+    const isAmenityLayout = layout === 'amenities' || layout.startsWith('amenities-');
+    const transitionPreloadMode = shouldConserveData || isAmenityLayout ? 'metadata' : 'auto';
+    const loopPreloadMode = shouldConserveData || isAmenityLayout ? 'metadata' : 'auto';
     const transitionIsHls = isHlsSource(config.transition);
     const shouldWaitForStartupBuffer = !shouldConserveData;
     const shouldEagerlyPrepareLoop = veryHighCapabilityDesktop && !transitionIsHls;
@@ -391,11 +390,18 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
                 warmTransitionCandidates[0],
                 warmLoopCandidates[0],
             ], {
-                chunkSize: 1,
-                concurrency: 1,
+                chunkSize: 2,
+                concurrency: shouldConserveData ? 1 : veryHighCapabilityDesktop ? 3 : 2,
                 priority: 'low',
-                gapMs: veryHighCapabilityDesktop ? 420 : 760,
-                idleTimeoutMs: 2400,
+                immediate: true,
+                gapMs: veryHighCapabilityDesktop ? 140 : 220,
+                idleTimeoutMs: 1200,
+                delayMs: 30,
+                videoPreload: shouldConserveData ? 'metadata' : veryHighCapabilityDesktop ? 'auto' : 'metadata',
+                videoReadyEvent: shouldConserveData || !veryHighCapabilityDesktop
+                    ? 'loadedmetadata'
+                    : 'loadeddata',
+                timeoutMs: veryHighCapabilityDesktop ? 9000 : 5000,
             });
         };
 
@@ -403,7 +409,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             layoutsToWarm.forEach((layoutToWarm, index) => {
                 const timeoutId = window.setTimeout(() => {
                     warmLayout(layoutToWarm);
-                }, index === 0 ? 120 : 1000);
+                }, index === 0 ? 60 : 320);
 
                 timeoutIds.push(timeoutId);
             });
@@ -544,17 +550,6 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             return true;
         }
 
-        if (isAssetCachePending(source)) {
-            cacheAssetOnce(source, {
-                priority: target === 'transition' ? 'high' : 'low',
-            }).finally(() => {
-                if (loadIdRef.current !== loadId) return;
-                video.src = source;
-                video.load();
-            });
-            return true;
-        }
-
         video.src = source;
         video.load();
 
@@ -689,7 +684,9 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             const maybeStartWhenBuffered = () => {
                 const minimumBuffer = transitionIsHls
                     ? HLS_MIN_START_BUFFER_AHEAD_SECONDS
-                    : MP4_MIN_START_BUFFER_AHEAD_SECONDS;
+                    : isAmenityLayout
+                        ? 0.85
+                        : MP4_MIN_START_BUFFER_AHEAD_SECONDS;
 
                 if (hasEnoughStartupBuffer(transitionVideo, minimumBuffer)) {
                     deferredTransitionStartCleanup?.();
@@ -876,7 +873,9 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
             let removeLoopBufferListeners = null;
 
             const maybeStartLoop = () => {
-                if (hasEnoughStartupBuffer(loopVideo, LOOP_MIN_START_BUFFER_AHEAD_SECONDS)) {
+                const minimumLoopBuffer = isAmenityLayout ? 0.6 : LOOP_MIN_START_BUFFER_AHEAD_SECONDS;
+
+                if (hasEnoughStartupBuffer(loopVideo, minimumLoopBuffer)) {
                     removeLoopBufferListeners?.();
                     removeLoopBufferListeners = null;
                     startLoopPlayback();

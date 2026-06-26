@@ -111,10 +111,15 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
     let cancelled = false;
     let frameId = 0;
     const startTime = performance.now();
+    const useSafeMedia = shouldUseSafeMedia();
     const criticalAssets = getCriticalAssets();
     let completedAssets = 0;
     let criticalDone = false;
     let timedOut = false;
+    const criticalVideoPreload = useSafeMedia ? 'metadata' : 'auto';
+    const criticalVideoReadyEvent = useSafeMedia ? 'loadedmetadata' : 'loadeddata';
+    const criticalWorkerCount = useSafeMedia ? 2 : 3;
+    const idleWarmConcurrency = useSafeMedia ? 2 : 3;
 
     const reportAssetComplete = () => {
       completedAssets += 1;
@@ -129,11 +134,16 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
       onRevealStartRef.current?.();
 
       prefetchAssetsInChunks(getIdleWarmAssets(), {
-        chunkSize: 2,
-        concurrency: 1,
+        chunkSize: 3,
+        concurrency: idleWarmConcurrency,
         priority: 'low',
-        gapMs: 900,
-        idleTimeoutMs: 2800,
+        immediate: true,
+        gapMs: useSafeMedia ? 220 : 140,
+        idleTimeoutMs: 1200,
+        delayMs: 20,
+        videoPreload: useSafeMedia ? 'metadata' : 'auto',
+        videoReadyEvent: useSafeMedia ? 'loadedmetadata' : 'loadeddata',
+        timeoutMs: useSafeMedia ? 5000 : 9000,
       });
 
       window.setTimeout(() => {
@@ -170,10 +180,16 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
 
     void registerAssetCacheServiceWorker();
     const criticalQueue = [...criticalAssets];
-    const criticalWorkers = Array.from({ length: shouldUseSafeMedia() ? 1 : 2 }, async () => {
+    const criticalWorkers = Array.from({ length: criticalWorkerCount }, async () => {
       while (!cancelled && criticalQueue.length > 0) {
         const nextAsset = criticalQueue.shift();
-        await cacheAssetOnce(nextAsset, { priority: 'high' }).finally(reportAssetComplete);
+        await cacheAssetOnce(nextAsset, {
+          priority: 'high',
+          immediate: true,
+          videoPreload: criticalVideoPreload,
+          videoReadyEvent: criticalVideoReadyEvent,
+          timeoutMs: criticalVideoPreload === 'auto' ? 9000 : 5000,
+        }).finally(reportAssetComplete);
       }
     });
 

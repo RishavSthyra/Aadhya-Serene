@@ -1,17 +1,13 @@
-const CACHE_NAME = 'aadhya-serene-media-v3';
+const CACHE_NAME = 'aadhya-serene-media-v4';
 const CACHEABLE_HOSTS = new Set([
     'cdn.sthyra.com',
     'du67w5n77drxm.cloudfront.net',
     'aadhya-serene-assets-v2.s3.amazonaws.com',
 ]);
 const CACHEABLE_PATH_PARTS = [
-    '/AADHYA%20SERENE/videos/',
     '/AADHYA%20SERENE/images/amenities-first-frames/',
     '/AADHYA%20SERENE/images/rot360_webp/',
-    '/AADHYA%20SERENE/renders',
-    '/videos/amenities/',
-    '/videos/flats/',
-    '/assets/background-video/',
+    '/AADHYA%20SERENE/images/',
 ];
 
 self.addEventListener('install', (event) => {

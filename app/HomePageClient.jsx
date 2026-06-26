@@ -110,6 +110,17 @@ export default function HomePageClient() {
   }, [router]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || pathname !== "/") {
+      return undefined;
+    }
+
+    window.dispatchEvent(new CustomEvent("bg-layout", { detail: "home" }));
+    window.dispatchEvent(new CustomEvent("bg-play"));
+
+    return undefined;
+  }, [pathname]);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
       return undefined;
     }
@@ -233,7 +244,11 @@ export default function HomePageClient() {
         />
       ) : null}
 
-      <section id="home-inner" className={styles.heroInner}>
+      <section
+        id="home-inner"
+        className={styles.heroInner}
+        style={{ opacity: 1, pointerEvents: "auto" }}
+      >
         <div className={styles.heroContent}>
           <motion.div
             initial={false}

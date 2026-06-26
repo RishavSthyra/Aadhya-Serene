@@ -8,7 +8,7 @@ import { spreadFloorplanPreviewUrls } from './floorplan-hotspots';
 const warmupAssets = [
   '/Brochure_Bg.avif',
   '/FlipbookPages/page1new.png',
-  '/FlipbookPages/page1.png',
+  '/FlipbookPages/Page1.png',
   '/FlipbookPages/Page2.png',
   '/FlipbookPages/page3new2.avif',
   '/FlipbookPages/page4new.avif',
