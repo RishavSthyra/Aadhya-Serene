@@ -15,6 +15,7 @@ import {
     ShieldCheck,
     UserPlus,
     UsersRound,
+    Wallet,
 } from 'lucide-react';
 import { RiArrowDownSLine } from 'react-icons/ri';
 import {
@@ -25,6 +26,7 @@ import {
     ResponsiveContainer,
     Tooltip,
 } from 'recharts';
+import FinancePanel from '@/components/Admin/FinancePanel';
 
 const ROLE_LABELS = {
     super_admin: 'Super Admin',
@@ -333,9 +335,11 @@ export default function AdminPage() {
     const [notice, setNotice] = useState('');
     const [query, setQuery] = useState('');
     const [activeSection, setActiveSection] = useState('dashboard');
+    const [financeRefreshToken, setFinanceRefreshToken] = useState(0);
     const contentRef = useRef(null);
     const dashboardRef = useRef(null);
     const reportsRef = useRef(null);
+    const financeRef = useRef(null);
     const keysRef = useRef(null);
     const inventoryRef = useRef(null);
 
@@ -435,6 +439,7 @@ export default function AdminPage() {
     function goToSection(section) {
         const sectionRefs = {
             dashboard: dashboardRef,
+            finance: financeRef,
             inventory: inventoryRef,
             users: keysRef,
             keys: keysRef,
@@ -496,6 +501,11 @@ export default function AdminPage() {
         setFlats([]);
     }
 
+    function refreshAdminData() {
+        void loadFlats();
+        setFinanceRefreshToken((current) => current + 1);
+    }
+
     if (checking) {
         return (
             <main className="font-display fixed inset-0 z-[999] flex min-h-screen items-center justify-center bg-[#f4f4f2] text-[#111]">
@@ -522,8 +532,9 @@ export default function AdminPage() {
                 </div>
 
                 <nav className="flex-1 space-y-2 px-5 py-7">
-                    {[
+                    {[ 
                         [LayoutDashboard, 'Dashboard', 'dashboard'],
+                        ...(canWrite ? [[Wallet, 'Finance', 'finance']] : []),
                         [Home, 'Inventory', 'inventory'],
                         [UsersRound, 'RBAC Users', 'users'],
                         [KeyRound, 'Signup Keys', 'keys'],
@@ -564,7 +575,7 @@ export default function AdminPage() {
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
-                            onClick={loadFlats}
+                            onClick={refreshAdminData}
                             className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[#111]/10 bg-white px-4 text-sm font-bold text-[#111] shadow-[0_7px_0_rgba(17,17,17,0.04),0_16px_32px_rgba(17,17,17,0.06)] transition hover:-translate-y-0.5"
                         >
                             <RefreshCcw className="h-4 w-4" />
@@ -662,6 +673,16 @@ export default function AdminPage() {
                             )}
                         </aside>
                     </section>
+
+                    {canWrite ? (
+                        <div ref={financeRef}>
+                            <FinancePanel
+                                canWrite={canWrite}
+                                isSuperAdmin={isSuperAdmin}
+                                refreshToken={financeRefreshToken}
+                            />
+                        </div>
+                    ) : null}
 
                     <section ref={inventoryRef} className="mt-7 scroll-mt-8 overflow-hidden rounded-[30px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)]">
                         <div className="flex flex-col gap-5 border-b border-[#111]/10 px-7 py-6 xl:flex-row xl:items-center xl:justify-between">
