@@ -6,7 +6,6 @@ import styles from './viewer.module.css';
 import { flatViewKeyFromFrame } from '../../lib/flats';
 import {
     cacheAssetOnce,
-    prefetchAssetsInChunks,
     registerAssetCacheServiceWorker,
 } from '../../lib/client-asset-cache';
 
@@ -328,14 +327,6 @@ export function scheduleApartment360FrameWarmup({
     startupWarmQueue = queue;
 
     void registerAssetCacheServiceWorker();
-
-    prefetchAssetsInChunks(queue.map(getFrameUrl), {
-        chunkSize: isConstrainedDevice ? 2 : 4,
-        concurrency: 1,
-        priority: 'low',
-        gapMs: isConstrainedDevice ? 900 : 520,
-        idleTimeoutMs: isConstrainedDevice ? 2600 : 1800,
-    });
 
     const options = {
         concurrency: isConstrainedDevice ? MOBILE_INITIAL_WARMUP_CONCURRENCY : INITIAL_WARMUP_CONCURRENCY,
@@ -846,7 +837,6 @@ export default function Apartment360Viewer({
                 ? MOBILE_INITIAL_INTERACTION_UNLOCK_COUNT
                 : INITIAL_INTERACTION_UNLOCK_COUNT;
             const instantFrames = criticalFrames.slice(0, unlockCount);
-            const backgroundFrames = criticalFrames.slice(unlockCount);
 
             await warmFramesWithConcurrency(instantFrames, {
                 concurrency: isConstrainedDevice
@@ -871,18 +861,6 @@ export default function Apartment360Viewer({
                 preloadRadius: preloadRadius,
             });
             setIsStartupPrimed(true);
-
-            if (!backgroundFrames.length) {
-                return;
-            }
-
-            prefetchAssetsInChunks(backgroundFrames.map(getFrameUrl), {
-                chunkSize: isConstrainedDevice ? 2 : 5,
-                concurrency: 1,
-                priority: 'low',
-                gapMs: isConstrainedDevice ? 900 : 520,
-                idleTimeoutMs: isConstrainedDevice ? 2800 : 1800,
-            });
         };
 
         setIsStartupPrimed(false);

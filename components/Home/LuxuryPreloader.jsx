@@ -19,6 +19,8 @@ const APARTMENTS_VIDEO_SAFE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AAD
 const APARTMENTS_VIDEO_PREMIUM = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_2560w_60fps_h264_premium.mp4';
 const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
 const ROT360_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp';
+const ROT360_TOTAL_FRAMES = 360;
+const ROT360_SNAP_POINTS = [1, 90, 180, 270, 360];
 
 function frameUrl(frameNumber) {
   return `${ROT360_BASE}/frame_${String(frameNumber).padStart(4, '0')}.webp`;
@@ -26,6 +28,16 @@ function frameUrl(frameNumber) {
 
 function normalizeFrameNumber(frameNumber) {
   return (((Math.round(frameNumber) - 1) % 360) + 360) % 360 + 1;
+}
+
+function appendFrame(frames, seen, frameNumber) {
+  const normalizedFrame = normalizeFrameNumber(frameNumber);
+  if (seen.has(normalizedFrame)) {
+    return;
+  }
+
+  seen.add(normalizedFrame);
+  frames.push(normalizedFrame);
 }
 
 function getPreloaderScrubFrames() {
@@ -43,6 +55,34 @@ function getPreloaderScrubFrames() {
   });
 
   return [...frames].sort((a, b) => a - b);
+}
+
+function getGradualRot360WarmFrames(isConstrainedDevice) {
+  const frames = [];
+  const seen = new Set();
+  const snapRadius = isConstrainedDevice ? 18 : 36;
+  const coarseStride = isConstrainedDevice ? 6 : 4;
+
+  getPreloaderScrubFrames().forEach((frameNumber) => {
+    appendFrame(frames, seen, frameNumber);
+  });
+
+  ROT360_SNAP_POINTS.forEach((centerFrame) => {
+    for (let offset = 0; offset <= snapRadius; offset += 1) {
+      appendFrame(frames, seen, centerFrame + offset);
+      appendFrame(frames, seen, centerFrame - offset);
+    }
+  });
+
+  for (let frameNumber = 1; frameNumber <= ROT360_TOTAL_FRAMES; frameNumber += coarseStride) {
+    appendFrame(frames, seen, frameNumber);
+  }
+
+  for (let frameNumber = 1; frameNumber <= ROT360_TOTAL_FRAMES; frameNumber += 1) {
+    appendFrame(frames, seen, frameNumber);
+  }
+
+  return frames;
 }
 
 function shouldUseSafeMedia() {
@@ -92,6 +132,10 @@ function getIdleWarmAssets() {
     APARTMENTS_LOOP,
     ...frameSeeds.slice(0, 24).map(frameUrl),
   ];
+}
+
+function getGradualRot360WarmAssets(isConstrainedDevice) {
+  return getGradualRot360WarmFrames(isConstrainedDevice).map(frameUrl);
 }
 
 export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
@@ -144,6 +188,23 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
         videoPreload: useSafeMedia ? 'metadata' : 'auto',
         videoReadyEvent: useSafeMedia ? 'loadedmetadata' : 'loadeddata',
         timeoutMs: useSafeMedia ? 5000 : 9000,
+        pauseDuringBackgroundTransition: true,
+        pauseOnAmenitiesRoute: true,
+        pauseRetryMs: useSafeMedia ? 900 : 560,
+      });
+
+      prefetchAssetsInChunks(getGradualRot360WarmAssets(useSafeMedia), {
+        chunkSize: useSafeMedia ? 4 : 8,
+        concurrency: useSafeMedia ? 1 : 2,
+        priority: 'low',
+        immediate: true,
+        gapMs: useSafeMedia ? 180 : 90,
+        idleTimeoutMs: useSafeMedia ? 2400 : 1500,
+        delayMs: useSafeMedia ? 160 : 40,
+        timeoutMs: useSafeMedia ? 4200 : 6200,
+        pauseDuringBackgroundTransition: true,
+        pauseOnAmenitiesRoute: true,
+        pauseRetryMs: useSafeMedia ? 900 : 560,
       });
 
       window.setTimeout(() => {
