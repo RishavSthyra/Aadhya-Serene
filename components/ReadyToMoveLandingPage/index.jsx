@@ -55,8 +55,8 @@ const FORM_IMAGE = '/landing%20page%20images/interiorimage7.avif';
 
 const LANDING_IMAGES = {
   heroMain: '/landing page images/HERO_1.avif',
-  heroSecondary: '/landing%20page%20images/image2.avif',
-  heroInterior: '/landing%20page%20images/interiorimage7.avif',
+  heroSecondary: '/landing page images/HERO_2.avif',
+  heroInterior: '/landing page images/HERO_3.avif',
   facade: '/landing%20page%20images/image4.avif',
   lifestyle: '/landing%20page%20images/image5.avif',
   delivered: '/landing%20page%20images/image3.avif',
@@ -79,19 +79,13 @@ const HERO_SLIDES = [
     caption: 'Vastu-compliant · Premium finishes',
   },
   {
-    src: LANDING_IMAGES.facade,
+    src: LANDING_IMAGES.heroSecondary,
     alt: 'Aadhya Serene building facade',
     eyebrow: 'Boutique Community',
     location: '1.25 Acres · 136 Homes',
     caption: 'BBMP + K-RERA Approved',
   },
-  {
-    src: LANDING_IMAGES.lifestyle,
-    alt: 'Aadhya Serene lifestyle amenity',
-    eyebrow: 'Walk to Manyata',
-    location: 'North Bangalore',
-    caption: 'Starts Rs 99 Lakhs*',
-  },
+
 ];
 
 const TRUST_STRIP = [
