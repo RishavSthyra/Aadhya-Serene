@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
   ArrowRight,
   BadgeCheck,
@@ -9,29 +11,27 @@ import {
   CalendarClock,
   Check,
   ChevronDown,
-  Clock3,
   Compass,
-  FileText,
+  Dumbbell,
+  Flame,
+  Gift,
+  HardHat,
   IndianRupee,
   KeyRound,
-  Landmark,
-  LayoutGrid,
   MapPin,
   Phone,
+  Play,
   ShieldCheck,
   Sparkles,
-  TrendingUp,
-  Users,
-  Trees,
   Trophy,
+  Users,
+  Waves,
+  Wifi,
   X,
 } from 'lucide-react';
 import {
   PiArmchair,
-  PiBuildings,
-  PiCheckCircleFill,
-  PiEye,
-  PiFlowerLotus,
+  PiBasketball,
   PiHouseLine,
   PiKey,
   PiShieldCheckered,
@@ -39,279 +39,336 @@ import {
   PiUsersThree,
 } from 'react-icons/pi';
 
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger);
+}
+
 const PHONE_DISPLAY = '+91 96209 93333';
 const PHONE_LINK = 'tel:+919620993333';
-const PROJECT_APP_URL = 'https://app.aadhyaserene.com';
+const WHATSAPP_LINK =
+  'https://wa.me/919620993333?text=Hi,%20I%27m%20interested%20in%20Aadhya%20Serene';
+const WHATSAPP_BROCHURE =
+  'https://wa.me/919620993333?text=Hi%2C%20please%20share%20the%20Aadhya%20Serene%20brochure%20and%20price%20sheet.';
+const RERA_NUMBER = 'PRM/KA/RERA/1251/446/PR/180625/006584';
+const WHATSAPP_IMAGE = '/landing%20page%20images/whatsapp.png';
 const FORM_IMAGE = '/landing%20page%20images/interiorimage7.avif';
+
 const LANDING_IMAGES = {
-  heroLeft: '/landing%20page%20images/image1.avif',
-  heroCenter: '/landing%20page%20images/image2.avif',
-  heroRight: '/landing%20page%20images/interiorimage7.avif',
-  ready: '/landing%20page%20images/image4.avif',
+  heroMain: '/landing page images/HERO_1.avif',
+  heroSecondary: '/landing%20page%20images/image2.avif',
+  heroInterior: '/landing%20page%20images/interiorimage7.avif',
+  facade: '/landing%20page%20images/image4.avif',
   lifestyle: '/landing%20page%20images/image5.avif',
   delivered: '/landing%20page%20images/image3.avif',
   deliveredAlt: '/landing%20page%20images/iamge6.avif',
 };
 
-const FORM_STEPS = [
+const HERO_SLIDES = [
   {
-    id: 'homeType',
-    type: 'options',
-    field: 'homeType',
-    title: 'Which home are you exploring?',
-    description: 'Pick the home type that matches your interest best.',
-    options: ['2 BHK', '3 BHK', 'Premium Corner Home', 'Need Guidance'],
+    src: LANDING_IMAGES.heroMain,
+    alt: 'Aadhya Serene terrace and pool at golden hour',
+    eyebrow: 'Ready-to-move 2 & 3 BHK',
+    location: 'Thanisandra, North Bangalore',
+    caption: 'Pool · Terrace · Clubhouse',
   },
   {
-    id: 'purpose',
-    type: 'options',
-    field: 'purpose',
-    title: 'What best describes your buying goal?',
-    description: 'This helps us tailor the right recommendation for you.',
-    options: ['Self use', 'Investment', 'Upgrade', 'Rental yield'],
+    src: LANDING_IMAGES.heroInterior,
+    alt: 'Aadhya Serene finished bedroom interior',
+    eyebrow: 'Finished Homes',
+    location: 'Move in today',
+    caption: 'Vastu-compliant · Premium finishes',
   },
   {
-    id: 'budget',
-    type: 'options',
-    field: 'budget',
-    title: 'What budget range are you considering?',
-    description: 'Choose the range that feels most comfortable for you.',
-    options: ['Under 1.2 Cr', '1.2 Cr - 1.5 Cr', '1.5 Cr+', 'Need options'],
+    src: LANDING_IMAGES.facade,
+    alt: 'Aadhya Serene building facade',
+    eyebrow: 'Boutique Community',
+    location: '1.25 Acres · 136 Homes',
+    caption: 'BBMP + K-RERA Approved',
   },
   {
-    id: 'timeline',
-    type: 'options',
-    field: 'timeline',
-    title: 'How soon are you planning to move?',
-    description: 'We will match the conversation to your timeline.',
-    options: ['Immediate', 'Within 30 days', 'Within 3 months', 'Just exploring'],
+    src: LANDING_IMAGES.lifestyle,
+    alt: 'Aadhya Serene lifestyle amenity',
+    eyebrow: 'Walk to Manyata',
+    location: 'North Bangalore',
+    caption: 'Starts Rs 99 Lakhs*',
+  },
+];
+
+const TRUST_STRIP = [
+  { icon: Building2, label: '1.25-Acre Boutique Community' },
+  { icon: PiHouseLine, label: 'Only 136 Homes' },
+  { icon: KeyRound, label: 'Ready to Move In' },
+  { icon: PiShieldCheckered, label: 'Vastu-Compliant Homes' },
+];
+
+const VALUE_CARDS = [
+  {
+    icon: KeyRound,
+    eyebrow: 'Move In Now',
+    title: 'Move in now, not in 2028.',
+    body:
+      'Most projects near Manyata are still under construction. Aadhya Serene is finished. See your actual home, get the keys, move in.',
   },
   {
-    id: 'preferredTime',
-    type: 'options',
-    field: 'preferredTime',
-    title: 'When would you like us to connect?',
-    description: 'Choose the time that works best for a callback or visit.',
-    options: ['This Weekend', 'Weekday Evening', 'Weekday Morning', 'Need a callback'],
+    icon: IndianRupee,
+    eyebrow: 'Transparent Pricing',
+    title: 'Rs 99L, all-inclusive. No hidden costs.',
+    body:
+      'Transparent pricing with no floor-rise games and no surprise add-ons. What you see is what you pay.',
   },
   {
-    id: 'requestType',
-    type: 'options',
-    field: 'requestType',
-    title: 'What would you like us to help with next?',
-    description: 'Select the next action you want from our team.',
-    options: [
-      { label: 'Site Visit', value: 'site_visit' },
-      { label: 'Book Unit', value: 'book_unit' },
-      { label: 'Register Interest', value: 'register_interest' },
-      { label: 'Request Brochure', value: 'brochure' },
-    ],
+    icon: MapPin,
+    eyebrow: 'Walk to Work',
+    title: 'Walk to Manyata. Reclaim your hours.',
+    body:
+      'Minutes from Manyata Tech Park and the airport corridor. Swap your commute and your rent for a home you own.',
+  },
+];
+
+const CONFIGURATIONS = [
+  {
+    id: '2bhk',
+    name: '2 BHK',
+    sqft: 'XXX sq.ft.',
+    image:
+      'https://cdn.sthyra.com/AADHYA%20SERENE/images/individual-floorplans/Second%20Floor/201-N.png',
+    headline: 'Smart, efficient layouts.',
+    sub: 'Starts Rs 99 L*',
+    blurb:
+      'Bright, well-ventilated homes designed for compact, modern living - perfect for first-time buyers and young families.',
   },
   {
-    id: 'message',
-    type: 'textarea',
-    field: 'message',
-    title: 'Any specific requirement you want us to know?',
-    description: 'Share preferred facing, loan help, family needs, or anything else.',
-    optional: true,
+    id: '3bhk',
+    name: '3 BHK',
+    sqft: 'XXX sq.ft.',
+    image:
+      'https://cdn.sthyra.com/AADHYA%20SERENE/images/individual-floorplans/Second%20Floor/209-N.png',
+    headline: 'More space for a growing family.',
+    sub: 'Price on request',
+    blurb:
+      'Generous room dimensions, larger balconies and refined finishes - built for families who refuse to compromise on comfort.',
   },
-  {
-    id: 'contact',
-    type: 'contact',
-    title: 'Where should we send the details?',
-    description: 'Share your details and we will get back quickly.',
-  },
+];
+
+const AMENITIES = [
+  { icon: Waves, label: "Swimming Pool & Kids' Pool" },
+  { icon: PiArmchair, label: 'Clubhouse & Party Hall' },
+  { icon: Dumbbell, label: 'Gymnasium' },
+  { icon: PiUsersThree, label: "Children's Play Area" },
+  { icon: Compass, label: 'Jogging Track' },
+  { icon: PiBasketball, label: 'Shuttle & Basketball Court' },
+  { icon: PiTreePalm, label: 'Landscaped Open Spaces' },
+  { icon: Sparkles, label: 'Rooftop Leisure' },
+  { icon: Wifi, label: 'Co-work Space' },
+  { icon: ShieldCheck, label: '24x7 CCTV Security' },
+];
+
+const LOCATION_POINTS = [
+  { label: 'Manyata Tech Park', eta: 'Beside' },
+  { label: 'Hebbal', eta: 'Nearby' },
+  { label: 'Outer Ring Road', eta: 'Connected' },
+  { label: 'Airport', eta: 'Airport Route' },
+];
+
+const SPEC_CHECKLIST = [
+  'Schindler / OTIS lifts',
+  'DG power backup (1 KVA per home)',
+  'Fire-resistant Polycab / Havells wiring',
+  'Modular kitchen provisions',
+  'Vitrified flooring',
+  'CERA / Jaquar-grade fittings',
+  'Rainwater harvesting & STP',
+  'Vastu-compliant layouts',
+  '24x7 CCTV + manned security',
 ];
 
 const FAQS = [
   {
-    question: 'Why is North Bangalore such a strong location today?',
-    answer:
-      'North Bangalore continues to attract homebuyers because of fast access to Manyata Tech Park, the airport corridor, established social infrastructure, and long-term appreciation driven by ongoing public and private investment.',
-  },
-  {
     question: 'Is Aadhya Serene ready to move in?',
     answer:
-      'Yes. Aadhya Serene is positioned as a ready-to-move community, so buyers can evaluate the finished project experience, common amenities, and overall quality before making a decision.',
+      'Yes - these are finished homes, available for immediate occupancy. You can walk through your actual unit before you commit.',
   },
   {
-    question: 'Who is this project ideal for?',
+    question: "What's the starting price?",
     answer:
-      'It works well for end users who want immediate usability, working professionals needing quick access to North Bangalore employment hubs, and families who value a finished community over under-construction uncertainty.',
+      'From Rs 99 Lakhs* for a 2 BHK. WhatsApp us for the full price sheet and current inventory.',
   },
   {
-    question: 'What makes a ready-to-move project different from an under-construction one?',
+    question: 'Is it RERA approved?',
     answer:
-      'You can physically inspect the home, judge space and finish quality in person, understand the actual neighborhood, and reduce the waiting risk that often comes with delivery timelines.',
+      `Yes. K-RERA: ${RERA_NUMBER}. BBMP approved.`,
+  },
+  {
+    question: 'How far is Manyata Tech Park?',
+    answer:
+      'Just minutes away on Thanisandra Main Road - designed for buyers who want to walk or short-commute to work.',
+  },
+  {
+    question: 'Who is the developer?',
+    answer:
+      'Abhigna - the team behind Misty Woods (128 homes delivered). We hand over keys, not promises.',
   },
 ];
 
-const COMPARISON_ROWS = [
-  {
-    label: 'Project Status',
-    serene: 'Ready to move in',
-    other: 'Often under construction or delivery-led',
-  },
-  {
-    label: 'Site Experience',
-    serene: 'Visit the finished project and live amenities',
-    other: 'Mostly sample-led or promise-led',
-  },
-  {
-    label: 'Location Access',
-    serene: 'Strong North Bangalore connectivity',
-    other: 'Can vary widely by micro-market',
-  },
-  {
-    label: 'Decision Confidence',
-    serene: 'Evaluate what is already built',
-    other: 'Depends more on plans and assumptions',
-  },
-  {
-    label: 'Community Readiness',
-    serene: 'Immediate use potential',
-    other: 'Phased handover in many cases',
-  },
-];
+function trackEvent(name, params) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ event: name, ...(params || {}) });
+  } catch (_) {}
+  try {
+    if (typeof window.fbq === 'function') {
+      window.fbq('trackCustom', name, params || {});
+    }
+  } catch (_) {}
+  try {
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', name, params || {});
+    }
+  } catch (_) {}
+}
 
-const QUICK_FACTS = [
-  {
-    icon: KeyRound,
-    title: 'Ready to Move',
-    description: 'Finished homes, ready for you to move in without the wait.',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Better Value',
-    description: 'Competitive pricing with no hidden costs. More value for your money.',
-  },
-  {
-    icon: MapPin,
-    title: 'Prime Location',
-    description: 'Minutes from Manyata Tech Park, with excellent connectivity.',
-  },
-  {
-    icon: Users,
-    title: 'Family-Centric Amenities',
-    description: 'Clubhouse, landscaped spaces and amenities for every age.',
-  },
-  {
-    icon: LayoutGrid,
-    title: 'Thoughtful Planning',
-    description: 'Smart layouts, efficient spaces and ample natural light.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Trusted Approvals',
-    description: 'BBMP approved and RERA registered for complete peace of mind.',
-  },
-];
+function useGsapReveal() {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
 
-const NORTH_BLR_POINTS = [
-  'Fast access to Manyata Tech Park and the airport corridor',
-  'Growing social infrastructure with schools, hospitals, and retail nearby',
-  'A practical choice for both self-use and long-term value-led buyers',
-];
+    const ctx = gsap.context(() => {
+      gsap.from('.gsap-entry', {
+        y: 70,
+        opacity: 0,
+        duration: 1.15,
+        ease: 'power3.out',
+        stagger: 0.09,
+      });
 
-const TRUST_POINTS = [
-  {
-    icon: PiShieldCheckered,
-    text: 'Delivered project legacy through Misty Woods',
-  },
-  {
-    icon: PiKey,
-    text: 'Ready-to-visit project experience instead of brochure-only selling',
-  },
-  {
-    icon: PiEye,
-    text: 'A clearer view of finish, scale, and actual liveability before booking',
-  },
-];
+      gsap.utils.toArray('.gsap-reveal').forEach((el) => {
+        gsap.from(el, {
+          y: 80,
+          opacity: 0,
+          duration: 1.05,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 86%',
+            toggleActions: 'play none none reverse',
+          },
+        });
+      });
 
-const LUXURY_POINTS = [
-  {
-    icon: PiUsersThree,
-    text: 'Clubhouse and social spaces',
-  },
-  {
-    icon: PiArmchair,
-    text: 'Ready-to-use outdoor leisure zones',
-  },
-  {
-    icon: PiHouseLine,
-    text: 'Finished homes with real interior context',
-  },
-  {
-    icon: PiTreePalm,
-    text: 'A calmer project scale built for daily life',
-  },
-];
+      gsap.utils.toArray('.gsap-stagger').forEach((group) => {
+        gsap.from(group.children, {
+          y: 48,
+          opacity: 0,
+          duration: 0.9,
+          ease: 'power3.out',
+          stagger: 0.09,
+          scrollTrigger: {
+            trigger: group,
+            start: 'top 84%',
+            toggleActions: 'play none none reverse',
+          },
+        });
+      });
 
-function FieldButton({ active, children, onClick }) {
-  return (
-    <motion.button
-      type="button"
-      onClick={onClick}
-      whileHover={{ y: -2, scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
-      className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
-        active
-          ? 'border-[#b58739] bg-[linear-gradient(180deg,#fff8ed_0%,#fff2dc_100%)] text-[#2c2111] shadow-[0_18px_38px_rgba(181,135,57,0.16)]'
-          : 'border-black/10 bg-white/92 text-[#5a5147] shadow-[0_12px_28px_rgba(0,0,0,0.04)] hover:border-[#b58739]/40 hover:bg-[#fffaf2]'
-      }`}
-    >
-      {children}
-    </motion.button>
-  );
+      gsap.utils.toArray('.gsap-from-left').forEach((el) => {
+        gsap.from(el, {
+          x: -80,
+          opacity: 0,
+          duration: 1.05,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 86%',
+            toggleActions: 'play none none reverse',
+          },
+        });
+      });
+
+      gsap.utils.toArray('.gsap-from-right').forEach((el) => {
+        gsap.from(el, {
+          x: 80,
+          opacity: 0,
+          duration: 1.05,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 86%',
+            toggleActions: 'play none none reverse',
+          },
+        });
+      });
+
+      gsap.utils.toArray('.gsap-scale').forEach((el) => {
+        gsap.from(el, {
+          scale: 0.9,
+          opacity: 0,
+          duration: 1.05,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 86%',
+            toggleActions: 'play none none reverse',
+          },
+        });
+      });
+
+      gsap.utils.toArray('.gsap-parallax').forEach((el) => {
+        gsap.to(el, {
+          yPercent: -10,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
+        });
+      });
+    });
+
+    return () => ctx.revert();
+  }, []);
 }
 
 export default function ReadyToMoveLandingPage() {
   const [activeFaq, setActiveFaq] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
-  const [stepIndex, setStepIndex] = useState(0);
+  const [activeConfig, setActiveConfig] = useState('2bhk');
+  const [activeSlide, setActiveSlide] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitState, setSubmitState] = useState({ type: '', message: '' });
-  const timerRef = useRef(null);
-  const openedRef = useRef(false);
-  const scrollOpenRef = useRef(false);
   const [formData, setFormData] = useState({
-    homeType: '2 BHK',
-    timeline: 'Immediate',
-    requestType: 'site_visit',
-    budget: 'Under 1.2 Cr',
-    purpose: 'Self use',
-    preferredTime: 'This Weekend',
     name: '',
     phone: '',
-    email: '',
+    config: '2 BHK',
+    budget: '99L - 1.2 Cr',
     message: '',
   });
 
-  const progress = useMemo(
-    () => ((stepIndex + 1) / FORM_STEPS.length) * 100,
-    [stepIndex],
-  );
-  const currentStep = FORM_STEPS[stepIndex];
+  const timerRef = useRef(null);
+  const openedRef = useRef(false);
+  const scrollOpenRef = useRef(false);
+  const slideTimerRef = useRef(null);
+  const isTransitioningRef = useRef(false);
+  const heroSlidesRef = useRef([]);
+  const heroCurtainLeftRef = useRef(null);
+  const heroCurtainRightRef = useRef(null);
+
+  useGsapReveal();
+
+  const openForm = () => {
+    if (openedRef.current) return;
+    openedRef.current = true;
+    setHasAutoOpened(true);
+    setIsFormOpen(true);
+  };
 
   useEffect(() => {
-    const openForm = () => {
-      if (openedRef.current) {
-        return;
-      }
-
-      openedRef.current = true;
-      setHasAutoOpened(true);
-      setIsFormOpen(true);
-    };
-
     timerRef.current = window.setTimeout(openForm, 20000);
 
     const handleScroll = () => {
-      if (scrollOpenRef.current || openedRef.current) {
-        return;
-      }
-
+      if (scrollOpenRef.current || openedRef.current) return;
       const scrolled = window.scrollY + window.innerHeight;
       const total = document.documentElement.scrollHeight;
 
@@ -331,53 +388,84 @@ export default function ReadyToMoveLandingPage() {
 
   useEffect(() => {
     document.body.style.overflow = isFormOpen ? 'hidden' : '';
-
     return () => {
       document.body.style.overflow = '';
     };
   }, [isFormOpen]);
 
-  const updateField = (key, value) => {
-    setFormData((current) => ({
-      ...current,
-      [key]: value,
-    }));
-  };
+  useEffect(() => {
+    const leftCurtain = heroCurtainLeftRef.current;
+    const rightCurtain = heroCurtainRightRef.current;
 
-  const validateStep = () => {
-    if (currentStep.type !== 'contact') {
-      return true;
-    }
+    if (!leftCurtain || !rightCurtain) return;
 
-    if (!formData.name.trim() || !formData.phone.trim() || !formData.email.trim()) {
-      setSubmitState({
-        type: 'error',
-        message: 'Please complete your name, phone, and email.',
-      });
-      return false;
-    }
+    gsap.set(leftCurtain, { xPercent: -72, yPercent: -118, autoAlpha: 0 });
+    gsap.set(rightCurtain, { xPercent: 72, yPercent: 118, autoAlpha: 0 });
+  }, []);
 
-    return true;
-  };
+  useEffect(() => {
+    slideTimerRef.current = window.setInterval(() => {
+      goToSlide((activeSlide + 1) % HERO_SLIDES.length);
+    }, 6000);
 
-  const nextStep = () => {
-    if (!validateStep()) {
-      return;
-    }
+    return () => window.clearInterval(slideTimerRef.current);
+  }, [activeSlide]);
 
-    setSubmitState({ type: '', message: '' });
-    setStepIndex((current) => Math.min(current + 1, FORM_STEPS.length - 1));
-  };
+  const updateField = (key, value) =>
+    setFormData((current) => ({ ...current, [key]: value }));
 
-  const prevStep = () => {
-    setSubmitState({ type: '', message: '' });
-    setStepIndex((current) => Math.max(current - 1, 0));
+  const goToSlide = (nextIndex) => {
+    if (nextIndex === activeSlide || isTransitioningRef.current) return;
+
+    const currentSlide = heroSlidesRef.current[activeSlide];
+    const nextSlide = heroSlidesRef.current[nextIndex];
+    const leftCurtain = heroCurtainLeftRef.current;
+    const rightCurtain = heroCurtainRightRef.current;
+
+    if (!currentSlide || !nextSlide || !leftCurtain || !rightCurtain) return;
+
+    isTransitioningRef.current = true;
+
+    const tl = gsap.timeline({
+      defaults: { ease: 'power4.inOut' },
+      onComplete: () => {
+        isTransitioningRef.current = false;
+      },
+    });
+
+    tl.set([leftCurtain, rightCurtain], { autoAlpha: 1 })
+      .fromTo(
+        leftCurtain,
+        { xPercent: -72, yPercent: -118 },
+        { xPercent: 0, yPercent: 0, duration: 0.9 }
+      )
+      .fromTo(
+        rightCurtain,
+        { xPercent: 72, yPercent: 118 },
+        { xPercent: 0, yPercent: 0, duration: 0.9 },
+        '<'
+      )
+      .add(() => {
+        currentSlide.style.opacity = '0';
+        currentSlide.style.zIndex = '1';
+        nextSlide.style.opacity = '1';
+        nextSlide.style.zIndex = '2';
+        setActiveSlide(nextIndex);
+      })
+      .to({}, { duration: 0.24 })
+      .to(leftCurtain, { xPercent: -72, yPercent: -118, duration: 0.9 })
+      .to(rightCurtain, { xPercent: 72, yPercent: 118, duration: 0.9 }, '<')
+      .set([leftCurtain, rightCurtain], { autoAlpha: 0 });
   };
 
   const submitForm = async (event) => {
     event.preventDefault();
 
-    if (!validateStep()) {
+    if (!formData.name.trim() || !formData.phone.trim()) {
+      setSubmitState({
+        type: 'error',
+        message: 'Please share your name and phone number.',
+      });
       return;
     }
 
@@ -387,49 +475,44 @@ export default function ReadyToMoveLandingPage() {
     try {
       const response = await fetch('/api/contact', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.name,
           phone: formData.phone,
-          email: formData.email,
-          requestType: formData.requestType,
+          requestType: 'site_visit',
           source: 'ready_to_move_landing',
-          preferredTime: `${formData.preferredTime} | ${formData.timeline}`,
-          message: [
-            `Interested in: ${formData.homeType}`,
-            `Budget: ${formData.budget}`,
-            `Purpose: ${formData.purpose}`,
-            `Booking timeline: ${formData.timeline}`,
-            formData.message ? `Notes: ${formData.message}` : '',
-          ]
-            .filter(Boolean)
-            .join('\n'),
+          preferredTime: `Config: ${formData.config} | Budget: ${formData.budget}`,
+          message: formData.message
+            ? `Notes: ${formData.message}`
+            : 'Pricing & floor plan enquiry from landing page.',
         }),
       });
 
       const payload = await response.json();
-
       if (!response.ok) {
         throw new Error(payload?.error || 'Something went wrong.');
       }
 
+      trackEvent('Lead', {
+        location: 'landing_inline_form',
+        config: formData.config,
+      });
+
       setSubmitState({
         type: 'success',
-        message: payload?.message || 'Thanks. Our team will contact you shortly.',
+        message: 'Thanks! Sending you to WhatsApp now.',
       });
-      setStepIndex(0);
-      setFormData((current) => ({
-        ...current,
-        name: '',
-        phone: '',
-        email: '',
-        message: '',
-      }));
+
       window.setTimeout(() => {
+        window.open(WHATSAPP_BROCHURE, '_blank', 'noopener,noreferrer');
         setIsFormOpen(false);
-      }, 1400);
+        setFormData((current) => ({
+          ...current,
+          name: '',
+          phone: '',
+          message: '',
+        }));
+      }, 900);
     } catch (error) {
       setSubmitState({
         type: 'error',
@@ -440,335 +523,1001 @@ export default function ReadyToMoveLandingPage() {
     }
   };
 
+  const heroFormSubmit = (event) => {
+    event.preventDefault();
+    trackEvent('Lead', { location: 'hero_inline_form' });
+    submitForm(event);
+  };
+
+  const heroWhatsAppClick = () => trackEvent('Contact', { location: 'hero_whatsapp' });
+  const heroCallClick = () => trackEvent('Call', { location: 'hero_call' });
+  const stickyWhatsApp = () => trackEvent('Contact', { location: 'sticky_whatsapp' });
+  const stickyCall = () => trackEvent('Call', { location: 'sticky_call' });
+
+  const currentConfig = useMemo(
+    () => CONFIGURATIONS.find((config) => config.id === activeConfig),
+    [activeConfig]
+  );
+
   return (
     <>
-      <main className="min-h-screen bg-[#f7f1e7] text-[#1f1a14]">
-        <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.96),rgba(248,242,232,0.98)_56%,rgba(242,233,219,0.98)_100%)]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(199,162,100,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(199,162,100,0.08),transparent_22%)]" />
-          <div className="absolute inset-0 opacity-35 [background:linear-gradient(120deg,rgba(255,255,255,0)_0%,rgba(214,182,129,0.12)_18%,rgba(255,255,255,0)_34%)]" />
+      <main className="min-h-screen bg-[#f3efe6] text-[#111111]">
+        <section className="relative h-[100svh] min-h-[760px] overflow-hidden bg-[#090a0d] text-white">
+          <div className="absolute inset-0">
+            {HERO_SLIDES.map((slide, index) => (
+              <div
+                key={slide.src}
+                ref={(element) => {
+                  heroSlidesRef.current[index] = element;
+                }}
+                className="absolute inset-0 transition-opacity duration-700"
+                style={{
+                  opacity: index === activeSlide ? 1 : 0,
+                  zIndex: index === activeSlide ? 2 : 1,
+                }}
+              >
+                <img
+                  src={slide.src}
+                  alt={slide.alt}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                {/* <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,10,0.42)_0%,rgba(5,6,10,0.24)_28%,rgba(5,6,10,0.62)_100%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_left,rgba(255,255,255,0.08),transparent_30%),radial-gradient(circle_at_right,rgba(0,0,0,0.3),transparent_42%)]" /> */}
+              </div>
+            ))}
+            <div className="pointer-events-none absolute inset-0 z-[30] overflow-hidden">
+              <div
+                ref={heroCurtainLeftRef}
+                aria-hidden="true"
+                className="absolute inset-0"
+                style={{ willChange: 'transform, opacity' }}
+              >
+                <div
+                  className="absolute"
+                  style={{
+                    top: '-38%',
+                    left: '-42%',
+                    width: '112%',
+                    height: '212%',
+                    background: '#000',
+                    transform: 'rotate(-34deg)',
+                    boxShadow: '28px 0 72px rgba(0,0,0,0.45)',
+                  }}
+                />
+              </div>
+              <div
+                ref={heroCurtainRightRef}
+                aria-hidden="true"
+                className="absolute inset-0"
+                style={{ willChange: 'transform, opacity' }}
+              >
+                <div
+                  className="absolute"
+                  style={{
+                    bottom: '-38%',
+                    right: '-42%',
+                    width: '112%',
+                    height: '212%',
+                    background: '#000',
+                    transform: 'rotate(-34deg)',
+                    boxShadow: '-28px 0 72px rgba(0,0,0,0.45)',
+                  }}
+                />
+              </div>
+            </div>
+          </div>
 
-          <div className="relative mx-auto w-full max-w-[1680px] px-4 pb-10 pt-10 sm:px-6 lg:px-8 lg:pb-14 lg:pt-12">
-            <div className="grid items-center gap-10 lg:grid-cols-[0.86fr_1.14fr]">
-              <div className="max-w-[42rem]">
-                <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#b07a2d] sm:text-xs">
-                  <MapPin className="h-4 w-4" />
-                  North Bangalore Landmark
+          <div className="relative z-10 flex h-[100svh] min-h-[760px] flex-col px-3 py-4 sm:px-4 sm:py-6 lg:px-5">
+            <div className="gsap-entry flex w-full items-center justify-between px-0.5 py-2 sm:px-1">
+              <div className="flex items-center gap-6">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.24em] text-white">
+                    Aadhya Serene
+                  </p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/55">
+                    Ready-to-move 2 & 3 BHK
+                  </p>
                 </div>
-
-                <h1 className="mt-4 font-[var(--font-hero)] text-[clamp(3.5rem,7vw,6.9rem)] leading-[0.84] tracking-[-0.055em] text-[#16254b]">
-                  Ready to
-                  <span className="block text-[#c68a37]">Move In</span>
-                </h1>
-
-                <p className="mt-3 text-[1.55rem] font-medium tracking-[-0.03em] text-[#22314f] sm:text-[2rem]">
-                  2 & 3 BHK homes near Manyata Tech Park
-                </p>
-
-                <p className="mt-5 max-w-[36rem] text-[15px] leading-8 text-[#5f5a52] sm:text-lg">
-                  Elegant finished homes near Manyata Tech Park, designed for buyers who want a real project experience, faster decisions with confidence, and immediate liveability.
-                </p>
-
-                <div className="mt-8 flex flex-wrap gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsFormOpen(true)}
-                    className="inline-flex min-h-[58px] items-center gap-3 rounded-[1.25rem] bg-[#13244a] px-7 text-base font-semibold text-white shadow-[0_18px_40px_rgba(19,36,74,0.18)] transition hover:-translate-y-0.5"
-                  >
-                    <CalendarClock className="h-5 w-5 text-[#d9b16b]" />
-                    <span>Book Site Visit</span>
-                    <ArrowRight className="h-5 w-5" />
-                  </button>
-                  <a
-                    href={PHONE_LINK}
-                    className="inline-flex min-h-[58px] items-center gap-3 rounded-[1.25rem] border border-[#ddb26f] bg-white px-7 text-base font-semibold text-[#c0872e] shadow-[0_16px_36px_rgba(188,140,58,0.1)] transition hover:-translate-y-0.5"
-                  >
-                    <Phone className="h-5 w-5" />
-                    <span>Call Now</span>
+                <nav className="hidden items-center gap-5 text-[11px] uppercase tracking-[0.18em] text-white/55 lg:flex">
+                  <a href="#why-us" className="transition hover:text-white">
+                    Advantages
                   </a>
-                </div>
+                  <a href="#walkthrough" className="transition hover:text-white">
+                    Walkthrough
+                  </a>
+                  <a href="#amenities" className="transition hover:text-white">
+                    Amenities
+                  </a>
+                  <a href="#faq" className="transition hover:text-white">
+                    FAQ
+                  </a>
+                </nav>
               </div>
 
-              <div className="relative">
-                <div className="overflow-hidden rounded-[2.25rem] border border-[#ddb26f] bg-white shadow-[0_24px_68px_rgba(86,60,20,0.16)]">
-                  <img
-                    src={LANDING_IMAGES.ready}
-                    alt="Aadhya Serene exterior facade"
-                    className="h-full min-h-[22rem] w-full object-cover lg:min-h-[36rem]"
-                  />
+              <div className="flex items-center gap-5 text-[11px] uppercase tracking-[0.16em] text-white/65">
+                <span className="hidden items-center gap-2 sm:inline-flex">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                  Site visits open today
+                </span>
+                <a
+                  href={PHONE_LINK}
+                  onClick={heroCallClick}
+                  className="hidden transition hover:text-white lg:inline"
+                >
+                  {PHONE_DISPLAY}
+                </a>
+              </div>
+            </div>
+
+            <div className="flex w-full flex-1 items-end py-8 sm:py-10 lg:py-12">
+              <div className="grid w-full items-end gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-10">
+                <div className="gsap-entry self-end">
+                  <div className="max-w-none">
+                    <p className="mb-4 text-[10px] uppercase tracking-[0.34em] text-white/58 sm:text-[11px]">
+                      Ready-to-move homes beside the tech corridor
+                    </p>
+                    <h1 className="font-[var(--font-hero)] text-[clamp(3.2rem,5.8vw,6rem)] font-medium leading-[0.9] tracking-[-0.065em] text-white">
+                      <span className="block whitespace-nowrap">Live Beside</span>
+                      <span className="block whitespace-nowrap">Manyata Tech Park.</span>
+                    </h1>
+                  </div>
                 </div>
 
-                <div className="mt-5 overflow-hidden rounded-[1.8rem] border border-[#ddb26f] bg-white shadow-[0_22px_54px_rgba(86,60,20,0.14)] lg:absolute lg:-bottom-14 lg:right-0 lg:mt-0 lg:w-[36%]">
-                  <img
-                    src={LANDING_IMAGES.heroRight}
-                    alt="Aadhya Serene bedroom interior"
-                    className="h-[19rem] w-full object-cover"
-                  />
-                  <div className="bg-[#13244a] px-5 py-4 text-white">
-                    <div className="flex items-center gap-3">
-                      <Building2 className="h-5 w-5 text-[#d7b06b]" />
-                      <p className="text-sm font-medium leading-6 text-white/90">
-                        Thoughtfully designed homes, ready for you.
-                      </p>
-                    </div>
+                <div className="gsap-entry flex items-end justify-start lg:justify-end lg:pr-1">
+                  <div className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-black/18 p-2.5 shadow-[0_18px_48px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+                    <button
+                      type="button"
+                      aria-label="Previous slide"
+                      onClick={() =>
+                        goToSlide(
+                          (activeSlide - 1 + HERO_SLIDES.length) % HERO_SLIDES.length
+                        )
+                      }
+                      className="flex h-14 w-14 items-center justify-center rounded-full border border-white/12 bg-white/[0.08] text-white transition duration-300 hover:-translate-y-0.5 hover:bg-white hover:text-black"
+                    >
+                      <ArrowRight className="h-5 w-5 rotate-180" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next slide"
+                      onClick={() => goToSlide((activeSlide + 1) % HERO_SLIDES.length)}
+                      className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-[0_12px_24px_rgba(255,255,255,0.18)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_30px_rgba(255,255,255,0.24)]"
+                    >
+                      <ArrowRight className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </section>
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:mt-16 lg:grid-cols-6">
-              {[
-                { icon: BadgeCheck, label: 'BBMP Approved' },
-                { icon: FileText, label: 'RERA Registered' },
-                { icon: IndianRupee, label: 'Starts from Rs 99 Lakhs*' },
-                { icon: Users, label: '136 Families' },
-                { icon: Landmark, label: 'Clubhouse Amenities' },
-                { icon: MapPin, label: 'Near Manyata Tech Park' },
-              ].map(({ icon: Icon, label }) => (
+        <div className="relative space-y-8 px-3 pb-24 pt-8 sm:space-y-10 sm:px-5 sm:pb-28 sm:pt-10 lg:space-y-12 lg:px-6 lg:pb-32 lg:pt-12">
+          <PanelShell id="lead-form" className="bg-[#f7f6f1]">
+            <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.1fr_1fr] lg:p-10">
+              <div className="gsap-from-left">
+                <SectionHeading
+                  eyebrow="Get the Price Sheet"
+                  title="Talk to us in 30 seconds."
+                  description="Drop your number and we'll send the price sheet, floor plans and book a free site visit - all on WhatsApp."
+                />
+                <div className="mt-8 flex items-center gap-2 text-sm text-[#5d5d5a]">
+                  <BadgeCheck className="h-4 w-4 text-emerald-600" />
+                  No spam. Aadhya Serene only.
+                </div>
+              </div>
+
+              <form
+                onSubmit={heroFormSubmit}
+                className="gsap-from-right rounded-[1.7rem] border border-black/6 bg-white/82 p-3 shadow-[0_20px_50px_rgba(0,0,0,0.05)] backdrop-blur-sm sm:p-4"
+              >
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field
+                    label="Your name"
+                    placeholder="Your name"
+                    value={formData.name}
+                    onChange={(value) => updateField('name', value)}
+                  />
+                  <Field
+                    label="Phone number"
+                    placeholder="Phone number"
+                    value={formData.phone}
+                    onChange={(value) => updateField('phone', value)}
+                  />
+                  <SelectField
+                    label="Configuration"
+                    value={formData.config}
+                    onChange={(value) => updateField('config', value)}
+                    options={['2 BHK', '3 BHK']}
+                  />
+                  <SelectField
+                    label="Budget"
+                    value={formData.budget}
+                    onChange={(value) => updateField('budget', value)}
+                    options={['99L - 1.2 Cr', '1.2 Cr +']}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="mt-4 inline-flex min-h-[56px] w-full items-center justify-center gap-3 rounded-full bg-black px-6 text-sm font-semibold uppercase tracking-[0.22em] text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting ? 'Sending...' : 'Send Me Details on WhatsApp'}
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+
+                {submitState.message ? (
+                  <div
+                    className={`mt-4 rounded-[1rem] px-4 py-3 text-sm ${
+                      submitState.type === 'success'
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'bg-red-50 text-red-700'
+                    }`}
+                  >
+                    {submitState.message}
+                  </div>
+                ) : null}
+              </form>
+            </div>
+          </PanelShell>
+
+          <PanelShell className="">
+            <div className="gsap-stagger grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {TRUST_STRIP.map(({ icon: Icon, label }) => (
                 <div
                   key={label}
-                  className="flex items-center gap-3 rounded-[1.4rem] border border-[#eadcc3] bg-white/86 px-4 py-4 shadow-[0_14px_34px_rgba(160,126,67,0.08)]"
+                  className="flex items-center justify-center gap-3 rounded-full border border-[#e7dece] bg-white/75 px-5 py-4 text-center text-[11px] uppercase tracking-[0.18em] text-[#2a2a28] shadow-[0_10px_24px_rgba(0,0,0,0.03)]"
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#fbf2e5] text-[#c48a34]">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <p className="text-sm font-medium leading-6 text-[#3f3327]">{label}</p>
+                  <Icon className="h-5 w-5 text-[#d9aa53]" />
+                  <span>{label}</span>
                 </div>
               ))}
             </div>
-          </div>
-        </section>
+          </PanelShell>
 
-        <section className="px-4 pb-16 pt-4 sm:px-6 lg:px-8 lg:pb-20">
-          <div className="mx-auto w-full max-w-[1680px] rounded-[2.2rem] border border-[#eadcc2] bg-white/72 px-5 py-12 shadow-[0_26px_70px_rgba(173,137,76,0.08)] backdrop-blur-md sm:px-8 lg:px-10">
-            <div className="text-center">
-              <h2 className="font-[var(--font-hero)] text-[clamp(2.4rem,4vw,4.4rem)] leading-[0.96] tracking-[-0.045em] text-[#16254b]">
-                Why Aadhya Serene Stands Out
-              </h2>
-              <div className="mx-auto mt-5 flex max-w-[32rem] items-center justify-center gap-4 text-[#d1a053]">
-                <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent,#dfc08b)]" />
-                <Sparkles className="h-5 w-5" />
-                <span className="h-px flex-1 bg-[linear-gradient(90deg,#dfc08b,transparent)]" />
+          <PanelShell id="why-us" className="">
+            <div className="p-6 sm:p-8 lg:p-10">
+              <div className="gsap-reveal grid gap-6 border-b border-black/8 pb-8 lg:grid-cols-[1fr_0.9fr] lg:items-end">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.34em] text-[#9a7a45]">
+                    Why Aadhya Serene
+                  </p>
+                  <h2 className="mt-3 max-w-[15.5ch] font-[var(--font-hero)] text-[clamp(2.2rem,4.2vw,4.2rem)] font-medium leading-[0.94] tracking-[-0.05em] text-black">
+                    <span className="text-black/28">/</span> Three reasons buyers
+                    choose us over every other project nearby.
+                  </h2>
+                </div>
+                <p className="max-w-[30rem] text-[15px] leading-7 text-[#5c5c58]">
+                  Ready now, priced clearly, and placed where daily life gets easier.
+                  The content stays the same - the experience just feels sharper.
+                </p>
+              </div>
+
+              <div className="mt-10 grid auto-rows-fr gap-5 md:grid-cols-2 2xl:grid-cols-3">
+                {VALUE_CARDS.map(({ icon: Icon, eyebrow, title, body }, index) => (
+                  <div
+                    key={title}
+                    className="gsap-reveal group relative h-full overflow-hidden border border-[#e7dfd1] bg-[linear-gradient(180deg,#ffffff_0%,#fbf8f1_100%)] p-7 shadow-[0_22px_50px_rgba(17,17,17,0.05)] transition duration-300 hover:-translate-y-1 hover:border-[#171717] hover:bg-[linear-gradient(180deg,#171717_0%,#1f1b16_100%)] hover:shadow-[0_32px_80px_rgba(17,17,17,0.16)]"
+                  >
+                    <span className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(169,119,47,0.42),transparent)] transition-opacity duration-300 group-hover:opacity-0" />
+                    <div className="relative z-10 flex items-center justify-between gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center border border-[#efe4d2] bg-[#111111] text-white shadow-[0_10px_24px_rgba(17,17,17,0.12)] transition duration-300 group-hover:border-[#c89a54]/45 group-hover:bg-white group-hover:text-black">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <span className="border border-[#eee3cf] bg-white/80 px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-black/35 transition duration-300 group-hover:border-white/20 group-hover:bg-white/8 group-hover:text-white/55">
+                        No.{index + 1}
+                      </span>
+                    </div>
+                    <p className="relative z-10 mt-6 text-[10px] uppercase tracking-[0.26em] text-[#9a7a45] transition duration-300 group-hover:text-[#d3ad71]">
+                      {eyebrow}
+                    </p>
+                    <h3 className="relative z-10 mt-3 max-w-[12ch] font-[var(--font-hero)] text-[clamp(1.6rem,2vw,2.1rem)] font-medium leading-[1.02] tracking-[-0.04em] text-black transition duration-300 group-hover:text-white">
+                      {title}
+                    </h3>
+                    <p className="relative z-10 mt-4 max-w-[28ch] text-[14px] leading-7 text-[#5c5c58] transition duration-300 group-hover:text-white/72">
+                      {body}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
+          </PanelShell>
 
-            <div className="mt-10 grid gap-5 lg:grid-cols-3">
-              {QUICK_FACTS.map(({ icon: Icon, title, description }) => (
-                <div
-                  key={title}
-                  className="rounded-[1.75rem] border border-[#f0e3cf] bg-white px-5 py-6 shadow-[0_18px_42px_rgba(181,145,88,0.08)]"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-[#f0dfc0] bg-[#fff8ef] text-[#c48a34] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-                      <Icon className="h-7 w-7" />
-                    </div>
+          <PanelShell id="walkthrough" className="">
+            <div className="p-6 sm:p-8 lg:p-10">
+              <div className="grid gap-8 border-b border-black/8 pb-8 lg:grid-cols-[1fr_0.9fr] lg:items-end">
+                <div className="gsap-from-left">
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-[#9a7a45]">
+                    The Walkthrough
+                  </p>
+                  <h2 className="mt-3 font-[var(--font-hero)] text-[clamp(2.8rem,5.4vw,5.8rem)] leading-[0.9] tracking-[-0.06em] text-black">
+                    <span className="text-black/28">/</span> This Home Is Real.
+                    <span className="block text-[#a9772f]">Not a Render.</span>
+                  </h2>
+                </div>
+                <div className="gsap-from-right">
+                  <p className="max-w-[34rem] text-base leading-8 text-[#5c5c58]">
+                    Tour a finished Aadhya Serene home - every other project shows
+                    you a 3D model. We show you the actual flat, in actual light, on
+                    an actual afternoon.
+                  </p>
+                  <p className="mt-5 text-[11px] uppercase tracking-[0.22em] text-black/45">
+                    02 min 18 sec · Cinematic tour
+                  </p>
+                </div>
+              </div>
+
+              <div className="gsap-scale mt-10">
+                <div className="relative overflow-hidden">
+                  <img
+                    src={LANDING_IMAGES.delivered}
+                    alt="Aadhya Serene aerial walkthrough"
+                    className="gsap-parallax h-[340px] w-full object-cover sm:h-[480px] lg:h-[640px]"
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.18)_0%,rgba(0,0,0,0.08)_30%,rgba(0,0,0,0.65)_100%)]" />
+
+                  <div className="absolute left-5 right-5 top-5 flex items-center justify-between text-white sm:left-8 sm:right-8 sm:top-8">
                     <div>
-                      <h3 className="font-[var(--font-hero)] text-[1.85rem] leading-none tracking-[-0.03em] text-[#213256]">
-                        {title}
-                      </h3>
-                      <p className="mt-3 text-[15px] leading-7 text-[#5f574e]">
-                        {description}
+                      <p className="text-[10px] uppercase tracking-[0.28em] text-[#e6ceaa]">
+                        Now Playing
+                      </p>
+                      <p className="mt-2 text-sm uppercase tracking-[0.18em] text-white/72">
+                        Inside Aadhya Serene · Ep. 01
                       </p>
                     </div>
+                    <p className="text-[11px] uppercase tracking-[0.22em] text-white/48">
+                      02:18
+                    </p>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        <section className="border-y border-[#e2d1b4]/65 bg-[linear-gradient(180deg,#fffaf2_0%,#f7efe2_100%)]">
-          <div className="mx-auto w-full max-w-[1680px] px-4 py-16 sm:px-6 lg:px-8 lg:py-18">
-            <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12">
-              <div>
-                <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#b07a2d]">
-                  <PiFlowerLotus className="h-4 w-4" />
-                  Why North Bangalore
-                </div>
-                <div className="mt-4 h-px w-28 bg-[linear-gradient(90deg,#d8aa61,transparent)]" />
-                <h2 className="mt-5 max-w-[16ch] font-[var(--font-hero)] text-[clamp(2rem,3.1vw,3.55rem)] leading-[0.94] tracking-[-0.045em] text-[#16254b]">
-                  <span className="block">Built For Buyers Who Want Access,</span>
-                  <span className="block">Value, And Immediate Use.</span>
-                </h2>
-
-                <div className="mt-7 space-y-3">
-                  {NORTH_BLR_POINTS.map((item) => (
-                    <div
-                      key={item}
-                      className="flex items-center gap-3 py-1"
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                    <motion.button
+                      type="button"
+                      aria-label="Play walkthrough video"
+                      whileHover={{ scale: 1.08 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() =>
+                        trackEvent('VideoPlay', { location: 'hero_walkthrough' })
+                      }
+                      className="relative flex h-28 w-28 items-center justify-center lg:h-32 lg:w-32"
                     >
-                      <PiCheckCircleFill className="h-6 w-6 shrink-0 text-[#cf9739]" />
-                      <p className="text-[15px] font-medium leading-7 text-[#4c4339]">{item}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-5 rounded-[2rem] border border-[#e6d3b5] bg-white/90 p-6 shadow-[0_18px_44px_rgba(181,145,88,0.08)]">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-18 w-18 shrink-0 items-center justify-center rounded-full border border-[#efdcbf] bg-[#fff8ee] text-[#c58a35]">
-                      <PiBuildings className="h-9 w-9" />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c39245]">
-                        Delivered Project Legacy
-                      </p>
-                      <h3 className="mt-2 font-[var(--font-hero)] text-[clamp(2rem,3vw,3rem)] leading-[0.98] tracking-[-0.04em] text-[#253453]">
-                        Misty Woods, Delivered With Trust
-                      </h3>
-                      <p className="mt-3 max-w-[42rem] text-[15px] leading-7 text-[#61584c]">
-                        Misty Woods reflects the developer&apos;s delivered-project credibility. For Aadhya Serene buyers, that matters because trust grows stronger when delivery and finish quality already exist in the brand&apos;s story.
-                      </p>
-                    </div>
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-0 rounded-full border border-white/30"
+                        style={{ animation: 'pulseRing 2.6s ease-out infinite' }}
+                      />
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-0 rounded-full border border-[#e6ceaa]/35"
+                        style={{
+                          animation: 'pulseRing 2.6s ease-out infinite',
+                          animationDelay: '0.55s',
+                        }}
+                      />
+                      <span className="absolute inset-3 rounded-full bg-white shadow-[0_24px_60px_rgba(0,0,0,0.4)]" />
+                      <Play
+                        className="relative h-12 w-12 fill-black text-black lg:h-14 lg:w-14"
+                        strokeWidth={0.8}
+                      />
+                    </motion.button>
+                    <p className="mt-6 text-[11px] uppercase tracking-[0.32em] text-[#e6ceaa]">
+                      Press to play
+                    </p>
                   </div>
 
-                  <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                    {TRUST_POINTS.map(({ icon: Icon, text }) => (
-                      <div
-                        key={text}
-                        className="rounded-[1.2rem] border border-[#eee1cd] bg-[#fffaf3] px-4 py-4 shadow-[0_8px_20px_rgba(181,145,88,0.05)]"
-                      >
-                        <div className="flex items-start gap-3">
-                          <Icon className="mt-0.5 h-6 w-6 shrink-0 text-[#c58a35]" />
-                          <p className="text-sm font-medium leading-6 text-[#5b5248]">{text}</p>
-                        </div>
+                  <div className="absolute inset-x-5 bottom-5 sm:inset-x-8 sm:bottom-8">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <p className="font-[var(--font-hero)] text-[clamp(1.6rem,3vw,3rem)] leading-[0.96] tracking-[-0.04em] text-white">
+                          Walk the finished 2 BHK.
+                        </p>
+                        <p className="mt-2 text-sm text-white/58">
+                          Hosted by our sales lead · Thanisandra, North Bangalore
+                        </p>
                       </div>
+                      <div className="text-[11px] uppercase tracking-[0.22em] text-white/55">
+                        4K · Drone + Walkthrough
+                      </div>
+                    </div>
+                    <div className="mt-5 h-[2px] rounded-full bg-white/12">
+                      <span className="block h-full w-[16%] rounded-full bg-[#e6ceaa]" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-col gap-4 border-t border-black/8 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="text-sm text-[#5c5c58]">
+                    Available for site visits today · Free cab pickup from Manyata
+                    Tech Park
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      trackEvent('Lead', { location: 'video_visit_cta' });
+                      setIsFormOpen(true);
+                    }}
+                    className="inline-flex min-h-[54px] items-center gap-3 bg-black px-7 text-sm font-semibold uppercase tracking-[0.22em] text-white transition hover:-translate-y-0.5"
+                  >
+                    Book a Visit to See It in Person
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </PanelShell>
+
+          <PanelShell id="configurations" className="">
+            <div className="p-6 sm:p-8 lg:p-10">
+              <div className="grid gap-8 border-b border-black/8 pb-8 lg:grid-cols-[1fr_auto] lg:items-end">
+                <div className="gsap-from-left">
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-[#9a7a45]">
+                    Configurations & Floor Plans
+                  </p>
+                  <h2 className="mt-3 max-w-[11ch] font-[var(--font-hero)] text-[clamp(2.2rem,4.1vw,4.2rem)] leading-[0.94] tracking-[-0.05em] text-black">
+                    <span className="text-black/28">/</span>
+                    <span className="block">Thoughtfully Designed</span>
+                    <span className="block">2 & 3 BHK Homes</span>
+                  </h2>
+                </div>
+                <div className="gsap-from-right flex items-center justify-start lg:justify-end lg:self-center">
+                  <div className="inline-flex border border-black/10 bg-white/90 p-1 shadow-[0_10px_28px_rgba(0,0,0,0.05)]">
+                    {CONFIGURATIONS.map((config) => (
+                      <button
+                        key={config.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveConfig(config.id);
+                          trackEvent('ViewContent', {
+                            content_type: 'floor_plan',
+                            config: config.name,
+                          });
+                        }}
+                        className={`px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] transition ${
+                          activeConfig === config.id
+                            ? 'bg-black text-white shadow-[0_8px_18px_rgba(0,0,0,0.12)]'
+                            : 'text-black/55 hover:bg-black/[0.03] hover:text-black'
+                        }`}
+                      >
+                        {config.name}
+                      </button>
                     ))}
                   </div>
                 </div>
               </div>
 
-              <div className="grid gap-5 lg:grid-rows-[auto_auto]">
-                <div className="relative h-[19rem] overflow-hidden rounded-[2.2rem] border border-[#ddb26f] shadow-[0_24px_60px_rgba(150,114,54,0.12)] sm:h-[23rem] lg:h-[26rem]">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentConfig.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="mt-10 grid items-stretch gap-8 lg:grid-cols-[1.06fr_0.94fr]"
+                >
                   <img
-                    src={LANDING_IMAGES.delivered}
-                    alt="Aadhya Serene building elevation"
-                    className="absolute inset-0 h-full w-full object-cover object-center"
+                    src={currentConfig.image}
+                    alt={`${currentConfig.name} floor plan`}
+                    className="gsap-scale h-[320px] w-full object-contain sm:h-[420px] lg:h-[520px]"
                   />
-                </div>
 
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="overflow-hidden rounded-[2rem] border border-[#e1c48f] bg-white shadow-[0_20px_48px_rgba(170,132,70,0.1)]">
-                    <img
-                      src="/assets/128homes%20iamge.png"
-                      alt="128 homes delivered"
-                      className="h-full min-h-[16rem] w-full object-cover"
-                    />
+                  <div className="gsap-from-right flex flex-col justify-between border border-black/10 bg-[linear-gradient(180deg,#fffdf8_0%,#f8f2e7_100%)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.04)] sm:p-8">
+                    <div>
+                    <p className="text-[11px] uppercase tracking-[0.28em] text-[#9a7a45]">
+                      {currentConfig.name} · {currentConfig.sqft}
+                    </p>
+                    <h3 className="mt-3 max-w-[10ch] font-[var(--font-hero)] text-[clamp(2.2rem,3.4vw,3.8rem)] leading-[0.94] tracking-[-0.05em] text-black">
+                      {currentConfig.headline}
+                    </h3>
+                    <p className="mt-5 max-w-[30rem] text-[15px] leading-8 text-[#5c5c58]">
+                      {currentConfig.blurb}
+                    </p>
+
+                    <div className="mt-6 inline-flex items-center gap-2 border border-[#e5dac7] bg-white px-4 py-2 text-sm font-semibold text-[#8f7242] shadow-[0_8px_22px_rgba(0,0,0,0.03)]">
+                      <IndianRupee className="h-4 w-4" />
+                      {currentConfig.sub}
+                    </div>
+                    </div>
+
+                    <div className="mt-8 grid gap-px overflow-hidden border border-black/10 bg-black/10 sm:grid-cols-2">
+                      <div className="bg-white/88 p-5">
+                        <p className="text-[11px] uppercase tracking-[0.22em] text-[#8e8576]">
+                          Layout
+                        </p>
+                        <p className="mt-2 text-lg font-semibold text-black">
+                          {currentConfig.name}
+                        </p>
+                      </div>
+                      <div className="bg-white/88 p-5">
+                        <p className="text-[11px] uppercase tracking-[0.22em] text-[#8e8576]">
+                          Availability
+                        </p>
+                        <p className="mt-2 text-lg font-semibold text-black">
+                          Ready to inspect
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-8 flex flex-wrap gap-3">
+                      <a
+                        href={WHATSAPP_BROCHURE}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() =>
+                          trackEvent('Contact', { location: 'config_whatsapp' })
+                        }
+                        className="inline-flex min-h-[54px] items-center gap-2 bg-[#1faf5a] px-6 text-sm font-semibold text-white shadow-[0_12px_26px_rgba(31,175,90,0.2)] transition hover:-translate-y-0.5 hover:bg-[#16944a]"
+                      >
+                        <PiKey className="h-4 w-4" />
+                        Get the Exact Price & Floor Plan
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          trackEvent('Lead', { location: 'config_visit_cta' });
+                          setIsFormOpen(true);
+                        }}
+                        className="inline-flex min-h-[54px] items-center gap-2 border border-black/10 bg-white px-6 text-sm font-semibold text-black transition hover:-translate-y-0.5 hover:border-black hover:bg-black hover:text-white"
+                      >
+                        Book a Free Site Visit
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </PanelShell>
 
-                  <div className="overflow-hidden rounded-[2rem] border border-[#ddb26f] shadow-[0_20px_48px_rgba(150,114,54,0.1)]">
-                    <img
-                      src={LANDING_IMAGES.deliveredAlt}
-                      alt="Aadhya Serene exterior side angle"
-                      className="h-full min-h-[16rem] w-full object-cover"
-                    />
-                  </div>
+          <PanelShell id="amenities" className="">
+            <div className="p-6 sm:p-8 lg:p-10">
+              <div className="grid gap-8 border-b border-black/8 pb-8 lg:grid-cols-[1fr_0.9fr] lg:items-end">
+                <div className="gsap-from-left">
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-[#9a7a45]">
+                    Amenities
+                  </p>
+                  <h2 className="mt-3 font-[var(--font-hero)] text-[clamp(2.8rem,5.2vw,5.2rem)] leading-[0.92] tracking-[-0.06em] text-black">
+                    <span className="text-black/28">/</span> A Lifestyle
+                    <span className="block text-[#a9772f]">Built In.</span>
+                  </h2>
                 </div>
+                <p className="gsap-from-right max-w-[34rem] text-base leading-8 text-[#5c5c58]">
+                  A 1.25-acre boutique community shaped around how you actually
+                  live - not a checklist copied from every other brochure in North
+                  Bangalore.
+                </p>
               </div>
-            </div>
-          </div>
-        </section>
 
-        <section className="px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <div className="mx-auto grid w-full max-w-[1680px] items-stretch gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="relative lg:min-h-[34rem]">
-              <img
-                src="/assets/leaf_nobg.png"
-                alt=""
-                aria-hidden="true"
-                className="pointer-events-none absolute -bottom-12 -left-10 hidden w-44 opacity-35 md:block"
-              />
-              <div className="h-full overflow-hidden rounded-[2.3rem] border border-[#ddb26f] bg-white shadow-[0_24px_60px_rgba(150,114,54,0.12)]">
-                <img
-                  src={LANDING_IMAGES.deliveredAlt}
-                  alt="Aadhya Serene facade perspective"
-                  className="h-full min-h-[26rem] w-full object-cover"
-                />
-              </div>
-            </div>
-
-            <div className="flex h-full flex-col justify-center lg:min-h-[34rem]">
-              <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#b07a2d]">
-                <PiFlowerLotus className="h-4 w-4" />
-                Everyday Luxury
-              </div>
-              <h2 className="mt-4 max-w-[11ch] font-[var(--font-hero)] text-[clamp(1.9rem,2.8vw,3.2rem)] leading-[0.98] tracking-[-0.04em] text-[#191f32]">
-                Spaces That Feel Finished,
-                <span className="block">Useful, And Warm.</span>
-              </h2>
-              <div className="mt-4 h-1 w-16 rounded-full bg-[#d5a14f]" />
-              <p className="mt-5 max-w-[42rem] text-[15px] leading-8 text-[#61584c] sm:text-base">
-                This is not just a location-led story. Aadhya Serene brings a complete visual and physical environment, from the arrival experience to the finished interiors and amenity rhythm that modern families actually use.
-              </p>
-
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                {LUXURY_POINTS.map(({ icon: Icon, text }) => (
+              <div className="gsap-reveal mt-10 grid gap-px overflow-hidden rounded-[2rem] border border-black/10 bg-black/10 lg:grid-cols-3">
+                {[
+                  { src: LANDING_IMAGES.heroMain, label: "Entrance" },
+                  { src: LANDING_IMAGES.heroInterior, label: 'Luxury Interiors' },
+                  { src: LANDING_IMAGES.heroSecondary, label: 'Premium Rooftop' },
+                ].map((item, index) => (
                   <div
-                    key={text}
-                    className="rounded-[1.3rem] border border-[#eadbc3] bg-[#fffaf3] px-4 py-4 shadow-[0_10px_24px_rgba(181,145,88,0.05)]"
+                    key={item.label}
+                    className="group relative aspect-[4/3] overflow-hidden bg-black"
                   >
-                    <div className="flex items-center gap-3">
-                      <Icon className="h-7 w-7 shrink-0 text-[#c58a35]" />
-                      <p className="text-[15px] font-medium leading-6 text-[#51483d]">{text}</p>
+                    <img
+                      src={item.src}
+                      alt={item.label}
+                      className="gsap-parallax h-[116%] w-full object-cover opacity-92 transition duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0)_45%,rgba(0,0,0,0.74)_100%)]" />
+                    <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-6 text-white">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.24em] text-[#e6ceaa]">
+                          0{index + 1}
+                        </p>
+                        <p className="mt-2 text-[15px] font-semibold">{item.label}</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100" />
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </section>
 
-        <section className="bg-[#15120f] py-16 text-white sm:py-20">
-          <div className="mx-auto grid w-full max-w-[1620px] gap-10 px-4 sm:px-6 lg:grid-cols-[1.15fr_0.9fr] lg:px-8">
-            <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 shadow-[0_22px_58px_rgba(0,0,0,0.24)] sm:p-8">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#c79d58]/35 bg-[#221b15] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#e8c98b]">
-                <BadgeCheck className="h-4 w-4" />
-                Smart Comparison
+              <div className="gsap-stagger mt-4 grid gap-px overflow-hidden rounded-[2rem] border border-black/10 bg-black/10 sm:grid-cols-2 lg:grid-cols-5">
+                {AMENITIES.slice(3).map(({ icon: Icon, label }, index) => (
+                  <div key={label} className="bg-white p-6">
+                    <span className="text-[10px] uppercase tracking-[0.24em] text-[#9a7a45]">
+                      0{index + 4}
+                    </span>
+                    <Icon className="mt-5 h-9 w-9 text-black" strokeWidth={1.4} />
+                    <p className="mt-5 text-[14px] leading-6 text-[#393935]">{label}</p>
+                  </div>
+                ))}
               </div>
-              <h2 className="mt-6 font-[var(--font-hero)] text-[clamp(2.3rem,4vw,4rem)] leading-[0.95] tracking-[-0.045em] text-[#f8ead6]">
-                Why Aadhya Serene Feels Different
-              </h2>
-              <div className="mt-8 overflow-hidden rounded-[1.5rem] border border-white/10">
-                <div className="grid grid-cols-[1.1fr_1fr_1fr] bg-[#1f1a15] text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d8ba84]">
-                  <div className="px-4 py-4">Category</div>
-                  <div className="border-l border-white/10 px-4 py-4">Aadhya Serene</div>
-                  <div className="border-l border-white/10 px-4 py-4">Many Other Projects</div>
+
+              <div className="gsap-reveal mt-8 flex flex-col gap-4 text-sm text-[#5c5c58] sm:flex-row sm:items-center sm:justify-between">
+                <span>10 amenities · 1.25 acres · 136 homes</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackEvent('Lead', { location: 'amenities_visit_cta' });
+                    setIsFormOpen(true);
+                  }}
+                  className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-black transition hover:text-[#a9772f]"
+                >
+                  See them in person
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </PanelShell>
+
+          <PanelShell id="location" className="">
+            <div className="p-6 sm:p-8 lg:p-10">
+              <div className="grid gap-8 border-b border-black/8 pb-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
+                <div className="gsap-from-left">
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-[#9a7a45]">
+                    Location & Connectivity
+                  </p>
+                  <h2 className="mt-3 max-w-[13.5ch] font-[var(--font-hero)] text-[clamp(2.2rem,4.2vw,4.2rem)] leading-[0.94] tracking-[-0.05em] text-black">
+                    <span className="text-black/28">/</span> Everything Around You,
+                    Minutes Away
+                  </h2>
                 </div>
-                {COMPARISON_ROWS.map((row) => (
-                  <div
-                    key={row.label}
-                    className="grid grid-cols-[1.1fr_1fr_1fr] border-t border-white/10 bg-[#120f0c] text-sm leading-6 text-white/82"
+                <p className="gsap-from-right max-w-[30rem] text-[15px] leading-7 text-[#5c5c58]">
+                  Thanisandra Main Road, beside Manyata Tech Park - North
+                  Bangalore&apos;s most-appreciating micro-market.
+                </p>
+              </div>
+
+              <div className="mt-10 grid items-start gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10">
+                <div className="gsap-from-left self-start border-t border-black/10 pt-5">
+                  <p className="inline-flex items-center gap-2 text-[12px] uppercase tracking-[0.18em] text-[#6b675f]">
+                    <MapPin className="h-4 w-4 text-[#a9772f]" />
+                    Thanisandra Main Road, North Bangalore
+                  </p>
+
+                  <div className="gsap-stagger mt-6 border-t border-black/8">
+                    {LOCATION_POINTS.map((point) => (
+                      <div
+                        key={point.label}
+                        className="flex items-center justify-between gap-4 border-b border-black/8 py-4"
+                      >
+                        <span className="text-[15px] font-medium text-black">
+                          {point.label}
+                        </span>
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7b756b]">
+                          {point.eta}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 grid gap-5 border-t border-black/8 pt-5 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.22em] text-[#9a7a45]">
+                        Daily Ease
+                      </p>
+                      <p className="mt-2 text-[14px] leading-6 text-[#5c5c58]">
+                        Work, airport access, and city connectivity without sacrificing a residential setting.
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.22em] text-[#9a7a45]">
+                        Social Infra
+                      </p>
+                      <p className="mt-2 text-[14px] leading-6 text-[#5c5c58]">
+                        Everyday convenience close by, with schools, hospitals, and retail all within easy reach.
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-6 border-t border-black/8 pt-5 text-[15px] leading-7 text-[#5c5c58]">
+                    Hospitals, schools, malls - <span className="font-semibold text-black">all within a short drive</span>.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      trackEvent('Lead', { location: 'location_visit_cta' });
+                      setIsFormOpen(true);
+                    }}
+                    className="mt-7 inline-flex min-h-[52px] items-center gap-3 border border-black bg-black px-5 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-transparent hover:text-black"
                   >
-                    <div className="px-4 py-4 font-medium text-[#f6ebdb]">{row.label}</div>
-                    <div className="border-l border-white/10 px-4 py-4 text-[#d9c7ac]">{row.serene}</div>
-                    <div className="border-l border-white/10 px-4 py-4 text-white/64">{row.other}</div>
+                    Book a Site Visit
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="gsap-from-right border border-black/10 bg-white/60 p-2 sm:p-3">
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3886.5840338197117!2d77.630294475078!3d13.062128487261639!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae19805217c9fb%3A0x4c11878c221b5d81!2sAadhya%20Serene!5e0!3m2!1sen!2sin!4v1782716091109!5m2!1sen!2sin"
+                    title="Aadhya Serene location map"
+                    className="h-[320px] w-full sm:h-[520px]"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                  />
+                  <div className="flex items-center justify-between gap-4 border-t border-black/8 px-3 py-3 sm:px-4">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.22em] text-[#9a7a45]">
+                        Google Maps
+                      </p>
+                      <p className="mt-1 text-[14px] text-[#5c5c58]">
+                        Aadhya Serene, Thanisandra Main Road, beside Manyata Tech Park.
+                      </p>
+                    </div>
+                    <Compass className="h-4 w-4 shrink-0 text-[#a9772f]" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </PanelShell>
+
+          <PanelShell className="">
+            <div className="p-6 sm:p-8 lg:p-10">
+              <div className="grid gap-8 border-b border-black/8 pb-8 lg:grid-cols-[1fr_0.95fr] lg:items-end">
+                <div className="gsap-from-left">
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-[#9a7a45]">
+                    Quality & Specifications
+                  </p>
+                  <h2 className="mt-3 font-[var(--font-hero)] text-[clamp(2.8rem,5vw,5rem)] leading-[0.92] tracking-[-0.06em] text-black">
+                    <span className="text-black/28">/</span> Built to Last, Finished
+                    to Move In
+                  </h2>
+                  <p className="mt-5 max-w-[36rem] text-[15px] leading-8 text-[#5c5c58]">
+                    Every spec, every brand, every fitting - chosen for durability
+                    and daily comfort. No compromises, no last-minute swaps.
+                  </p>
+                </div>
+                <div className="gsap-from-right grid gap-4 border-t border-black/10 pt-5 sm:grid-cols-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+                  <SpecStat value="136" label="Homes" />
+                  <SpecStat value="1.25" label="Acres" />
+                  <SpecStat value="24x7" label="Manned Security" />
+                </div>
+              </div>
+
+              <div className="gsap-stagger mt-10 grid gap-x-8 gap-y-0 border-t border-black/8 sm:grid-cols-2 lg:grid-cols-3">
+                {SPEC_CHECKLIST.map((spec) => (
+                  <div
+                    key={spec}
+                    className="flex items-start gap-3 border-b border-black/8 py-4"
+                  >
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                    <span className="text-[14px] leading-6 text-[#393935]">{spec}</span>
                   </div>
                 ))}
               </div>
             </div>
+          </PanelShell>
 
-            <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 shadow-[0_22px_58px_rgba(0,0,0,0.24)] sm:p-8">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#c79d58]/35 bg-[#221b15] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#e8c98b]">
-                <MapPin className="h-4 w-4" />
-                FAQ
+          <PanelShell className="">
+            <div className="grid gap-8 border-t border-black/10 px-6 py-8 sm:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:px-10 lg:py-10">
+              <div className="gsap-from-left">
+                <p className="text-[11px] uppercase tracking-[0.3em] text-[#9a7a45]">
+                  Developer Trust
+                </p>
+                <h2 className="mt-3 max-w-[14ch] font-[var(--font-hero)] text-[clamp(2.2rem,4.2vw,4.2rem)] leading-[0.94] tracking-[-0.05em] text-black">
+                  <span className="text-black/28">/</span> Built by Abhigna -
+                  <span className="block text-[#a9772f]">Delivered, Not Promised.</span>
+                </h2>
+                <p className="mt-5 max-w-[38rem] text-[15px] leading-8 text-[#5c5c58]">
+                  Aadhya Serene comes from the team behind <span className="font-semibold text-black">Misty Woods - 128 homes delivered with trust.</span> We don&apos;t sell renders; we hand over keys.
+                </p>
+
+                <div className="gsap-stagger mt-8 grid gap-5 border-t border-black/8 pt-5 sm:grid-cols-3">
+                  {[
+                    { icon: HardHat, label: 'In-house construction' },
+                    { icon: ShieldCheck, label: 'Transparent paperwork' },
+                    { icon: KeyRound, label: 'On-time handovers' },
+                  ].map(({ icon: Icon, label }) => (
+                    <div
+                      key={label}
+                      className="border-t border-black/10 pt-4"
+                    >
+                      <Icon className="h-5 w-5 text-[#a9772f]" />
+                      <p className="mt-4 text-sm leading-6 text-[#2f2f2c]">{label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <h2 className="mt-6 font-[var(--font-hero)] text-[clamp(2.1rem,3.6vw,3.5rem)] leading-[0.96] tracking-[-0.045em] text-[#f8ead6]">
-                Buying Questions, Answered Clearly
-              </h2>
-              <div className="mt-8 space-y-3">
+
+              <div className="gsap-from-right border border-black/10 bg-white/60 p-2 sm:p-3">
+                <div className="relative overflow-hidden">
+                  <img
+                    src={LANDING_IMAGES.deliveredAlt}
+                    alt="Misty Woods - 128 homes delivered"
+                    className="gsap-parallax h-[320px] w-full object-cover sm:h-[500px]"
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.55)_100%)]" />
+                </div>
+                <div className="border-t border-black/8 px-3 py-3 sm:px-4">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-[#9a7a45]">
+                    Track Record
+                  </p>
+                  <p className="mt-1 text-[14px] leading-7 text-[#5c5c58]">
+                    Misty Woods - 128 homes delivered with trust.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </PanelShell>
+
+          <PanelShell className="">
+            <div className="grid gap-8 border-y border-black/10 bg-white/40 px-6 py-8 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:px-10 lg:py-10">
+              <div className="gsap-from-left">
+                <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-[#9a7a45]">
+                  <Flame className="h-4 w-4" />
+                  Limited-Period Offer
+                </p>
+                <h2 className="mt-5 max-w-[14ch] font-[var(--font-hero)] text-[clamp(2.2rem,4.2vw,4.2rem)] leading-[0.94] tracking-[-0.05em] text-black">
+                  First 15 Homes -
+                  <span className="block text-[#a9772f]">Special Booking Benefit</span>
+                </h2>
+                <p className="mt-5 max-w-[38rem] text-[15px] leading-8 text-[#5c5c58]">
+                  Book among the first 15 and unlock an exclusive move-in benefit.
+                  Only <span className="font-semibold text-black">136 homes</span> in
+                  the community, and they&apos;re ready now.
+                </p>
+                <p className="mt-3 text-sm text-[#7b756a]">
+                  *Limited-period offer. T&amp;C apply.
+                </p>
+
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      trackEvent('Lead', { location: 'offer_visit_cta' });
+                      setIsFormOpen(true);
+                    }}
+                    className="inline-flex min-h-[54px] items-center gap-3 bg-black px-6 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5"
+                  >
+                      <Gift className="h-4 w-4" />
+                      Claim Booking Benefit
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <a
+                    href={WHATSAPP_BROCHURE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackEvent('Contact', { location: 'offer_whatsapp' })}
+                    className="inline-flex min-h-[54px] items-center gap-2 border border-black/12 bg-white px-6 text-sm font-semibold uppercase tracking-[0.18em] text-black transition hover:-translate-y-0.5"
+                  >
+                    <PiKey className="h-4 w-4" />
+                    WhatsApp Us
+                  </a>
+                </div>
+              </div>
+
+              <div className="gsap-from-right grid grid-cols-2 gap-4 border-t border-black/8 pt-5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+                {[
+                  { value: '15', label: 'Homes in this offer' },
+                  { value: '136', label: 'Total homes' },
+                  { value: '99L*', label: 'Starting price' },
+                  { value: '2/3', label: 'BHK options' },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="border border-black/8 bg-[#fbf8f2] px-5 py-6"
+                  >
+                    <p className="font-[var(--font-hero)] text-[clamp(3rem,6vw,4.5rem)] leading-none tracking-[-0.06em] text-black">
+                      {stat.value}
+                    </p>
+                    <p className="mt-3 text-[11px] uppercase tracking-[0.22em] text-[#6f6a60]">
+                      {stat.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </PanelShell>
+
+          <PanelShell className="">
+            <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_1fr] lg:p-10">
+              <div className="gsap-from-left">
+                <SectionHeading
+                  eyebrow="Get the Details"
+                  title="Get the Price Sheet, Floor Plans & a Free Site Visit"
+                  description="Drop your details and we'll send everything on WhatsApp - price sheet, floor plans, available inventory, and a confirmed site visit slot."
+                />
+                <div className="mt-7 inline-flex items-center gap-2 text-sm text-[#5c5c58]">
+                  <BadgeCheck className="h-4 w-4 text-emerald-600" />
+                  We&apos;ll only contact you about Aadhya Serene. No spam.
+                </div>
+              </div>
+
+              <form
+                onSubmit={heroFormSubmit}
+                className="gsap-from-right rounded-[2rem] border border-black/8 bg-white p-5 shadow-[0_20px_50px_rgba(0,0,0,0.06)] sm:p-6"
+              >
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field
+                    label="Name"
+                    placeholder="Your full name"
+                    value={formData.name}
+                    onChange={(value) => updateField('name', value)}
+                  />
+                  <Field
+                    label="Phone"
+                    placeholder="+91"
+                    value={formData.phone}
+                    onChange={(value) => updateField('phone', value)}
+                  />
+                  <SelectField
+                    label="Configuration"
+                    value={formData.config}
+                    onChange={(value) => updateField('config', value)}
+                    options={['2 BHK', '3 BHK']}
+                  />
+                  <SelectField
+                    label="Budget (optional)"
+                    value={formData.budget}
+                    onChange={(value) => updateField('budget', value)}
+                    options={['99L - 1.2 Cr', '1.2 Cr +']}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="mt-5 inline-flex w-full min-h-[56px] items-center justify-center gap-2 rounded-full bg-black text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting ? 'Sending...' : 'Send Me Details on WhatsApp'}
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+
+                {submitState.message ? (
+                  <div
+                    className={`mt-4 rounded-[1.2rem] px-4 py-3 text-sm ${
+                      submitState.type === 'success'
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'bg-red-50 text-red-700'
+                    }`}
+                  >
+                    {submitState.message}
+                  </div>
+                ) : null}
+
+                <p className="mt-4 text-sm text-[#6a6a65]">
+                  By submitting, you agree to receive WhatsApp updates from Aadhya
+                  Serene.
+                </p>
+              </form>
+            </div>
+          </PanelShell>
+
+          <PanelShell id="faq" className="">
+            <div className="p-6 sm:p-8 lg:p-10">
+              <div className="gsap-reveal border-b border-black/8 pb-8">
+                <p className="text-[11px] uppercase tracking-[0.3em] text-[#9a7a45]">
+                  FAQ
+                </p>
+                <h2 className="mt-3 font-[var(--font-hero)] text-[clamp(2.8rem,5vw,5rem)] leading-[0.92] tracking-[-0.06em] text-black">
+                  <span className="text-black/28">/</span> Buying Questions, Answered
+                  Clearly
+                </h2>
+              </div>
+
+              <div className="gsap-stagger mt-8 space-y-3">
                 {FAQS.map((item, index) => {
                   const open = activeFaq === index;
 
                   return (
-                    <div key={item.question} className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#181410]">
+                    <div
+                      key={item.question}
+                      className="overflow-hidden rounded-[1.6rem] border border-black/8 bg-white shadow-[0_14px_34px_rgba(0,0,0,0.04)]"
+                    >
                       <button
                         type="button"
                         onClick={() => setActiveFaq(open ? -1 : index)}
-                        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                        className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left sm:px-6"
                       >
-                        <span className="text-sm font-semibold text-[#f8ead6] sm:text-[15px]">{item.question}</span>
-                        <ChevronDown className={`h-4 w-4 shrink-0 text-[#d8ba84] transition ${open ? 'rotate-180' : ''}`} />
+                        <span className="text-[15px] font-semibold tracking-[-0.01em] text-black sm:text-base">
+                          {item.question}
+                        </span>
+                        <ChevronDown
+                          className={`h-4 w-4 shrink-0 text-[#a9772f] transition ${
+                            open ? 'rotate-180' : ''
+                          }`}
+                        />
                       </button>
                       {open ? (
-                        <div className="border-t border-white/8 px-5 py-4 text-sm leading-7 text-white/72">
+                        <div className="border-t border-black/8 px-5 py-5 text-[14px] leading-7 text-[#5c5c58] sm:px-6">
                           {item.answer}
                         </div>
                       ) : null}
@@ -777,46 +1526,214 @@ export default function ReadyToMoveLandingPage() {
                 })}
               </div>
             </div>
-          </div>
-        </section>
+          </PanelShell>
 
-        <section className="border-t border-[#d5c09c]/55 bg-[#fbf6ee]">
-          <div className="mx-auto flex w-full max-w-[1620px] flex-col items-start justify-between gap-6 px-4 py-10 sm:px-6 lg:flex-row lg:items-center lg:px-8">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#9a6f2d]">Ready To Explore Aadhya Serene?</p>
-              <h2 className="mt-3 font-[var(--font-hero)] text-[clamp(2rem,3.4vw,3.4rem)] leading-[0.98] tracking-[-0.04em] text-[#2f2418]">
-                Book your visit and experience the finished project in person.
-              </h2>
+          <PanelShell className="">
+            <div className="gsap-reveal flex flex-col gap-6 rounded-[2rem] border border-[#e7dece] bg-white/86 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.04)] sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:p-10">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-[#9a7a45]">
+                  Ready to See Your Future Home?
+                </p>
+                <h2 className="mt-3 max-w-[13ch] font-[var(--font-hero)] text-[clamp(2rem,3.8vw,3.5rem)] leading-[0.96] tracking-[-0.05em] text-black">
+                  Walk in this weekend. Walk out with keys.
+                </h2>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <a
+                  href={PHONE_LINK}
+                  onClick={heroCallClick}
+                  className="inline-flex min-h-[52px] items-center gap-2 rounded-full border border-black/10 bg-white px-5 text-sm font-semibold text-black transition hover:-translate-y-0.5"
+                >
+                  <Phone className="h-4 w-4 text-[#a9772f]" />
+                  Call {PHONE_DISPLAY}
+                </a>
+                <a
+                  href={WHATSAPP_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={heroWhatsAppClick}
+                  className="inline-flex min-h-[52px] items-center gap-2 rounded-full bg-[#1faf5a] px-5 text-sm font-semibold text-white transition hover:-translate-y-0.5"
+                >
+                  <PiKey className="h-4 w-4" />
+                  WhatsApp Us
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackEvent('Lead', { location: 'final_visit_cta' });
+                    setIsFormOpen(true);
+                  }}
+                  className="inline-flex min-h-[52px] items-center gap-2 rounded-full bg-black px-5 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5"
+                >
+                  Book Free Visit
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-4">
-              <button
-                type="button"
-                onClick={() => setIsFormOpen(true)}
-                className="inline-flex min-h-[52px] items-center gap-3 rounded-[1.15rem] bg-[#18253a] px-5 text-sm font-semibold uppercase tracking-[0.16em] text-[#f2d395] shadow-[0_18px_36px_rgba(22,30,46,0.22)] transition hover:-translate-y-0.5"
-              >
-                Start Booking Form
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              <a
-                href={PHONE_LINK}
-                className="inline-flex min-h-[52px] items-center rounded-[1.15rem] border border-[#d8c4a5] bg-white px-5 text-sm font-semibold uppercase tracking-[0.14em] text-[#2a2117] shadow-[0_12px_24px_rgba(0,0,0,0.06)] transition hover:-translate-y-0.5"
-              >
-                Call {PHONE_DISPLAY}
-              </a>
+          </PanelShell>
+
+        </div>
+
+          <footer className="w-full bg-[#111111] text-[#f3efe6]">
+            <div className="w-full px-5 pb-4 pt-8 sm:px-6 sm:pb-5 sm:pt-9 lg:px-8 lg:pb-6 lg:pt-10">
+              <div className="grid gap-8 border-b border-white/10 pb-7 lg:grid-cols-[1.2fr_0.9fr_0.8fr]">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-white/6 text-white">
+                      <Building2 className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">Aadhya Serene</p>
+                      <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-white/42">
+                        Ready-to-move 2 &amp; 3 BHK homes
+                      </p>
+                    </div>
+                  </div>
+
+                  <h3 className="mt-6 max-w-[10ch] font-[var(--font-hero)] text-[clamp(1.9rem,3.7vw,3.4rem)] leading-[0.94] tracking-[-0.055em] text-white">
+                    Walk in this weekend.
+                    <span className="block text-[#d7b177]">Walk out with keys.</span>
+                  </h3>
+
+                  <p className="mt-5 max-w-[30rem] text-[12px] leading-6 text-white/58">
+                    Ready-to-move 2 &amp; 3 BHK homes on Thanisandra Main Road,
+                    North Bangalore. By Abhigna.
+                  </p>
+                  <p className="mt-3 inline-flex items-center gap-2 text-[11px] text-white/48">
+                    <MapPin className="h-3.5 w-3.5 text-[#d7b177]" />
+                    Thanisandra Main Road, North Bangalore
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-[#d7b177]">
+                    Contact
+                  </p>
+                  <div className="mt-4 space-y-2.5 text-[13px]">
+                    <a
+                      href={PHONE_LINK}
+                      onClick={heroCallClick}
+                      className="block font-medium text-white transition hover:text-[#d7b177]"
+                    >
+                      <Phone className="mr-2 inline h-4 w-4" />
+                      {PHONE_DISPLAY}
+                    </a>
+                    <a
+                      href={WHATSAPP_LINK}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={heroWhatsAppClick}
+                      className="block font-medium text-white transition hover:text-[#d7b177]"
+                    >
+                      <PiKey className="mr-2 inline h-4 w-4" />
+                      WhatsApp Us
+                    </a>
+                  </div>
+
+                  <div className="mt-5 border border-white/10 bg-white/[0.04] p-3 backdrop-blur-sm">
+                    <p className="text-[9px] uppercase tracking-[0.22em] text-[#d7b177]">
+                      K-RERA
+                    </p>
+                    <p className="mt-2 text-[11px] leading-5 text-white/68 [overflow-wrap:anywhere]">
+                      {RERA_NUMBER}
+                    </p>
+                    <p className="mt-1 text-[10px] text-white/40">BBMP Approved</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-[#d7b177]">
+                    Quick Links
+                  </p>
+                  <div className="mt-4 flex flex-col gap-2.5 text-[12px] text-white/62">
+                    <a href="#lead-form" className="transition hover:text-white">
+                      Get Price Sheet
+                    </a>
+                    <a
+                      href={WHATSAPP_BROCHURE}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition hover:text-white"
+                    >
+                      Brochure on WhatsApp
+                    </a>
+                    <a href="#lead-form" className="transition hover:text-white">
+                      Book a Site Visit
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-4 text-[10px] leading-5 text-white/38 lg:flex-row lg:items-center lg:justify-between">
+                <p>
+                  Disclaimer: Prices, images, and specifications are indicative and
+                  subject to change. *Starting price for limited units. T&amp;C
+                  apply. This is not a legal offer.
+                </p>
+                <p className="uppercase tracking-[0.16em] text-white/24">
+                  Aadhya Serene · North Bangalore
+                </p>
+              </div>
             </div>
-          </div>
-        </section>
+          </footer>
       </main>
 
+      <div className="fixed inset-x-0 bottom-0 z-[85] grid grid-cols-2 border-t border-black/8 bg-white/96 shadow-[0_-12px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl lg:hidden">
+        <a
+          href={WHATSAPP_LINK}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={stickyWhatsApp}
+          className="inline-flex items-center justify-center gap-2 py-4 text-[14px] font-semibold text-white"
+          style={{ background: 'linear-gradient(180deg,#26c66a,#1faf5a)' }}
+        >
+          <PiKey className="h-4 w-4" />
+          WhatsApp
+        </a>
+        <a
+          href={PHONE_LINK}
+          onClick={stickyCall}
+          className="inline-flex items-center justify-center gap-2 border-l border-white/30 bg-black py-4 text-[14px] font-semibold text-white"
+        >
+          <Phone className="h-4 w-4" />
+          Call
+        </a>
+      </div>
+
       <motion.a
-        href={PROJECT_APP_URL}
-        whileHover={{ y: -2, scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
-        className="fixed bottom-4 right-4 z-[90] inline-flex min-h-[54px] items-center gap-3 rounded-[1.2rem] border border-[#d9bc88] bg-[linear-gradient(180deg,#fff8ed_0%,#fff0d9_100%)] px-5 text-sm font-semibold uppercase tracking-[0.14em] text-[#2c2111] shadow-[0_18px_40px_rgba(83,55,15,0.18)] transition sm:bottom-6 sm:right-6"
+        href={WHATSAPP_LINK}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={stickyWhatsApp}
+        whileHover={{ y: -2, scale: 1.04 }}
+        whileTap={{ scale: 0.97 }}
+        className="fixed bottom-6 right-6 z-[90] hidden h-14 w-14 items-center justify-center lg:inline-flex"
+        aria-label={`Chat on WhatsApp at ${PHONE_DISPLAY}`}
       >
-        <Building2 className="h-4 w-4 text-[#b37a2d]" />
-        <span>View Project</span>
-        <ArrowRight className="h-4 w-4 text-[#b37a2d]" />
+        <motion.span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-full bg-[#25d366]/22"
+          animate={{ scale: [1, 1.25, 1], opacity: [0.45, 0, 0.45] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-1 rounded-full border border-[#25d366]/30"
+          animate={{ scale: [0.94, 1.18, 0.94], opacity: [0.34, 0, 0.34] }}
+          transition={{
+            duration: 2.4,
+            repeat: Infinity,
+            ease: 'easeInOut',
+            delay: 0.22,
+          }}
+        />
+        <img
+          src={WHATSAPP_IMAGE}
+          alt=""
+          aria-hidden="true"
+          className="relative z-[1] h-full w-full shrink-0 object-contain"
+        />
       </motion.a>
 
       <AnimatePresence>
@@ -826,227 +1743,230 @@ export default function ReadyToMoveLandingPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.28, ease: 'easeOut' }}
-            className="fixed inset-0 z-[1200] flex items-center justify-center bg-[rgba(17,11,6,0.62)] p-4 backdrop-blur-xl sm:p-6"
+            className="fixed inset-0 z-[1200] flex items-center justify-center bg-[rgba(10,10,12,0.7)] p-4 backdrop-blur-xl sm:p-6"
           >
             <motion.div
               initial={{ opacity: 0, y: 26, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 18, scale: 0.98 }}
               transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-              className="relative flex h-auto max-h-[68vh] w-full max-w-5xl overflow-hidden rounded-[2.2rem] border border-[#d8bb85]/35 bg-[linear-gradient(180deg,rgba(252,247,239,0.98)_0%,rgba(248,241,230,0.98)_100%)] shadow-[0_36px_120px_rgba(0,0,0,0.34)]"
+              className="relative flex w-full max-w-5xl overflow-hidden rounded-[2.2rem] border border-white/10 bg-[#f7f6f1] shadow-[0_36px_120px_rgba(0,0,0,0.34)]"
             >
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(226,195,129,0.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(24,37,58,0.08),transparent_26%)]" />
-
               <motion.button
                 type="button"
                 onClick={() => setIsFormOpen(false)}
                 whileHover={{ scale: 1.06, rotate: 90 }}
                 whileTap={{ scale: 0.95 }}
-                className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-[#92897f]/88 text-white shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl transition"
+                className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-black/80 text-white shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl transition"
                 aria-label="Close form"
               >
                 <X className="h-4 w-4" />
               </motion.button>
 
-              <div className="relative hidden w-[30%] shrink-0 overflow-hidden md:block">
+              <div className="relative hidden w-[34%] shrink-0 overflow-hidden md:block">
                 <img
                   src={FORM_IMAGE}
                   alt="Aadhya Serene interior"
-                  className="h-full w-full object-cover transition duration-700"
+                  className="h-full w-full object-cover"
                 />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,8,6,0.08)_0%,rgba(9,8,6,0.24)_100%)]" />
-                <div className="absolute inset-x-4 bottom-4 rounded-[1.3rem] border border-white/15 bg-black/18 px-4 py-4 text-white backdrop-blur-lg">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#f1d6a4]">Signature Living</p>
-                  <p className="mt-2 text-sm leading-6 text-white/88">
-                    Answer a few quick questions and let our team tailor the right next step for you.
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.12)_0%,rgba(0,0,0,0.48)_100%)]" />
+                <div className="absolute inset-x-4 bottom-4 rounded-[1.3rem] border border-white/15 bg-black/28 px-4 py-4 text-white backdrop-blur-lg">
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-[#f1d6a4]">
+                    Aadhya Serene
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-white/90">
+                    Share a few details and our team will send the price sheet, floor
+                    plans and book your free site visit on WhatsApp.
                   </p>
                 </div>
               </div>
 
-              <div className="relative flex min-h-0 flex-1 flex-col">
-                <div className="border-b border-[#e5d7c2] px-5 py-5 sm:px-6">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#9b7234]">
-                        {hasAutoOpened ? 'Priority Enquiry' : 'Book With Confidence'}
-                      </p>
-                      <h3 className="mt-2 text-[1.75rem] font-semibold tracking-[-0.03em] text-[#241c13]">
-                        {currentStep.title}
-                      </h3>
-                      <p className="mt-2 text-[15px] leading-7 text-[#6c6154]">{currentStep.description}</p>
-                    </div>
-                    {/* <div className="rounded-full border border-[#e6d8bf] bg-white/70 px-4 py-2 text-right text-xs font-medium uppercase tracking-[0.18em] text-[#7d6b51] shadow-[0_10px_24px_rgba(0,0,0,0.04)]">
-                      Step {stepIndex + 1} / {FORM_STEPS.length}
-                    </div> */}
-                  </div>
-                  <div className="mt-5 h-2.5 rounded-full bg-[#eadfce] shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)]">
-                    <motion.div
-                      className="h-full rounded-full bg-[linear-gradient(90deg,#aa772a,#e2c381)] shadow-[0_8px_22px_rgba(210,167,86,0.26)]"
-                      animate={{ width: `${progress}%` }}
-                      transition={{ duration: 0.35, ease: 'easeOut' }}
-                    />
-                  </div>
+              <form onSubmit={submitForm} className="relative flex min-h-0 flex-1 flex-col">
+                <div className="border-b border-black/8 px-5 py-5 sm:px-6">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-[#9b7234]">
+                    {hasAutoOpened ? 'Priority Enquiry' : 'Book With Confidence'}
+                  </p>
+                  <h3 className="mt-2 text-[1.65rem] font-semibold tracking-[-0.03em] text-black">
+                    Get the Price Sheet, Floor Plans &amp; a Free Site Visit
+                  </h3>
+                  <p className="mt-1.5 text-[14px] leading-7 text-[#5c5c58]">
+                    Takes 30 seconds. We&apos;ll only contact you about Aadhya
+                    Serene.
+                  </p>
                 </div>
 
-                <form onSubmit={submitForm} className="flex min-h-0 flex-1 flex-col">
-                  <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
-                    <AnimatePresence mode="wait" initial={false}>
-                      <motion.div
-                        key={currentStep.id}
-                        initial={{ opacity: 0, y: 18 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.26, ease: 'easeOut' }}
-                      >
-                        {currentStep.type === 'options' ? (
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            {currentStep.options.map((option, index) => {
-                              const optionValue = typeof option === 'string' ? option : option.value;
-                              const optionLabel = typeof option === 'string' ? option : option.label;
-
-                              return (
-                                <motion.div
-                                  key={optionValue}
-                                  initial={{ opacity: 0, y: 14 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: index * 0.04, duration: 0.22 }}
-                                  className="w-full"
-                                >
-                                  <FieldButton
-                                    active={formData[currentStep.field] === optionValue}
-                                    onClick={() => updateField(currentStep.field, optionValue)}
-                                  >
-                                    {optionLabel}
-                                  </FieldButton>
-                                </motion.div>
-                              );
-                            })}
-                          </div>
-                        ) : null}
-
-                        {currentStep.type === 'textarea' ? (
-                          <div className="grid gap-4">
-                            <div>
-                              <label className="mb-2 block text-sm font-medium text-[#4d4338]" htmlFor="notes">
-                                Optional Note
-                              </label>
-                              <textarea
-                                id="notes"
-                                rows={6}
-                                value={formData.message}
-                                onChange={(event) => updateField('message', event.target.value)}
-                                className="w-full rounded-[1.6rem] border border-[#e0d3bf] bg-white/92 px-4 py-3 text-sm text-[#2b241b] shadow-[0_14px_32px_rgba(0,0,0,0.04)] outline-none transition focus:border-[#b58739] focus:ring-4 focus:ring-[#b58739]/12"
-                                placeholder="Preferred facing, budget comfort, loan help, family needs, or anything else..."
-                              />
-                            </div>
-                          </div>
-                        ) : null}
-
-                        {currentStep.type === 'contact' ? (
-                          <div className="grid gap-4">
-                            <div>
-                              <label className="mb-2 block text-sm font-medium text-[#4d4338]" htmlFor="name">
-                                Full Name
-                              </label>
-                              <input
-                                id="name"
-                                value={formData.name}
-                                onChange={(event) => updateField('name', event.target.value)}
-                                className="h-12 w-full rounded-[1.4rem] border border-[#e0d3bf] bg-white/92 px-4 text-sm text-[#2b241b] shadow-[0_14px_32px_rgba(0,0,0,0.04)] outline-none transition focus:border-[#b58739] focus:ring-4 focus:ring-[#b58739]/12"
-                                placeholder="Enter your full name"
-                              />
-                            </div>
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              <div>
-                                <label className="mb-2 block text-sm font-medium text-[#4d4338]" htmlFor="phone">
-                                  Phone Number
-                                </label>
-                                <input
-                                  id="phone"
-                                  value={formData.phone}
-                                  onChange={(event) => updateField('phone', event.target.value)}
-                                  className="h-12 w-full rounded-[1.4rem] border border-[#e0d3bf] bg-white/92 px-4 text-sm text-[#2b241b] shadow-[0_14px_32px_rgba(0,0,0,0.04)] outline-none transition focus:border-[#b58739] focus:ring-4 focus:ring-[#b58739]/12"
-                                  placeholder="+91"
-                                />
-                              </div>
-                              <div>
-                                <label className="mb-2 block text-sm font-medium text-[#4d4338]" htmlFor="email">
-                                  Email Address
-                                </label>
-                                <input
-                                  id="email"
-                                  type="email"
-                                  value={formData.email}
-                                  onChange={(event) => updateField('email', event.target.value)}
-                                  className="h-12 w-full rounded-[1.4rem] border border-[#e0d3bf] bg-white/92 px-4 text-sm text-[#2b241b] shadow-[0_14px_32px_rgba(0,0,0,0.04)] outline-none transition focus:border-[#b58739] focus:ring-4 focus:ring-[#b58739]/12"
-                                  placeholder="you@example.com"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ) : null}
-                      </motion.div>
-                    </AnimatePresence>
-
-                    {submitState.message ? (
-                      <motion.div
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`mt-4 rounded-2xl px-4 py-3 text-sm ${
-                          submitState.type === 'success'
-                            ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-                            : 'border border-red-200 bg-red-50 text-red-700'
-                        }`}
-                      >
-                        {submitState.message}
-                      </motion.div>
-                    ) : null}
+                <div className="min-h-0 flex-1 px-5 py-5 sm:px-6">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                      label="Full Name"
+                      placeholder="Enter your full name"
+                      value={formData.name}
+                      onChange={(value) => updateField('name', value)}
+                    />
+                    <Field
+                      label="Phone Number"
+                      placeholder="+91"
+                      value={formData.phone}
+                      onChange={(value) => updateField('phone', value)}
+                    />
+                    <SelectField
+                      label="Configuration"
+                      value={formData.config}
+                      onChange={(value) => updateField('config', value)}
+                      options={['2 BHK', '3 BHK']}
+                    />
+                    <SelectField
+                      label="Budget (optional)"
+                      value={formData.budget}
+                      onChange={(value) => updateField('budget', value)}
+                      options={['99L - 1.2 Cr', '1.2 Cr +']}
+                    />
                   </div>
 
-                  <div className="border-t border-[#e5d7c2] px-5 py-4 sm:px-6">
-                    <div className="flex items-center justify-between gap-3">
-                      <motion.button
-                        type="button"
-                        onClick={prevStep}
-                        disabled={stepIndex === 0 || isSubmitting}
-                        whileHover={stepIndex === 0 || isSubmitting ? undefined : { y: -1 }}
-                        whileTap={stepIndex === 0 || isSubmitting ? undefined : { scale: 0.98 }}
-                        className="inline-flex min-h-[48px] items-center rounded-[1.05rem] border border-black/8 bg-white/78 px-5 text-sm font-semibold text-[#493f35] shadow-[0_12px_24px_rgba(0,0,0,0.04)] transition hover:bg-[#faf5ee] disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Back
-                      </motion.button>
+                  <div className="mt-4">
+                    <label className="mb-2 block text-sm font-medium text-[#4d4338]">
+                      Anything specific? (optional)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formData.message}
+                      onChange={(event) => updateField('message', event.target.value)}
+                      className="w-full rounded-[1.2rem] border border-black/8 bg-white px-4 py-3 text-sm text-black shadow-[0_14px_32px_rgba(0,0,0,0.04)] outline-none transition focus:border-black focus:ring-4 focus:ring-black/8"
+                      placeholder="Preferred facing, family needs, loan help..."
+                    />
+                  </div>
 
-                      {stepIndex < FORM_STEPS.length - 1 ? (
-                        <motion.button
-                          type="button"
-                          onClick={nextStep}
-                          whileHover={{ y: -2, scale: 1.01 }}
-                          whileTap={{ scale: 0.99 }}
-                          className="inline-flex min-h-[48px] items-center gap-2 rounded-[1.1rem] bg-[linear-gradient(180deg,#1d2d47_0%,#16253d_100%)] px-6 text-sm font-semibold uppercase tracking-[0.16em] text-[#f2d395] shadow-[0_18px_36px_rgba(24,37,58,0.26)] transition"
-                        >
-                          Continue
-                          <ArrowRight className="h-4 w-4" />
-                        </motion.button>
-                      ) : (
-                        <motion.button
-                          type="submit"
-                          disabled={isSubmitting}
-                          whileHover={isSubmitting ? undefined : { y: -2, scale: 1.01 }}
-                          whileTap={isSubmitting ? undefined : { scale: 0.99 }}
-                          className="inline-flex min-h-[48px] items-center gap-2 rounded-[1.1rem] bg-[linear-gradient(180deg,#1d2d47_0%,#16253d_100%)] px-6 text-sm font-semibold uppercase tracking-[0.16em] text-[#f2d395] shadow-[0_18px_36px_rgba(24,37,58,0.26)] transition disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {isSubmitting ? 'Submitting...' : 'Submit Enquiry'}
-                          <CalendarClock className="h-4 w-4" />
-                        </motion.button>
-                      )}
+                  {submitState.message ? (
+                    <div
+                      className={`mt-4 rounded-[1.2rem] px-4 py-3 text-[13px] font-medium ${
+                        submitState.type === 'success'
+                          ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                          : 'border border-red-200 bg-red-50 text-red-700'
+                      }`}
+                    >
+                      {submitState.message}
                     </div>
-                  </div>
-                </form>
-              </div>
+                  ) : null}
+                </div>
+
+                <div className="border-t border-black/8 px-5 py-4 sm:px-6">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="inline-flex w-full min-h-[52px] items-center justify-center gap-2 rounded-full bg-black text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Sending...' : 'Send Me Details on WhatsApp'}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         ) : null}
       </AnimatePresence>
+
+      <style jsx global>{`
+        @keyframes pulseRing {
+          0% {
+            transform: scale(1);
+            opacity: 0.55;
+          }
+          80% {
+            transform: scale(1.5);
+            opacity: 0;
+          }
+          100% {
+            transform: scale(1.5);
+            opacity: 0;
+          }
+        }
+
+        html {
+          scroll-behavior: smooth;
+        }
+
+        @media (max-width: 1023px) {
+          body {
+            padding-bottom: 64px;
+          }
+        }
+      `}</style>
     </>
+  );
+}
+
+function PanelShell({ id, className = '', children }) {
+  return (
+    <section
+      id={id}
+      className={`relative overflow-hidden ${className}`}
+    >
+      <div className="mx-auto w-full max-w-[1480px]">{children}</div>
+    </section>
+  );
+}
+
+function SectionHeading({ eyebrow, title, description }) {
+  return (
+    <div>
+      <p className="text-[11px] uppercase tracking-[0.3em] text-[#9a7a45]">{eyebrow}</p>
+      <h2 className="mt-3 max-w-[11ch] font-[var(--font-hero)] text-[clamp(2.4rem,4.5vw,4.6rem)] leading-[0.94] tracking-[-0.055em] text-black">
+        <span className="text-black/28">/</span> {title}
+      </h2>
+      <p className="mt-5 max-w-[36rem] text-[15px] leading-8 text-[#5c5c58]">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function Field({ label, placeholder, value, onChange }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6d6d68]">
+        {label}
+      </label>
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-14 w-full rounded-[1.3rem] border border-black/8 bg-[#f7f6f1] px-4 text-sm text-black outline-none transition focus:border-black focus:ring-4 focus:ring-black/8"
+      />
+    </div>
+  );
+}
+
+function SelectField({ label, value, onChange, options }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6d6d68]">
+        {label}
+      </label>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-14 w-full rounded-[1.3rem] border border-black/8 bg-[#f7f6f1] px-4 text-sm text-black outline-none transition focus:border-black focus:ring-4 focus:ring-black/8"
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function SpecStat({ value, label }) {
+  return (
+    <div className="border-t border-black/10 pt-4 text-left">
+      <p className="font-[var(--font-hero)] text-[2.4rem] leading-none tracking-[-0.05em] text-black">
+        {value}
+      </p>
+      <p className="mt-2 text-[11px] uppercase tracking-[0.24em] text-[#9a7a45]">
+        {label}
+      </p>
+    </div>
   );
 }

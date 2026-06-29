@@ -261,7 +261,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const shouldWaitForStartupBuffer = !shouldConserveData;
     const shouldEagerlyPrepareLoop = veryHighCapabilityDesktop && !transitionIsHls;
     const shouldDeferLoopPreloadForHls = !shouldConserveData && transitionIsHls && layout !== 'home';
-    const shouldHideBackground = layout === 'location' || layout === 'project-overview';
+    const shouldHideBackground = layout === 'apartments' || layout === 'location' || layout === 'project-overview';
     const posterSrc = BACKGROUND_POSTERS[layout] ?? BACKGROUND_POSTERS.home;
     const transitionReadyEvent = shouldConserveData ? 'loadedmetadata' : 'loadeddata';
     const transitionReadyStateThreshold = shouldConserveData ? 1 : 2;

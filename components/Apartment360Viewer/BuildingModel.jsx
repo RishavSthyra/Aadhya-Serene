@@ -5,6 +5,7 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import trackingData from '../../public/data/unreal_tracking_data.json';
+import { apartment360ViewIndexFromFrame } from '../../lib/apartment360Frames';
 import { flatsData } from '../../lib/flats';
 
 const BASE_OVERLAY_SCALE = 1.0035;
@@ -329,8 +330,7 @@ function SceneWithCamera({
         const entries = Object.entries(flatRefs.current);
         if (entries.length === 0) return;
 
-        const normalizedFrame = ((currentFrame % 360) + 360) % 360;
-        const index = Math.round(normalizedFrame / 90) % 4;
+        const index = apartment360ViewIndexFromFrame(currentFrame);
 
         const d1 = cameraPath.dummies.dummy_1;
         const d2 = cameraPath.dummies.dummy_2;
@@ -605,8 +605,7 @@ function SceneWithCamera({
     let fov = 50;
 
     if (cameraPath) {
-        const normalizedFrame = ((currentFrame % 360) + 360) % 360;
-        const index = Math.round(normalizedFrame / 90) % 4;
+        const index = apartment360ViewIndexFromFrame(currentFrame);
         position = cameraPath.positions[index].clone();
         quaternion = cameraPath.rotations[index].clone();
         fov = cameraPath.fovs[index];

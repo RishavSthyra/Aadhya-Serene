@@ -6,6 +6,12 @@ import {
   prefetchAssetsInChunks,
   registerAssetCacheServiceWorker,
 } from '@/lib/client-asset-cache';
+import {
+  APARTMENT_360_PRIMARY_PRELOAD_COUNT,
+  APARTMENT_360_SNAP_POINTS,
+  APARTMENT_360_TOTAL_FRAMES,
+  apartment360FrameUrl,
+} from '@/lib/apartment360Frames';
 import styles from '../../app/home.module.css';
 
 const MIN_PRELOADER_DURATION_MS = 1200;
@@ -15,19 +21,15 @@ const EASE_OUT_CUBIC = (value) => 1 - ((1 - value) ** 3);
 
 const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/Aadhya%20Serene%20Home%20Page%205%20With%20Humans(2).mp4';
 const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya%20Serene%20Home%20Page%205%20With%20Humans%20-%20First%20Frame.avif';
-const APARTMENTS_VIDEO_SAFE = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_1920w_60fps_h264_safe.mp4';
-const APARTMENTS_VIDEO_PREMIUM = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/AADHYA_SERENE_OPTIMIZED/3-1_2560w_60fps_h264_premium.mp4';
-const APARTMENTS_LOOP = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/3-2-av1.mp4';
-const ROT360_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp';
-const ROT360_TOTAL_FRAMES = 360;
-const ROT360_SNAP_POINTS = [1, 90, 180, 270, 360];
+const ROT360_TOTAL_FRAMES = APARTMENT_360_TOTAL_FRAMES;
+const ROT360_SNAP_POINTS = APARTMENT_360_SNAP_POINTS;
 
 function frameUrl(frameNumber) {
-  return `${ROT360_BASE}/frame_${String(frameNumber).padStart(4, '0')}.webp`;
+  return apartment360FrameUrl(frameNumber);
 }
 
 function normalizeFrameNumber(frameNumber) {
-  return (((Math.round(frameNumber) - 1) % 360) + 360) % 360 + 1;
+  return (((Math.round(frameNumber) - 1) % ROT360_TOTAL_FRAMES) + ROT360_TOTAL_FRAMES) % ROT360_TOTAL_FRAMES + 1;
 }
 
 function appendFrame(frames, seen, frameNumber) {
@@ -41,27 +43,17 @@ function appendFrame(frames, seen, frameNumber) {
 }
 
 function getPreloaderScrubFrames() {
-  const frames = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 90, 180, 270, 360]);
-
-  for (let offset = 12; offset <= 120; offset += 6) {
-    frames.add(normalizeFrameNumber(offset));
-    frames.add(normalizeFrameNumber(360 - offset));
-  }
-
-  [90, 180, 270].forEach((centerFrame) => {
-    for (let offset = -12; offset <= 12; offset += 4) {
-      frames.add(normalizeFrameNumber(centerFrame + offset));
-    }
-  });
-
-  return [...frames].sort((a, b) => a - b);
+  return Array.from(
+    { length: Math.min(APARTMENT_360_PRIMARY_PRELOAD_COUNT, ROT360_TOTAL_FRAMES) },
+    (_, index) => index + 1,
+  );
 }
 
 function getGradualRot360WarmFrames(isConstrainedDevice) {
   const frames = [];
   const seen = new Set();
-  const snapRadius = isConstrainedDevice ? 18 : 36;
-  const coarseStride = isConstrainedDevice ? 6 : 4;
+  const snapRadius = isConstrainedDevice ? 36 : 72;
+  const coarseStride = isConstrainedDevice ? 12 : 8;
 
   getPreloaderScrubFrames().forEach((frameNumber) => {
     appendFrame(frames, seen, frameNumber);
@@ -74,11 +66,11 @@ function getGradualRot360WarmFrames(isConstrainedDevice) {
     }
   });
 
-  for (let frameNumber = 1; frameNumber <= ROT360_TOTAL_FRAMES; frameNumber += coarseStride) {
+  for (let frameNumber = APARTMENT_360_PRIMARY_PRELOAD_COUNT + 1; frameNumber <= ROT360_TOTAL_FRAMES; frameNumber += coarseStride) {
     appendFrame(frames, seen, frameNumber);
   }
 
-  for (let frameNumber = 1; frameNumber <= ROT360_TOTAL_FRAMES; frameNumber += 1) {
+  for (let frameNumber = APARTMENT_360_PRIMARY_PRELOAD_COUNT + 1; frameNumber <= ROT360_TOTAL_FRAMES; frameNumber += 1) {
     appendFrame(frames, seen, frameNumber);
   }
 
@@ -96,41 +88,21 @@ function shouldUseSafeMedia() {
     || /(^|slow-)?2g|3g/.test(connection?.effectiveType ?? '');
 }
 
-function getSelectedMediaSources() {
-  return {
-    homeVideo: HOME_VIDEO,
-    apartmentsTransition: shouldUseSafeMedia()
-      ? APARTMENTS_VIDEO_SAFE
-      : APARTMENTS_VIDEO_PREMIUM,
-  };
-}
-
 function getCriticalAssets() {
-  const { homeVideo, apartmentsTransition } = getSelectedMediaSources();
-  const scrubFrameAssets = getPreloaderScrubFrames()
-    .slice(0, shouldUseSafeMedia() ? 6 : 12)
-    .map(frameUrl);
+  const scrubFrameAssets = getPreloaderScrubFrames().map(frameUrl);
 
   return [
     '/favicon.ico',
     HOME_POSTER,
-    homeVideo,
-    apartmentsTransition,
+    HOME_VIDEO,
     ...scrubFrameAssets,
   ];
 }
 
 function getIdleWarmAssets() {
-  const sources = getSelectedMediaSources();
-  const frameSeeds = getPreloaderScrubFrames();
-
   return [
     HOME_POSTER,
-    sources.homeVideo,
-    sources.apartmentsTransition,
-    'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_3_1%20(1).jpg',
-    APARTMENTS_LOOP,
-    ...frameSeeds.slice(0, 24).map(frameUrl),
+    HOME_VIDEO,
   ];
 }
 

@@ -15,9 +15,7 @@ export default function GlobalBackground({ siteVariant }) {
     const isLandingRoute = isReadyToMoveExperience(pathname, siteVariant);
     const [layout, setLayout] = useState('home');
     const [playing, setPlaying] = useState(true);
-    const [replayKey, setReplayKey] = useState(0);
     const prevPathname = useRef(pathname);
-    const eagerApartmentsTransitionRef = useRef(false);
 
     useEffect(() => {
         if (isLandingRoute) {
@@ -39,28 +37,12 @@ export default function GlobalBackground({ siteVariant }) {
         const shouldSkipApartmentsReplay = isEnteringApartmentsPage
             ? consumeSkipNextApartmentsReplay()
             : false;
-        const shouldSuppressReplayFromEagerTransition = isEnteringApartmentsPage
-            && eagerApartmentsTransitionRef.current;
 
-        if (
-            isEnteringApartmentsPage
-            && newLayout === layout
-            && !shouldSkipApartmentsReplay
-            && !shouldSuppressReplayFromEagerTransition
-        ) {
-            setBackgroundTransitionState('apartments', true);
-            setReplayKey((current) => current + 1);
-        }
-
-        if (isEnteringApartmentsPage && shouldSkipApartmentsReplay) {
+        if (isEnteringApartmentsPage && !shouldSkipApartmentsReplay) {
             setBackgroundTransitionState('apartments', false);
             window.dispatchEvent(new CustomEvent('bg-transition-ended', {
                 detail: { layout: 'apartments' },
             }));
-        }
-
-        if (isEnteringApartmentsPage) {
-            eagerApartmentsTransitionRef.current = false;
         }
 
         // We just navigated to a new route, but the layout didn't fundamentally change
@@ -90,7 +72,6 @@ export default function GlobalBackground({ siteVariant }) {
         }
 
         const handleLayout = (e) => {
-            eagerApartmentsTransitionRef.current = e.detail === 'apartments';
             setBackgroundTransitionState(e.detail, true);
             setLayout(e.detail);
         };
@@ -112,5 +93,5 @@ export default function GlobalBackground({ siteVariant }) {
         return null;
     }
 
-    return <BackgroundVideo layout={layout} playing={playing} replayKey={replayKey} />;
+    return <BackgroundVideo layout={layout} playing={playing} />;
 }

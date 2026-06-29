@@ -5,23 +5,24 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './viewer.module.css';
 import { flatViewKeyFromFrame } from '../../lib/flats';
 import {
+    APARTMENT_360_SNAP_POINTS,
+    APARTMENT_360_TOTAL_FRAMES,
+    apartment360FrameUrl,
+} from '../../lib/apartment360Frames';
+import {
     cacheAssetOnce,
     registerAssetCacheServiceWorker,
 } from '../../lib/client-asset-cache';
 
-const TOTAL_FRAMES = 360;
-const SNAP_POINTS = [1, 90, 180, 270, 360];
-const ROT360_CDN_BASE = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp';
-//https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_compressed/frame_0001.avif
-//https://cdn.sthyra.com/AADHYA%20SERENE/images/rot360_webp/frame_0001.webp
-const ROT360_FRAME_EXTENSION = ROT360_CDN_BASE.includes('webp') ? 'webp' : 'avif';
+const TOTAL_FRAMES = APARTMENT_360_TOTAL_FRAMES;
+const SNAP_POINTS = APARTMENT_360_SNAP_POINTS;
 const DRAG_FRAME_STEP = 1;
 const MOBILE_DRAG_FRAME_STEP = 1;
-const PRELOAD_RADIUS = 40;
+const PRELOAD_RADIUS = 80;
 const PRELOAD_CONCURRENCY = 4;
 const MAX_CACHE_SIZE = 360;
-const DRAG_SENSITIVITY = 0.28;
-const MOBILE_PRELOAD_RADIUS = 7;
+const DRAG_SENSITIVITY = 0.56;
+const MOBILE_PRELOAD_RADIUS = 14;
 const MOBILE_PRELOAD_CONCURRENCY = 2;
 const MOBILE_MAX_CACHE_SIZE = 96;
 const MOBILE_DPR_CAP = 1;
@@ -31,23 +32,23 @@ const MAX_ZOOM = 2.25;
 const DRAG_START_THRESHOLD = 6;
 const SNAP_ANIMATION_DURATION_MS = 300;
 const MOBILE_SNAP_ANIMATION_DURATION_MS = 240;
-const DRAG_PRELOAD_RADIUS = 20;
-const MOBILE_DRAG_PRELOAD_RADIUS = 4;
+const DRAG_PRELOAD_RADIUS = 40;
+const MOBILE_DRAG_PRELOAD_RADIUS = 8;
 const DRAG_PRELOAD_STRIDE = 1;
 const MOBILE_DRAG_PRELOAD_STRIDE = 4;
-const INITIAL_WARMUP_RADIUS = 48;
-const MOBILE_INITIAL_WARMUP_RADIUS = 10;
+const INITIAL_WARMUP_RADIUS = 96;
+const MOBILE_INITIAL_WARMUP_RADIUS = 20;
 const INITIAL_WARMUP_CONCURRENCY = 3;
 const MOBILE_INITIAL_WARMUP_CONCURRENCY = 2;
 const INITIAL_WARMUP_DELAY_MS = 0;
 const MOBILE_INITIAL_WARMUP_DELAY_MS = 120;
 const INITIAL_WARMUP_TIMEOUT_MS = 800;
 const MOBILE_INITIAL_WARMUP_TIMEOUT_MS = 1200;
-const INITIAL_WARMUP_SNAP_RADIUS = 1;
-const INITIAL_INTERACTION_PRIME_RADIUS = 90;
-const MOBILE_INITIAL_INTERACTION_PRIME_RADIUS = 18;
-const INITIAL_INTERACTION_SNAP_RADIUS = 3;
-const MOBILE_INITIAL_INTERACTION_SNAP_RADIUS = 1;
+const INITIAL_WARMUP_SNAP_RADIUS = 2;
+const INITIAL_INTERACTION_PRIME_RADIUS = 180;
+const MOBILE_INITIAL_INTERACTION_PRIME_RADIUS = 36;
+const INITIAL_INTERACTION_SNAP_RADIUS = 6;
+const MOBILE_INITIAL_INTERACTION_SNAP_RADIUS = 2;
 const INITIAL_INTERACTION_PRIME_CONCURRENCY = 3;
 const MOBILE_INITIAL_INTERACTION_PRIME_CONCURRENCY = 2;
 const INITIAL_INTERACTION_UNLOCK_COUNT = 8;
@@ -67,7 +68,7 @@ const BuildingModel = dynamic(() => import('./BuildingModel'), {
 });
 
 function getFrameUrl(frameNumber) {
-    return `${ROT360_CDN_BASE}/frame_${String(frameNumber).padStart(4, '0')}.${ROT360_FRAME_EXTENSION}`;
+    return apartment360FrameUrl(frameNumber);
 }
 
 function normalizeFrame(frameNumber) {
@@ -1017,8 +1018,8 @@ export default function Apartment360Viewer({
             }
         }
         let diff = bestTargetNorm - normalized;
-        if (diff > 180) diff -= 360;
-        if (diff < -180) diff += 360;
+        if (diff > TOTAL_FRAMES / 2) diff -= TOTAL_FRAMES;
+        if (diff < -(TOTAL_FRAMES / 2)) diff += TOTAL_FRAMES;
         const snapTarget = finalFrame + diff;
         targetFrameRef.current = snapTarget;
         ensureFrameLoaded(bestTargetNorm);
@@ -1037,7 +1038,7 @@ export default function Apartment360Viewer({
                 Math.abs(normalizedFrame - (point - TOTAL_FRAMES)),
             );
 
-            return distance <= 3;
+            return distance <= 6;
         });
 
         let nextPoint;
@@ -1054,8 +1055,8 @@ export default function Apartment360Viewer({
         }
 
         let diff = nextPoint - normalizedFrame;
-        if (diff > 180) diff -= 360;
-        if (diff < -180) diff += 360;
+        if (diff > TOTAL_FRAMES / 2) diff -= TOTAL_FRAMES;
+        if (diff < -(TOTAL_FRAMES / 2)) diff += TOTAL_FRAMES;
 
         isDragging.current = false;
         setIsSettled(false);

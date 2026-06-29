@@ -18,7 +18,6 @@ import {
   preloadFlatEntryVideo,
   scheduleIdleFlatVideoWarmup,
 } from "../../lib/flats";
-import { isBackgroundTransitionActive } from "../../lib/background-transition";
 import useResponsiveViewport from "../../hooks/useResponsiveViewport";
 
 const DESKTOP_PANEL_WIDTH = 420;
@@ -68,7 +67,6 @@ export default function Apartments() {
   const { isMobile, isTablet, isTabletOrBelow, width, height } = useResponsiveViewport();
 
   const [isPanelOpen, setIsPanelOpen] = useState(true);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(() => isBackgroundTransitionActive("apartments"));
   const [viewerVersion, setViewerVersion] = useState(0);
   const [shouldMountViewer, setShouldMountViewer] = useState(false);
   const [isViewerReady, setIsViewerReady] = useState(false);
@@ -103,7 +101,6 @@ export default function Apartments() {
   const resetApartmentsExperience = useCallback((remountViewer = false) => {
     document.body.style.opacity = "1";
     document.body.style.transition = "";
-    setIsVideoPlaying(isBackgroundTransitionActive("apartments"));
     setIsViewerReady(false);
     setShouldMountViewer(false);
     setPendingFlatId(null);
@@ -114,16 +111,6 @@ export default function Apartments() {
   }, []);
 
   useEffect(() => {
-    const handleStart = (event) => {
-      if (!event.detail || event.detail?.layout === "apartments") {
-        setIsVideoPlaying(true);
-      }
-    };
-    const handleEnd = (event) => {
-      if (!event.detail || event.detail?.layout === "apartments") {
-        setIsVideoPlaying(false);
-      }
-    };
     const handlePageShow = (event) => {
       if (event.persisted) {
         resetApartmentsExperience(true);
@@ -132,13 +119,9 @@ export default function Apartments() {
 
     resetApartmentsExperience(true);
 
-    window.addEventListener("bg-transition-started", handleStart);
-    window.addEventListener("bg-transition-ended", handleEnd);
     window.addEventListener("pageshow", handlePageShow);
 
     return () => {
-      window.removeEventListener("bg-transition-started", handleStart);
-      window.removeEventListener("bg-transition-ended", handleEnd);
       window.removeEventListener("pageshow", handlePageShow);
     };
   }, [resetApartmentsExperience]);
@@ -183,7 +166,7 @@ export default function Apartments() {
   }, [allData?.length, isCompactLayout, pathname, prioritizedWarmupFlatIds]);
 
   useEffect(() => {
-    if (pathname !== "/apartments" || isVideoPlaying) {
+    if (pathname !== "/apartments") {
       return undefined;
     }
 
@@ -206,14 +189,14 @@ export default function Apartments() {
       cancelled = true;
       cancelRotatorWarmup?.();
     };
-  }, [isCompactLayout, isVideoPlaying, pathname]);
+  }, [isCompactLayout, pathname]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return undefined;
     }
 
-    if (isVideoPlaying || shouldMountViewer) {
+    if (shouldMountViewer) {
       return undefined;
     }
 
@@ -224,9 +207,9 @@ export default function Apartments() {
     return () => {
       window.cancelAnimationFrame(rafId);
     };
-  }, [isVideoPlaying, shouldMountViewer, viewerVersion]);
+  }, [shouldMountViewer, viewerVersion]);
 
-  const shouldRevealViewer = shouldMountViewer && isViewerReady && !isVideoPlaying;
+  const shouldRevealViewer = shouldMountViewer && isViewerReady;
 
   const filteredFlatIds = useMemo(() => {
     if (!allData || data.length === allData.length) return null;
@@ -311,8 +294,8 @@ export default function Apartments() {
       className="fixed right-0 top-[104px] z-[120] hidden xl:block"
       style={{
         top: isShortDesktop ? "92px" : "104px",
-        opacity: isVideoPlaying ? 0 : 1,
-        pointerEvents: isVideoPlaying || isFlatRoutePreparing ? "none" : "auto",
+        opacity: 1,
+        pointerEvents: isFlatRoutePreparing ? "none" : "auto",
         transform: isPanelOpen ? "translateX(0)" : `translateX(${desktopPanelWidth + 20}px)`,
         transition: "transform 420ms cubic-bezier(0.22,1,0.36,1), opacity 280ms ease",
       }}
