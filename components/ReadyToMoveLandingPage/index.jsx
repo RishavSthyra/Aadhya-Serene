@@ -654,6 +654,7 @@ export default function ReadyToMoveLandingPage() {
                       <span className="block whitespace-nowrap">Live Beside</span>
                       <span className="block whitespace-nowrap">Manyata Tech Park.</span>
                     </h1>
+                    <ReraBadge theme="dark" className="mt-6" />
                   </div>
                 </div>
 
@@ -694,6 +695,7 @@ export default function ReadyToMoveLandingPage() {
                   eyebrow="Get the Price Sheet"
                   title="Talk to us in 30 seconds."
                   description="Drop your number and we'll send the price sheet, floor plans and book a free site visit - all on WhatsApp."
+                  showRera
                 />
                 <div className="mt-8 flex items-center gap-2 text-sm text-[#5d5d5a]">
                   <BadgeCheck className="h-4 w-4 text-emerald-600" />
@@ -757,16 +759,22 @@ export default function ReadyToMoveLandingPage() {
           </PanelShell>
 
           <PanelShell className="">
-            <div className="gsap-stagger grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {TRUST_STRIP.map(({ icon: Icon, label }) => (
-                <div
-                  key={label}
-                  className="flex items-center justify-center gap-3 rounded-full border border-[#e7dece] bg-white/75 px-5 py-4 text-center text-[11px] uppercase tracking-[0.18em] text-[#2a2a28] shadow-[0_10px_24px_rgba(0,0,0,0.03)]"
-                >
-                  <Icon className="h-5 w-5 text-[#d9aa53]" />
-                  <span>{label}</span>
-                </div>
-              ))}
+            <div className="space-y-3">
+              <div className="gsap-stagger grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {TRUST_STRIP.map(({ icon: Icon, label }) => (
+                  <div
+                    key={label}
+                    className="flex items-center justify-center gap-3 rounded-full border border-[#e7dece] bg-white/75 px-5 py-4 text-center text-[11px] uppercase tracking-[0.18em] text-[#2a2a28] shadow-[0_10px_24px_rgba(0,0,0,0.03)]"
+                  >
+                    <Icon className="h-5 w-5 text-[#d9aa53]" />
+                    <span>{label}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="gsap-reveal flex justify-center sm:justify-end">
+                <ReraBadge className="w-full justify-between rounded-[1.4rem] px-5 py-3 sm:w-auto" />
+              </div>
             </div>
           </PanelShell>
 
@@ -782,10 +790,13 @@ export default function ReadyToMoveLandingPage() {
                     choose us over every other project nearby.
                   </h2>
                 </div>
-                <p className="max-w-[30rem] text-[15px] leading-7 text-[#5c5c58]">
-                  Ready now, priced clearly, and placed where daily life gets easier.
-                  The content stays the same - the experience just feels sharper.
-                </p>
+                <div>
+                  <p className="max-w-[30rem] text-[15px] leading-7 text-[#5c5c58]">
+                    Ready now, priced clearly, and placed where daily life gets easier.
+                    The content stays the same - the experience just feels sharper.
+                  </p>
+                  <ReraBadge className="mt-5" />
+                </div>
               </div>
 
               <div className="mt-10 grid auto-rows-fr gap-5 md:grid-cols-2 2xl:grid-cols-3">
@@ -836,6 +847,7 @@ export default function ReadyToMoveLandingPage() {
                     you a 3D model. We show you the actual flat, in actual light, on
                     an actual afternoon.
                   </p>
+                  <ReraBadge className="mt-5" />
                   <p className="mt-5 text-[11px] uppercase tracking-[0.22em] text-black/45">
                     02 min 18 sec · Cinematic tour
                   </p>
@@ -864,7 +876,6 @@ export default function ReadyToMoveLandingPage() {
                       02:18
                     </p>
                   </div>
-
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
                     <motion.button
                       type="button"
@@ -953,6 +964,7 @@ export default function ReadyToMoveLandingPage() {
                     <span className="block">Thoughtfully Designed</span>
                     <span className="block">2 & 3 BHK Homes</span>
                   </h2>
+                  <ReraBadge className="mt-5" />
                 </div>
                 <div className="gsap-from-right flex items-center justify-start lg:justify-end lg:self-center">
                   <div className="inline-flex border border-black/10 bg-white/90 p-1 shadow-[0_10px_28px_rgba(0,0,0,0.05)]">
@@ -1075,11 +1087,14 @@ export default function ReadyToMoveLandingPage() {
                     <span className="block text-[#a9772f]">Built In.</span>
                   </h2>
                 </div>
-                <p className="gsap-from-right max-w-[34rem] text-base leading-8 text-[#5c5c58]">
-                  A 1.25-acre boutique community shaped around how you actually
-                  live - not a checklist copied from every other brochure in North
-                  Bangalore.
-                </p>
+                <div className="gsap-from-right">
+                  <p className="max-w-[34rem] text-base leading-8 text-[#5c5c58]">
+                    A 1.25-acre boutique community shaped around how you actually
+                    live - not a checklist copied from every other brochure in North
+                    Bangalore.
+                  </p>
+                  <ReraBadge className="mt-5" />
+                </div>
               </div>
 
               <div className="gsap-reveal mt-10 grid gap-px overflow-hidden rounded-[2rem] border border-black/10 bg-black/10 lg:grid-cols-3">
@@ -1152,10 +1167,13 @@ export default function ReadyToMoveLandingPage() {
                     Minutes Away
                   </h2>
                 </div>
-                <p className="gsap-from-right max-w-[30rem] text-[15px] leading-7 text-[#5c5c58]">
-                  Thanisandra Main Road, beside Manyata Tech Park - North
-                  Bangalore&apos;s most-appreciating micro-market.
-                </p>
+                <div className="gsap-from-right">
+                  <p className="max-w-[30rem] text-[15px] leading-7 text-[#5c5c58]">
+                    Thanisandra Main Road, beside Manyata Tech Park - North
+                    Bangalore&apos;s most-appreciating micro-market.
+                  </p>
+                  <ReraBadge className="mt-5" />
+                </div>
               </div>
 
               <div className="mt-10 grid items-start gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10">
@@ -1258,6 +1276,7 @@ export default function ReadyToMoveLandingPage() {
                     Every spec, every brand, every fitting - chosen for durability
                     and daily comfort. No compromises, no last-minute swaps.
                   </p>
+                  <ReraBadge className="mt-5" />
                 </div>
                 <div className="gsap-from-right grid gap-4 border-t border-black/10 pt-5 sm:grid-cols-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
                   <SpecStat value="136" label="Homes" />
@@ -1293,6 +1312,7 @@ export default function ReadyToMoveLandingPage() {
                 <p className="mt-5 max-w-[38rem] text-[15px] leading-8 text-[#5c5c58]">
                   Aadhya Serene comes from the team behind <span className="font-semibold text-black">Misty Woods - 128 homes delivered with trust.</span> We don&apos;t sell renders; we hand over keys.
                 </p>
+                <ReraBadge className="mt-5" />
 
                 <div className="gsap-stagger mt-8 grid gap-5 border-t border-black/8 pt-5 sm:grid-cols-3">
                   {[
@@ -1348,6 +1368,7 @@ export default function ReadyToMoveLandingPage() {
                   Only <span className="font-semibold text-black">136 homes</span> in
                   the community, and they&apos;re ready now.
                 </p>
+                <ReraBadge className="mt-5" />
                 <p className="mt-3 text-sm text-[#7b756a]">
                   *Limited-period offer. T&amp;C apply.
                 </p>
@@ -1408,6 +1429,7 @@ export default function ReadyToMoveLandingPage() {
                   eyebrow="Get the Details"
                   title="Get the Price Sheet, Floor Plans & a Free Site Visit"
                   description="Drop your details and we'll send everything on WhatsApp - price sheet, floor plans, available inventory, and a confirmed site visit slot."
+                  showRera
                 />
                 <div className="mt-7 inline-flex items-center gap-2 text-sm text-[#5c5c58]">
                   <BadgeCheck className="h-4 w-4 text-emerald-600" />
@@ -1485,6 +1507,7 @@ export default function ReadyToMoveLandingPage() {
                   <span className="text-black/28">/</span> Buying Questions, Answered
                   Clearly
                 </h2>
+                <ReraBadge className="mt-5" />
               </div>
 
               <div className="gsap-stagger mt-8 space-y-3">
@@ -1531,6 +1554,7 @@ export default function ReadyToMoveLandingPage() {
                 <h2 className="mt-3 max-w-[13ch] font-[var(--font-hero)] text-[clamp(2rem,3.8vw,3.5rem)] leading-[0.96] tracking-[-0.05em] text-black">
                   Walk in this weekend. Walk out with keys.
                 </h2>
+                <ReraBadge className="mt-5" />
               </div>
 
               <div className="flex flex-wrap gap-3">
@@ -1625,14 +1649,12 @@ export default function ReadyToMoveLandingPage() {
                     </a>
                   </div>
 
-                  <div className="mt-5 border border-white/10 bg-white/[0.04] p-3 backdrop-blur-sm">
-                    <p className="text-[9px] uppercase tracking-[0.22em] text-[#d7b177]">
-                      K-RERA
-                    </p>
-                    <p className="mt-2 text-[11px] leading-5 text-white/68 [overflow-wrap:anywhere]">
-                      {RERA_NUMBER}
-                    </p>
-                    <p className="mt-1 text-[10px] text-white/40">BBMP Approved</p>
+                  <div className="mt-5">
+                    <ReraBadge
+                      theme="dark"
+                      className="w-full rounded-[1.4rem] border-white/10 bg-white/[0.04] px-4 py-3"
+                    />
+                    <p className="mt-2 text-[10px] text-white/40">BBMP Approved</p>
                   </div>
                 </div>
 
@@ -1787,6 +1809,7 @@ export default function ReadyToMoveLandingPage() {
                     Takes 30 seconds. We&apos;ll only contact you about Aadhya
                     Serene.
                   </p>
+                  <ReraBadge className="mt-5" />
                 </div>
 
                 <div className="min-h-0 flex-1 px-5 py-5 sm:px-6">
@@ -1900,7 +1923,13 @@ function PanelShell({ id, className = '', children }) {
   );
 }
 
-function SectionHeading({ eyebrow, title, description }) {
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+  showRera = false,
+  reraTheme = 'light',
+}) {
   return (
     <div>
       <p className="text-[11px] uppercase tracking-[0.3em] text-[#9a7a45]">{eyebrow}</p>
@@ -1910,6 +1939,38 @@ function SectionHeading({ eyebrow, title, description }) {
       <p className="mt-5 max-w-[36rem] text-[15px] leading-8 text-[#5c5c58]">
         {description}
       </p>
+      {showRera ? <ReraBadge theme={reraTheme} className="mt-6" /> : null}
+    </div>
+  );
+}
+
+function ReraBadge({ className = '', theme = 'light' }) {
+  const isDark = theme === 'dark';
+
+  return (
+    <div
+      className={`inline-flex max-w-full flex-wrap items-center gap-3 rounded-full border px-4 py-2.5 shadow-[0_12px_28px_rgba(0,0,0,0.05)] backdrop-blur-sm ${
+        isDark
+          ? 'border-white/12 bg-black/24 text-white/72'
+          : 'border-[#e5dac7] bg-white/86 text-[#6c624f]'
+      } ${className}`}
+    >
+      <span
+        className={`inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] ${
+          isDark ? 'text-[#e9d2ae]' : 'text-[#9a7a45]'
+        }`}
+      >
+        <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.6} />
+        K-RERA
+      </span>
+      <span className={`hidden h-3.5 w-px sm:block ${isDark ? 'bg-white/16' : 'bg-black/10'}`} />
+      <span
+        className={`min-w-0 text-[10px] font-medium leading-5 [overflow-wrap:anywhere] sm:text-[11px] ${
+          isDark ? 'text-white/78' : 'text-[#2f2b25]'
+        }`}
+      >
+        {RERA_NUMBER}
+      </span>
     </div>
   );
 }
