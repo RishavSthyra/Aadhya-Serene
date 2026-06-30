@@ -138,6 +138,10 @@ export default function Contact() {
       setFormData(initialFormState);
       setSubmitState('success');
       setStatusMessage(result.message || 'Your enquiry has been sent successfully.');
+
+      window.setTimeout(() => {
+        window.location.href = '/thank-you';
+      }, 700);
     } catch (error) {
       setSubmitState('error');
       setStatusMessage(error.message || 'Something went wrong while sending your enquiry.');

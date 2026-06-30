@@ -59,6 +59,7 @@ export default function Nav({ siteVariant }) {
   const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
   const isApartmentsRoute = pathname.startsWith("/apartments");
   const isProjectOverviewRoute = pathname.startsWith("/project-overview");
+  const isThankYouRoute = pathname.startsWith("/thank-you");
   const isLandingRoute = isReadyToMoveExperience(pathname, siteVariant);
   const [isNavVisible, setIsNavVisible] = useState(true);
   const hideTimeoutRef = useRef(null);
@@ -174,7 +175,7 @@ export default function Nav({ siteVariant }) {
     router.push(href);
   };
 
-  if (isInteriorPanosRoute || isLandingRoute) {
+  if (isInteriorPanosRoute || isLandingRoute || isThankYouRoute) {
     return null;
   }
 

@@ -38,27 +38,16 @@ function buildInfoRow(label, value) {
 }
 
 function getMailConfig() {
-  const host = cleanValue(process.env.SMTP_HOST || process.env.MAILTRAP_HOST);
-  const portValue = cleanValue(process.env.SMTP_PORT || process.env.MAILTRAP_PORT);
-  const user = cleanValue(process.env.SMTP_USER || process.env.MAILTRAP_USER);
-  const pass = cleanValue(process.env.SMTP_PASS || process.env.MAILTRAP_PASS);
+  const user = cleanValue(process.env.EMAIL_USER);
+  const pass = cleanValue(process.env.GOOGLE_APP_PASSWORD);
   const to = cleanValue(
-    process.env.SMTP_TO ||
-      process.env.CONTACT_TO_EMAIL ||
-      process.env.MAILTRAP_TO ||
-      DEFAULT_TO_EMAIL
+    process.env.CONTACT_TO_EMAIL || process.env.EMAIL_USER || DEFAULT_TO_EMAIL
   );
   const from = cleanValue(
-    process.env.SMTP_FROM ||
-      process.env.CONTACT_FROM_EMAIL ||
-      process.env.MAILTRAP_FROM ||
-      DEFAULT_FROM_EMAIL
+    process.env.CONTACT_FROM_EMAIL || process.env.EMAIL_USER || DEFAULT_FROM_EMAIL
   );
 
   return {
-    host,
-    port: Number(portValue),
-    portValue,
     user,
     pass,
     to,
@@ -69,24 +58,16 @@ function getMailConfig() {
 function getMissingConfigFields(mailConfig) {
   const missingFields = [];
 
-  if (!mailConfig.host) {
-    missingFields.push('host');
-  }
-
-  if (!mailConfig.portValue || Number.isNaN(mailConfig.port)) {
-    missingFields.push('port');
-  }
-
   if (!mailConfig.user) {
-    missingFields.push('user');
+    missingFields.push('EMAIL_USER');
   }
 
   if (!mailConfig.pass) {
-    missingFields.push('pass');
+    missingFields.push('GOOGLE_APP_PASSWORD');
   }
 
   if (!mailConfig.to) {
-    missingFields.push('to');
+    missingFields.push('CONTACT_TO_EMAIL');
   }
 
   return missingFields;
@@ -122,14 +103,15 @@ export async function POST(request) {
     source: cleanValue(payload?.source),
   };
 
-  if (!submission.name || !submission.phone || !submission.email || !submission.requestType) {
+  if (!submission.name || !submission.phone || !submission.requestType) {
     return NextResponse.json(
       { error: 'Please complete the required contact details.' },
       { status: 400 }
     );
   }
 
-  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(submission.email);
+  const isValidEmail =
+    !submission.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(submission.email);
 
   if (!isValidEmail) {
     return NextResponse.json({ error: 'Please provide a valid email address.' }, { status: 400 });
@@ -144,9 +126,7 @@ export async function POST(request) {
   });
 
   const transporter = nodemailer.createTransport({
-    host: mailConfig.host,
-    port: mailConfig.port,
-    secure: mailConfig.port === 465,
+    service: 'gmail',
     auth: {
       user: mailConfig.user,
       pass: mailConfig.pass,
@@ -174,7 +154,7 @@ export async function POST(request) {
               ${buildInfoRow('Source', enquirySource)}
               ${buildInfoRow('Name', submission.name)}
               ${buildInfoRow('Phone', submission.phone)}
-              ${buildInfoRow('Email', submission.email)}
+              ${buildInfoRow('Email', submission.email || 'Not provided')}
               ${buildInfoRow('Request', requestLabel)}
               ${buildInfoRow('Preferred Time', submission.preferredTime || 'Not specified')}
               ${buildInfoRow('Submitted', submittedAt)}
@@ -201,7 +181,7 @@ export async function POST(request) {
     `Request: ${requestLabel}`,
     `Name: ${submission.name}`,
     `Phone: ${submission.phone}`,
-    `Email: ${submission.email}`,
+    `Email: ${submission.email || 'Not provided'}`,
     `Preferred time: ${submission.preferredTime || 'Not specified'}`,
     `Submitted: ${submittedAt}`,
     ``,
@@ -213,14 +193,14 @@ export async function POST(request) {
     await transporter.sendMail({
       from: `Aadhya Serene <${mailConfig.from}>`,
       to: mailConfig.to,
-      replyTo: submission.email,
+      replyTo: submission.email || undefined,
       subject: `[Aadhya Serene] ${requestLabel} - ${submission.name} (${enquirySource})`,
       text,
       html,
     });
 
     return NextResponse.json({
-      message: 'Your enquiry is on its way. Our team will reach out shortly.',
+      message: 'Your enquiry has been emailed to our team. We will reach out shortly.',
     });
   } catch (error) {
     console.error('Contact form email failed:', error);

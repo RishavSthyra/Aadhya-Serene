@@ -60,6 +60,7 @@ const LANDING_IMAGES = {
   facade: '/landing%20page%20images/image4.avif',
   lifestyle: '/landing%20page%20images/image5.avif',
   delivered: '/landing%20page%20images/image3.avif',
+  mistywoods : '/landing page images/ABMW.avif',
   deliveredAlt: '/landing%20page%20images/iamge6.avif',
 };
 
@@ -324,7 +325,7 @@ function useGsapReveal() {
   }, []);
 }
 
-export default function ReadyToMoveLandingPage() {
+export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   const [activeFaq, setActiveFaq] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
@@ -359,6 +360,10 @@ export default function ReadyToMoveLandingPage() {
   };
 
   useEffect(() => {
+    if (!enableAutoPopup) {
+      return undefined;
+    }
+
     timerRef.current = window.setTimeout(openForm, 20000);
 
     const handleScroll = () => {
@@ -378,7 +383,7 @@ export default function ReadyToMoveLandingPage() {
       window.clearTimeout(timerRef.current);
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [enableAutoPopup]);
 
   useEffect(() => {
     document.body.style.overflow = isFormOpen ? 'hidden' : '';
@@ -494,19 +499,12 @@ export default function ReadyToMoveLandingPage() {
 
       setSubmitState({
         type: 'success',
-        message: 'Thanks! Sending you to WhatsApp now.',
+        message: 'Thanks! Your enquiry has been sent to our team.',
       });
 
       window.setTimeout(() => {
-        window.open(WHATSAPP_BROCHURE, '_blank', 'noopener,noreferrer');
-        setIsFormOpen(false);
-        setFormData((current) => ({
-          ...current,
-          name: '',
-          phone: '',
-          message: '',
-        }));
-      }, 900);
+        window.location.href = '/thank-you';
+      }, 700);
     } catch (error) {
       setSubmitState({
         type: 'error',
@@ -694,7 +692,7 @@ export default function ReadyToMoveLandingPage() {
                 <SectionHeading
                   eyebrow="Get the Price Sheet"
                   title="Talk to us in 30 seconds."
-                  description="Drop your number and we'll send the price sheet, floor plans and book a free site visit - all on WhatsApp."
+                  description="Drop your details and our team will reach out with the price sheet, floor plans, and site visit support by email or phone."
                   showRera
                 />
                 <div className="mt-8 flex items-center gap-2 text-sm text-[#5d5d5a]">
@@ -739,7 +737,7 @@ export default function ReadyToMoveLandingPage() {
                   disabled={isSubmitting}
                   className="mt-4 inline-flex min-h-[56px] w-full items-center justify-center gap-3 rounded-full bg-black px-6 text-sm font-semibold uppercase tracking-[0.22em] text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSubmitting ? 'Sending...' : 'Send Me Details on WhatsApp'}
+                  {isSubmitting ? 'Sending...' : 'Submit Enquiry'}
                   <ArrowRight className="h-4 w-4" />
                 </button>
 
@@ -1334,9 +1332,9 @@ export default function ReadyToMoveLandingPage() {
               <div className="gsap-from-right border border-black/10 bg-white/60 p-2 sm:p-3">
                 <div className="relative overflow-hidden">
                   <img
-                    src={LANDING_IMAGES.deliveredAlt}
+                    src={LANDING_IMAGES.mistywoods}
                     alt="Misty Woods - 128 homes delivered"
-                    className="gsap-parallax h-[320px] w-full object-cover sm:h-[500px]"
+                    className="block gsap-parallax h-[320px] w-full object-cover object-top sm:h-[500px]"
                   />
                   <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.55)_100%)]" />
                 </div>
@@ -1428,7 +1426,7 @@ export default function ReadyToMoveLandingPage() {
                 <SectionHeading
                   eyebrow="Get the Details"
                   title="Get the Price Sheet, Floor Plans & a Free Site Visit"
-                  description="Drop your details and we'll send everything on WhatsApp - price sheet, floor plans, available inventory, and a confirmed site visit slot."
+                  description="Drop your details and our team will follow up by email or phone with the price sheet, floor plans, available inventory, and a site visit slot."
                   showRera
                 />
                 <div className="mt-7 inline-flex items-center gap-2 text-sm text-[#5c5c58]">
@@ -1473,7 +1471,7 @@ export default function ReadyToMoveLandingPage() {
                   disabled={isSubmitting}
                   className="mt-5 inline-flex w-full min-h-[56px] items-center justify-center gap-2 rounded-full bg-black text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSubmitting ? 'Sending...' : 'Send Me Details on WhatsApp'}
+                  {isSubmitting ? 'Sending...' : 'Submit Enquiry'}
                   <ArrowRight className="h-4 w-4" />
                 </button>
 
@@ -1490,8 +1488,8 @@ export default function ReadyToMoveLandingPage() {
                 ) : null}
 
                 <p className="mt-4 text-sm text-[#6a6a65]">
-                  By submitting, you agree to receive WhatsApp updates from Aadhya
-                  Serene.
+                  By submitting, you agree to be contacted by the Aadhya Serene
+                  team regarding your enquiry.
                 </p>
               </form>
             </div>
@@ -1791,8 +1789,8 @@ export default function ReadyToMoveLandingPage() {
                     Aadhya Serene
                   </p>
                   <p className="mt-2 text-sm leading-6 text-white/90">
-                    Share a few details and our team will send the price sheet, floor
-                    plans and book your free site visit on WhatsApp.
+                    Share a few details and our team will review your enquiry and
+                    follow up with pricing, floor plans, and site visit assistance.
                   </p>
                 </div>
               </div>
@@ -1872,7 +1870,7 @@ export default function ReadyToMoveLandingPage() {
                     disabled={isSubmitting}
                     className="inline-flex w-full min-h-[52px] items-center justify-center gap-2 rounded-full bg-black text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {isSubmitting ? 'Sending...' : 'Send Me Details on WhatsApp'}
+                    {isSubmitting ? 'Sending...' : 'Submit Enquiry'}
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 </div>

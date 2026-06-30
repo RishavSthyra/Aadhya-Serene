@@ -1,4 +1,5 @@
 import ReadyToMoveLandingPage from '@/components/ReadyToMoveLandingPage';
+import GoogleAdsTag from '@/components/GoogleAdsTag';
 
 export const metadata = {
   title: 'Aadhya Serene | Ready To Move Homes',
@@ -7,5 +8,10 @@ export const metadata = {
 };
 
 export default function ReadyToMovePage() {
-  return <ReadyToMoveLandingPage />;
+  return (
+    <>
+      <GoogleAdsTag />
+      <ReadyToMoveLandingPage />
+    </>
+  );
 }

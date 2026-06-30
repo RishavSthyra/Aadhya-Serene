@@ -26,11 +26,10 @@ Open:
 
 ## env
 
-SMTP_HOST="sandbox.smtp.mailtrap.io"
-SMTP_PORT="2525"
-SMTP_USER="121fa6c516e293"
-SMTP_PASS="51290f3a2ec291"
-SMTP_TO="rishav@sthyra.com"
-MONGODB_URI="mongodb+srv://rishav_db_user:bcn1rxOhPA3J2nqT@aadhyacluster.2dliczp.mongodb.net/AadhyaSerene?retryWrites=true&w=majority&appName=AadhyaCluster"
-JWT_SECRET="aadhya-serene-admin-session-2026-change-before-production"
-ADMIN_BOOTSTRAP_SECRET="AADHYA-SERENE-SUPERADMIN-2026"
+EMAIL_USER="your-google-workspace-or-gmail-address"
+GOOGLE_APP_PASSWORD="your-google-app-password"
+CONTACT_TO_EMAIL="sales@abhignaconstructions.com"
+CONTACT_FROM_EMAIL="your-google-workspace-or-gmail-address"
+MONGODB_URI="your-mongodb-uri"
+JWT_SECRET="change-before-production"
+ADMIN_BOOTSTRAP_SECRET="change-before-production"
