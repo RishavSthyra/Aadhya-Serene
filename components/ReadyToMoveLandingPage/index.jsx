@@ -876,7 +876,7 @@ export default function ReadyToMoveLandingPage() {
                       02:18
                     </p>
                   </div>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                  {/* <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
                     <motion.button
                       type="button"
                       aria-label="Play walkthrough video"
@@ -909,7 +909,7 @@ export default function ReadyToMoveLandingPage() {
                     <p className="mt-6 text-[11px] uppercase tracking-[0.32em] text-[#e6ceaa]">
                       Press to play
                     </p>
-                  </div>
+                  </div> */}
 
                   <div className="absolute inset-x-5 bottom-5 sm:inset-x-8 sm:bottom-8">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
