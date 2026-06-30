@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import HomePageClient from './HomePageClient';
 import ReadyToMoveLandingPage from '@/components/ReadyToMoveLandingPage';
+import GoogleAdsTag from '@/components/GoogleAdsTag';
 import { createPageMetadata } from '@/lib/seo';
 import { getSiteVariantFromHost, SITE_VARIANTS } from '@/lib/site-variant';
 
@@ -64,5 +65,10 @@ export default async function Page() {
     return <HomePageClient />;
   }
 
-  return <ReadyToMoveLandingPage />;
+  return (
+    <>
+      <GoogleAdsTag />
+      <ReadyToMoveLandingPage />
+    </>
+  );
 }
