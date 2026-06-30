@@ -695,10 +695,10 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   description="Drop your details and our team will reach out with the price sheet, floor plans, and site visit support by email or phone."
                   showRera
                 />
-                <div className="mt-8 flex items-center gap-2 text-sm text-[#5d5d5a]">
+                {/* <div className="mt-8 flex items-center gap-2 text-sm text-[#5d5d5a]">
                   <BadgeCheck className="h-4 w-4 text-emerald-600" />
                   No spam. Aadhya Serene only.
-                </div>
+                </div> */}
               </div>
 
               <form
