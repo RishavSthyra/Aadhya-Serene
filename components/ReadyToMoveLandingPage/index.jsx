@@ -68,15 +68,15 @@ const HERO_SLIDES = [
   {
     src: LANDING_IMAGES.heroMain,
     alt: 'Aadhya Serene terrace and pool at golden hour',
-    eyebrow: 'Ready-to-move 2 & 3 BHK',
+    eyebrow: 'Near-Possession 2 & 3 BHK',
     location: 'Thanisandra, North Bangalore',
     caption: 'Pool · Terrace · Clubhouse',
   },
   {
     src: LANDING_IMAGES.heroInterior,
     alt: 'Aadhya Serene finished bedroom interior',
-    eyebrow: 'Finished Homes',
-    location: 'Move in today',
+    eyebrow: 'Near Possession Homes',
+    location: 'Possession soon',
     caption: 'Vastu-compliant · Premium finishes',
   },
   {
@@ -92,17 +92,17 @@ const HERO_SLIDES = [
 const TRUST_STRIP = [
   { icon: Building2, label: '1.25-Acre Boutique Community' },
   { icon: PiHouseLine, label: 'Only 136 Homes' },
-  { icon: KeyRound, label: 'Ready to Move In' },
+  { icon: KeyRound, label: 'Near Possession' },
   { icon: PiShieldCheckered, label: 'Vastu-Compliant Homes' },
 ];
 
 const VALUE_CARDS = [
   {
     icon: KeyRound,
-    eyebrow: 'Move In Now',
-    title: 'Move in now, not in 2028.',
+    eyebrow: 'Near Possession',
+    title: 'Close to possession, not years away.',
     body:
-      'Most projects near Manyata are still under construction. Aadhya Serene is finished. See your actual home, get the keys, move in.',
+      'Most projects near Manyata are still at an early stage. Aadhya Serene is well progressed and nearing handover, so you can buy with much more confidence and far less waiting.',
   },
   {
     icon: IndianRupee,
@@ -179,9 +179,9 @@ const SPEC_CHECKLIST = [
 
 const FAQS = [
   {
-    question: 'Is Aadhya Serene ready to move in?',
+    question: 'Is Aadhya Serene near possession?',
     answer:
-      'Yes - these are finished homes, available for immediate occupancy. You can walk through your actual unit before you commit.',
+      'Aadhya Serene is in the near-possession stage. The project is well progressed, and our team can walk you through the current site status and expected handover details.',
   },
   {
     question: "What's the starting price?",
@@ -201,7 +201,7 @@ const FAQS = [
   {
     question: 'Who is the developer?',
     answer:
-      'Abhigna - the team behind Misty Woods (128 homes delivered). We hand over keys, not promises.',
+      'Abhigna - the team behind Misty Woods (128 homes delivered). Aadhya Serene is being built with the same delivery-first mindset.',
   },
 ];
 
@@ -607,7 +607,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     Aadhya Serene
                   </p>
                   <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/55">
-                    Ready-to-move 2 & 3 BHK
+                    Near-possession 2 & 3 BHK
                   </p>
                 </div>
                 <nav className="hidden items-center gap-5 text-[11px] uppercase tracking-[0.18em] text-white/55 lg:flex">
@@ -1308,7 +1308,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   <span className="block text-[#a9772f]">Delivered, Not Promised.</span>
                 </h2>
                 <p className="mt-5 max-w-[38rem] text-[15px] leading-8 text-[#5c5c58]">
-                  Aadhya Serene comes from the team behind <span className="font-semibold text-black">Misty Woods - 128 homes delivered with trust.</span> We don&apos;t sell renders; we hand over keys.
+                  Aadhya Serene comes from the team behind <span className="font-semibold text-black">Misty Woods - 128 homes delivered with trust.</span> We don&apos;t sell distant promises; we build with visible progress and delivery confidence.
                 </p>
                 <ReraBadge className="mt-5" />
 
@@ -1547,10 +1547,10 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
             <div className="gsap-reveal flex flex-col gap-6 rounded-[2rem] border border-[#e7dece] bg-white/86 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.04)] sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:p-10">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.24em] text-[#9a7a45]">
-                  Ready to See Your Future Home?
+                  Ready to See the Progress Up Close?
                 </p>
                 <h2 className="mt-3 max-w-[13ch] font-[var(--font-hero)] text-[clamp(2rem,3.8vw,3.5rem)] leading-[0.96] tracking-[-0.05em] text-black">
-                  Walk in this weekend. Walk out with keys.
+                  Visit this weekend. See how close your home is to possession.
                 </h2>
                 <ReraBadge className="mt-5" />
               </div>
@@ -1602,18 +1602,18 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     <div>
                       <p className="text-sm font-semibold text-white">Aadhya Serene</p>
                       <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-white/42">
-                        Ready-to-move 2 &amp; 3 BHK homes
+                        Near-possession 2 &amp; 3 BHK homes
                       </p>
                     </div>
                   </div>
 
                   <h3 className="mt-6 max-w-[10ch] font-[var(--font-hero)] text-[clamp(1.9rem,3.7vw,3.4rem)] leading-[0.94] tracking-[-0.055em] text-white">
-                    Walk in this weekend.
-                    <span className="block text-[#d7b177]">Walk out with keys.</span>
+                    Visit this weekend.
+                    <span className="block text-[#d7b177]">See how close you are to possession.</span>
                   </h3>
 
                   <p className="mt-5 max-w-[30rem] text-[12px] leading-6 text-white/58">
-                    Ready-to-move 2 &amp; 3 BHK homes on Thanisandra Main Road,
+                    Near-possession 2 &amp; 3 BHK homes on Thanisandra Main Road,
                     North Bangalore. By Abhigna.
                   </p>
                   <p className="mt-3 inline-flex items-center gap-2 text-[11px] text-white/48">

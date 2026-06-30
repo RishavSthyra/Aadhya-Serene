@@ -29,6 +29,7 @@ const contactItems = [
     primary: CONTACT_PHONE,
     secondary: 'Connect directly with our sales team.',
     href: CONTACT_PHONE_LINK,
+    actionLabel: 'Call Now',
   },
   {
     icon: Mail,
@@ -36,12 +37,13 @@ const contactItems = [
     primary: CONTACT_EMAIL,
     secondary: 'Every enquiry from this page goes straight to email.',
     href: CONTACT_EMAIL_LINK,
+    actionLabel: 'Send Email',
   },
   {
     icon: MapPin,
     label: 'Visit Location',
     primary: CONTACT_ADDRESS,
-    secondary: 'Ready-to-move residences in a well-connected North Bengaluru address.',
+    secondary: 'Near-possession residences in a well-connected North Bengaluru address.',
   },
 ];
 
@@ -111,7 +113,7 @@ export default function EnquiryContactPage() {
           preferredTime: [formData.residenceType, formData.preferredTime]
             .filter(Boolean)
             .join(' | '),
-          message: formData.message || 'Lead captured from the ready-to-move contact page.',
+          message: formData.message || 'Lead captured from the near-possession contact page.',
           source: 'ready_to_move_contact_page',
         }),
       });
@@ -158,35 +160,32 @@ export default function EnquiryContactPage() {
             </div>
 
             <Link href="/ready-to-move" className={styles.backLink}>
-              Back to Ready to Move Page
+              Back to Near Possession Page
             </Link>
           </div>
         </div>
 
         <div className={styles.contactGrid}>
-          {contactItems.map(({ icon: Icon, label, primary, secondary, href }) => {
-            const content = (
-              <>
+          {contactItems.map(({ icon: Icon, label, primary, secondary, href, actionLabel }) => {
+            return (
+              <div key={label} className={styles.contactCard}>
                 <span className={styles.contactIcon}>
                   <Icon size={18} strokeWidth={1.8} />
                 </span>
                 <span className={styles.contactLabel}>{label}</span>
-                <strong className={styles.contactPrimary}>{primary}</strong>
+                {href ? (
+                  <a href={href} className={`${styles.contactPrimary} ${styles.contactPrimaryLink}`}>
+                    {primary}
+                  </a>
+                ) : (
+                  <strong className={styles.contactPrimary}>{primary}</strong>
+                )}
                 <span className={styles.contactSecondary}>{secondary}</span>
-              </>
-            );
-
-            if (href) {
-              return (
-                <a key={label} href={href} className={styles.contactCard}>
-                  {content}
-                </a>
-              );
-            }
-
-            return (
-              <div key={label} className={styles.contactCard}>
-                {content}
+                {href ? (
+                  <a href={href} className={styles.contactAction}>
+                    {actionLabel}
+                  </a>
+                ) : null}
               </div>
             );
           })}

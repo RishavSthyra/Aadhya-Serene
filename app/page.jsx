@@ -33,15 +33,15 @@ const appHomeMetadata = {
 };
 
 const readyToMoveMetadata = createPageMetadata({
-  title: 'Aadhya Serene | Ready To Move Homes',
+  title: 'Aadhya Serene | Near Possession Homes',
   description:
-    'Explore the Aadhya Serene ready-to-move landing page with North Bangalore advantages, lifestyle highlights, delivered-project trust, and a booking enquiry flow.',
+    'Explore the Aadhya Serene near-possession landing page with North Bangalore advantages, lifestyle highlights, delivery trust, and an enquiry flow.',
   path: '/',
   keywords: [
-    'ready to move homes in North Bangalore',
-    'Aadhya Serene ready to move',
-    '2 BHK ready to move apartments',
-    '3 BHK ready to move apartments',
+    'near possession homes in North Bangalore',
+    'Aadhya Serene near possession',
+    '2 BHK near possession apartments',
+    '3 BHK near possession apartments',
     'apartments near Manyata Tech Park',
   ],
 });

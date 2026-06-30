@@ -2,9 +2,9 @@ import ReadyToMoveLandingPage from '@/components/ReadyToMoveLandingPage';
 import GoogleAdsTag from '@/components/GoogleAdsTag';
 
 export const metadata = {
-  title: 'Aadhya Serene | Ready To Move Homes',
+  title: 'Aadhya Serene | Near Possession Homes',
   description:
-    'Explore the Aadhya Serene ready-to-move landing page with North Bangalore advantages, lifestyle highlights, delivered-project trust, and a booking enquiry flow.',
+    'Explore the Aadhya Serene near-possession landing page with North Bangalore advantages, lifestyle highlights, delivery trust, and an enquiry flow.',
 };
 
 export default function ReadyToMovePage() {
