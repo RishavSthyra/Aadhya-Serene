@@ -49,7 +49,7 @@ const WHATSAPP_LINK =
   'https://wa.me/919620993333?text=Hi,%20I%27m%20interested%20in%20Aadhya%20Serene';
 const WHATSAPP_BROCHURE =
   'https://wa.me/919620993333?text=Hi%2C%20please%20share%20the%20Aadhya%20Serene%20brochure%20and%20price%20sheet.';
-const RERA_NUMBER = 'PRM/KA/RERA/1251/446/PR/180625/006584';
+const RERA_NUMBER = 'PRM/KA/RERA/1251/446/PR/190614/002604';
 const WHATSAPP_IMAGE = '/landing%20page%20images/whatsapp.png';
 const FORM_IMAGE = '/landing%20page%20images/interiorimage7.avif';
 
