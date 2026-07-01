@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
     ArrowLeft,
     Bath,
@@ -20,20 +20,16 @@ import {
     Sofa,
     Sparkles,
     UtensilsCrossed,
-    Volume2,
-    VolumeX,
 } from 'lucide-react';
 import {
     flatRenderFallbackPoster,
-    flatViewAngleFromKey,
-    flatVideoFallbackId,
-    flatReverseVideoSrc,
-    flatVideoSrc,
     getFlatById,
     normalizeFlatViewKey,
-    supportsFlatRenderVideoPlayback,
-    WALKTHROUGH_VIDEO,
 } from '../../../lib/flats';
+import {
+    apartment360FrameUrl,
+    normalizeApartment360Frame,
+} from '../../../lib/apartment360Frames';
 import {
     buildInteriorPanosHref,
     preloadInteriorStartPano,
@@ -171,38 +167,17 @@ function WalkthroughPreviewCard({
     );
 }
 
-function primeInlineVideoElement(videoElement) {
-    if (!videoElement) return;
-
-    videoElement.muted = true;
-    videoElement.defaultMuted = true;
-    videoElement.playsInline = true;
-    videoElement.autoplay = true;
-    videoElement.controls = false;
-    videoElement.disablePictureInPicture = true;
-    videoElement.setAttribute('muted', '');
-    videoElement.setAttribute('autoplay', '');
-    videoElement.setAttribute('playsinline', '');
-    videoElement.setAttribute('webkit-playsinline', 'true');
-    videoElement.setAttribute('disablepictureinpicture', '');
-    videoElement.setAttribute('controlslist', 'nodownload noplaybackrate noremoteplayback nofullscreen');
-}
-
 export default function FlatDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const id = params?.id;
     const pageShellRef = useRef(null);
-    const introVideoRef = useRef(null);
-    const loopVideoRef = useRef(null);
-    const reverseVideoRef = useRef(null);
     const mainPanelRef = useRef(null);
     const sidebarPanelRef = useRef(null);
     const isNavigatingRef = useRef(false);
-    const reverseFallbackTimeoutRef = useRef(null);
     const hasActiveTouchGestureRef = useRef(false);
 
-    const [muted, setMuted] = useState(true);
     const [activeViewKey, setActiveViewKey] = useState(() => {
         if (typeof window === 'undefined') {
             return 'A1';
@@ -210,10 +185,6 @@ export default function FlatDetailPage() {
 
         return normalizeFlatViewKey(new URLSearchParams(window.location.search).get('view'));
     });
-    const [useVideoFallback, setUseVideoFallback] = useState(() => !supportsFlatRenderVideoPlayback());
-    const [videoPhase, setVideoPhase] = useState('intro');
-    const [isIntroFrameReady, setIsIntroFrameReady] = useState(false);
-    const [isExitTransitionActive, setIsExitTransitionActive] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [liveFlat, setLiveFlat] = useState(() => getFlatById(id));
     const { isMobile, isTablet, isTabletOrBelow, width } = useResponsiveViewport();
@@ -228,6 +199,24 @@ export default function FlatDetailPage() {
         );
         setActiveViewKey(nextViewKey);
     }, [id]);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') {
+            return undefined;
+        }
+
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousHtmlOverflow = document.documentElement.style.overflow;
+
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+        window.scrollTo(0, 0);
+
+        return () => {
+            document.body.style.overflow = previousBodyOverflow;
+            document.documentElement.style.overflow = previousHtmlOverflow;
+        };
+    }, []);
 
     useEffect(() => {
         let cancelled = false;
@@ -314,75 +303,23 @@ export default function FlatDetailPage() {
     }, [id]);
 
     const flat = liveFlat;
-    const renderPosterSrc = flatRenderFallbackPoster(activeViewKey);
-    const fallbackId = flat ? flatVideoFallbackId(id) : null;
-    const hasVideo = !!fallbackId;
-    const hasFlatSpecificVideo = hasVideo && !useVideoFallback;
-    const shouldAllowGestureBack = !hasFlatSpecificVideo || videoPhase === 'loop';
-    const flatVideoAngle = ((flatViewAngleFromKey(activeViewKey) - 1) % 2) + 1;
-    const introVideoSrc = hasFlatSpecificVideo ? flatVideoSrc(fallbackId, flatVideoAngle) : WALKTHROUGH_VIDEO;
-    const loopVideoSrc = hasFlatSpecificVideo ? flatVideoSrc(fallbackId, 2) : null;
-    const reverseVideoSrc = hasFlatSpecificVideo ? flatReverseVideoSrc(fallbackId) : null;
-
-    const clearReverseFallbackTimeout = useCallback(() => {
-        if (!reverseFallbackTimeoutRef.current) return;
-
-        window.clearTimeout(reverseFallbackTimeoutRef.current);
-        reverseFallbackTimeoutRef.current = null;
-    }, []);
+    const exactFrameParam = searchParams?.get('frame');
+    const exactFrameNumber = exactFrameParam == null
+        ? null
+        : normalizeApartment360Frame(Number(exactFrameParam));
+    const renderPosterSrc = Number.isFinite(exactFrameNumber)
+        ? apartment360FrameUrl(exactFrameNumber)
+        : flatRenderFallbackPoster(activeViewKey);
 
     const finalizeBackNavigation = useCallback(() => {
-        clearReverseFallbackTimeout();
         skipNextApartmentsReplay();
-        router.push('/apartments');
-    }, [clearReverseFallbackTimeout, router]);
+        router.push('/apartments', { scroll: false });
+    }, [router]);
 
     useEffect(() => {
-        clearReverseFallbackTimeout();
-        setUseVideoFallback(!supportsFlatRenderVideoPlayback());
-        setVideoPhase('intro');
-        setIsIntroFrameReady(false);
-        setIsExitTransitionActive(false);
         isNavigatingRef.current = false;
         hasActiveTouchGestureRef.current = false;
-    }, [clearReverseFallbackTimeout, id]);
-
-    useEffect(() => {
-        const introVideo = introVideoRef.current;
-        const loopVideo = loopVideoRef.current;
-        const reverseVideo = reverseVideoRef.current;
-
-        primeInlineVideoElement(introVideo);
-        primeInlineVideoElement(loopVideo);
-        primeInlineVideoElement(reverseVideo);
-
-        setVideoPhase('intro');
-        setIsIntroFrameReady(false);
-
-        if (introVideo) {
-            introVideo.pause();
-            introVideo.currentTime = 0;
-            introVideo.load();
-            introVideo.play().catch(() => {});
-        }
-
-        if (loopVideo) {
-            loopVideo.pause();
-            loopVideo.currentTime = 0;
-            loopVideo.load();
-        }
-
-        if (reverseVideo) {
-            reverseVideo.pause();
-            reverseVideo.currentTime = 0;
-        }
-    }, [activeViewKey, hasFlatSpecificVideo, id, useVideoFallback]);
-
-    useEffect(() => {
-        return () => {
-            clearReverseFallbackTimeout();
-        };
-    }, [clearReverseFallbackTimeout]);
+    }, [id]);
 
     useEffect(() => {
         const handleFullscreenChange = () => {
@@ -396,108 +333,14 @@ export default function FlatDetailPage() {
         };
     }, []);
 
-    const revealLoopVideo = useCallback(() => {
-        window.requestAnimationFrame(() => {
-            window.requestAnimationFrame(() => {
-                introVideoRef.current?.pause();
-                setVideoPhase('loop');
-            });
-        });
-    }, []);
-
-    const handleIntroEnded = useCallback(() => {
-        if (!hasFlatSpecificVideo) return;
-
-        const loopVideo = loopVideoRef.current;
-        if (!loopVideo) return;
-
-        let didRevealLoop = false;
-        const revealWhenReady = () => {
-            if (didRevealLoop) return;
-            didRevealLoop = true;
-            loopVideo.removeEventListener('playing', revealWhenReady);
-            revealLoopVideo();
-        };
-
-        loopVideo.currentTime = 0;
-        loopVideo.addEventListener('playing', revealWhenReady);
-
-        loopVideo.play()
-            .then(() => {
-                if (loopVideo.readyState >= 2) {
-                    revealLoopVideo();
-                }
-            })
-            .catch(() => {
-                loopVideo.removeEventListener('playing', revealWhenReady);
-                const introVideo = introVideoRef.current;
-                if (!introVideo) return;
-
-                introVideo.loop = true;
-                introVideo.play().catch(() => {});
-            });
-    }, [hasFlatSpecificVideo, revealLoopVideo]);
-
     const navigateBack = useCallback(() => {
         if (isNavigatingRef.current) return;
 
         isNavigatingRef.current = true;
-        setIsExitTransitionActive(true);
-
-        if (!hasFlatSpecificVideo) {
-            window.setTimeout(() => {
-                finalizeBackNavigation();
-            }, 180);
-            return;
-        }
-
-        const introVideo = introVideoRef.current;
-        const loopVideo = loopVideoRef.current;
-        const reverseVideo = reverseVideoRef.current;
-
-        if (!reverseVideo) {
+        window.setTimeout(() => {
             finalizeBackNavigation();
-            return;
-        }
-
-        let didRevealReverse = false;
-        const revealReverse = () => {
-            if (didRevealReverse) return;
-            didRevealReverse = true;
-            reverseVideo.removeEventListener('playing', revealReverse);
-            window.requestAnimationFrame(() => {
-                window.requestAnimationFrame(() => {
-                    introVideo?.pause();
-                    loopVideo?.pause();
-                    setVideoPhase('reverse');
-                });
-            });
-        };
-
-        const fallbackDelay = Number.isFinite(reverseVideo.duration) && reverseVideo.duration > 0
-            ? Math.ceil(reverseVideo.duration * 1000) + 500
-            : 4000;
-
-        clearReverseFallbackTimeout();
-        reverseFallbackTimeoutRef.current = window.setTimeout(() => {
-            finalizeBackNavigation();
-        }, fallbackDelay);
-
-        introVideo?.pause();
-        loopVideo?.pause();
-        reverseVideo.pause();
-        reverseVideo.currentTime = 0;
-        reverseVideo.addEventListener('playing', revealReverse);
-
-        reverseVideo.play().then(() => {
-            if (reverseVideo.readyState >= 2) {
-                revealReverse();
-            }
-        }).catch(() => {
-            reverseVideo.removeEventListener('playing', revealReverse);
-            finalizeBackNavigation();
-        });
-    }, [clearReverseFallbackTimeout, finalizeBackNavigation, hasFlatSpecificVideo]);
+        }, 120);
+    }, [finalizeBackNavigation]);
 
     useEffect(() => {
         void preloadInteriorStartPano();
@@ -508,38 +351,16 @@ export default function FlatDetailPage() {
     useEffect(() => {
         void registerAssetCacheServiceWorker();
 
-        if (!hasFlatSpecificVideo) {
-            prefetchAssetsInChunks([renderPosterSrc], {
-                chunkSize: 1,
-                concurrency: 2,
-                priority: 'low',
-                immediate: true,
-                gapMs: 120,
-                idleTimeoutMs: 900,
-                delayMs: 0,
-            });
-            return;
-        }
-
-        prefetchAssetsInChunks([renderPosterSrc, loopVideoSrc, reverseVideoSrc], {
-            chunkSize: 2,
-            concurrency: isTabletOrBelow ? 2 : 3,
+        prefetchAssetsInChunks([renderPosterSrc], {
+            chunkSize: 1,
+            concurrency: 2,
             priority: 'low',
             immediate: true,
-            gapMs: isTabletOrBelow ? 220 : 140,
-            idleTimeoutMs: 1200,
-            delayMs: 20,
-            videoPreload: isTabletOrBelow ? 'metadata' : 'auto',
-            videoReadyEvent: isTabletOrBelow ? 'loadedmetadata' : 'loadeddata',
-            timeoutMs: isTabletOrBelow ? 6000 : 9000,
+            gapMs: 120,
+            idleTimeoutMs: 900,
+            delayMs: 0,
         });
-    }, [
-        hasFlatSpecificVideo,
-        isTabletOrBelow,
-        loopVideoSrc,
-        renderPosterSrc,
-        reverseVideoSrc,
-    ]);
+    }, [renderPosterSrc]);
 
     useEffect(() => {
         const isInsideInteractivePanel = (target) => {
@@ -552,7 +373,6 @@ export default function FlatDetailPage() {
 
         const handleWheel = (event) => {
             if (isNavigatingRef.current) return;
-            if (!shouldAllowGestureBack) return;
             if (isInsideInteractivePanel(event.target)) return;
             if (event.deltaY < -30) navigateBack();
         };
@@ -561,7 +381,7 @@ export default function FlatDetailPage() {
         let touchStartedInsidePanel = false;
 
         const handleTouchStart = (event) => {
-            if (isNavigatingRef.current || !shouldAllowGestureBack) {
+            if (isNavigatingRef.current) {
                 hasActiveTouchGestureRef.current = false;
                 return;
             }
@@ -573,7 +393,6 @@ export default function FlatDetailPage() {
 
         const handleTouchEnd = (event) => {
             if (isNavigatingRef.current) return;
-            if (!shouldAllowGestureBack) return;
             if (!hasActiveTouchGestureRef.current) return;
 
             hasActiveTouchGestureRef.current = false;
@@ -600,11 +419,7 @@ export default function FlatDetailPage() {
             window.removeEventListener('touchend', handleTouchEnd);
             window.removeEventListener('touchcancel', handleTouchCancel);
         };
-    }, [navigateBack, shouldAllowGestureBack]);
-
-    const toggleMute = useCallback(() => {
-        setMuted((currentMuted) => !currentMuted);
-    }, []);
+    }, [navigateBack]);
 
     const goFullscreen = useCallback(async () => {
         const pageShell = pageShellRef.current;
@@ -624,7 +439,7 @@ export default function FlatDetailPage() {
 
     if (!flat) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-[#090b10] px-6 text-white">
+            <div className="fixed inset-0 flex items-center justify-center bg-[#090b10] px-6 text-white">
                 <div className="border border-white/10 bg-[linear-gradient(135deg,rgba(6,10,16,0.78),rgba(8,13,20,0.44))] px-8 py-10 text-center backdrop-blur-[24px]">
                     <p className="text-sm text-white/65">Apartment not found.</p>
                     <Link
@@ -643,9 +458,7 @@ export default function FlatDetailPage() {
     const facingLabel = formatFacing(flat.facing);
     const isAvailable = flat.status === 'available';
     const bhkValue = Number.parseInt(flat.type, 10);
-    const shouldShowDetailPanels = isTabletOrBelow
-        ? true
-        : !hasFlatSpecificVideo || videoPhase === 'loop';
+    const shouldShowDetailPanels = true;
     const interiorPanosHref = buildInteriorPanosHref({
         apartmentId: flat.id,
         flatNumber: flat.flat,
@@ -669,9 +482,8 @@ export default function FlatDetailPage() {
         )}px`
         : 'min(42dvh, 380px)';
     const compactSheetOverlap = isTablet ? 28 : 24;
-    const shouldShowPosterScrim = hasFlatSpecificVideo && videoPhase === 'intro' && !isIntroFrameReady;
-    const shouldFadeDetailPanels = !shouldShowDetailPanels || (!isTabletOrBelow && isExitTransitionActive);
-    const shouldDisableDetailPanelInteraction = isExitTransitionActive || !shouldShowDetailPanels;
+    const shouldFadeDetailPanels = false;
+    const shouldDisableDetailPanelInteraction = false;
     const detailShellInsetClass = isTabletOrBelow
         ? 'px-0 pb-24 pt-0'
         : 'px-4 pb-24 pt-5 2xl:px-8';
@@ -722,7 +534,7 @@ export default function FlatDetailPage() {
     return (
         <div
             ref={pageShellRef}
-            className="relative min-h-screen overflow-hidden bg-[#07090e] text-white"
+            className="fixed inset-0 overflow-hidden bg-[#07090e] text-white"
         >
             <div
                 className={isTabletOrBelow ? 'absolute inset-x-0 top-0 z-0 overflow-hidden bg-black' : 'absolute inset-0 bg-black'}
@@ -743,89 +555,6 @@ export default function FlatDetailPage() {
                         }
                 }
             >
-                {shouldShowPosterScrim ? (
-                    <div
-                        className="absolute inset-0 z-[2] transition-opacity duration-300"
-                        style={{
-                            backgroundImage: `linear-gradient(180deg,rgba(7,10,15,0.06),rgba(7,10,15,0.18)), url(${renderPosterSrc})`,
-                            backgroundPosition: 'center',
-                            backgroundRepeat: 'no-repeat',
-                            backgroundSize: 'cover',
-                            opacity: 1,
-                        }}
-                    />
-                ) : null}
-                <video
-                    ref={introVideoRef}
-                    key={introVideoSrc}
-                    src={introVideoSrc}
-                    className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-                    style={{ opacity: videoPhase === 'intro' && isIntroFrameReady ? 1 : 0, zIndex: videoPhase === 'intro' ? 3 : 1 }}
-                    muted={muted}
-                    playsInline
-                    preload="auto"
-                    fetchPriority="high"
-                    autoPlay
-                    poster={renderPosterSrc}
-                    controls={false}
-                    disablePictureInPicture
-                    controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
-                    loop={!hasFlatSpecificVideo}
-                    onLoadedData={() => setIsIntroFrameReady(true)}
-                    onCanPlay={() => setIsIntroFrameReady(true)}
-                    onPlaying={() => setIsIntroFrameReady(true)}
-                    onEnded={handleIntroEnded}
-                    onError={() => {
-                        setIsIntroFrameReady(true);
-                        if (hasFlatSpecificVideo) {
-                            setVideoPhase('intro');
-                            setUseVideoFallback(true);
-                        }
-                    }}
-                />
-                {loopVideoSrc ? (
-                    <video
-                        ref={loopVideoRef}
-                        key={loopVideoSrc}
-                        src={loopVideoSrc}
-                        className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-                        style={{ opacity: videoPhase === 'loop' ? 1 : 0, zIndex: videoPhase === 'loop' ? 4 : 1 }}
-                        muted={muted}
-                        playsInline
-                        preload="auto"
-                        fetchPriority="low"
-                        loop
-                        controls={false}
-                        disablePictureInPicture
-                        controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
-                        onError={() => {
-                            setVideoPhase('intro');
-                            setUseVideoFallback(true);
-                        }}
-                    />
-                ) : null}
-                {reverseVideoSrc ? (
-                    <video
-                        ref={reverseVideoRef}
-                        key={reverseVideoSrc}
-                        src={reverseVideoSrc}
-                        className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300"
-                        style={{ opacity: videoPhase === 'reverse' ? 1 : 0, zIndex: videoPhase === 'reverse' ? 5 : 1 }}
-                        muted={muted}
-                        playsInline
-                        preload="metadata"
-                        fetchPriority="low"
-                        controls={false}
-                        disablePictureInPicture
-                        controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
-                        onEnded={finalizeBackNavigation}
-                        onError={() => {
-                            if (isNavigatingRef.current || videoPhase === 'reverse') {
-                                finalizeBackNavigation();
-                            }
-                        }}
-                    />
-                ) : null}
             </div>
 
             {isTabletOrBelow ? (
@@ -838,7 +567,7 @@ export default function FlatDetailPage() {
             ) : null}
 
             <div
-                className={`relative z-10 min-h-screen transition-opacity duration-500 ${detailShellInsetClass} ${
+                className={`relative z-10 h-full transition-opacity duration-500 ${detailShellInsetClass} ${
                     shouldDisableDetailPanelInteraction
                         ? 'pointer-events-none'
                         : 'opacity-100'
@@ -855,18 +584,10 @@ export default function FlatDetailPage() {
                         }
                 }
             >
-                <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-none flex-col">
+                <div className="mx-auto flex h-full w-full max-w-none flex-col">
                     {!isMobile ? (
                         <div className="fixed inset-x-0 bottom-4 z-20 flex justify-center px-4 lg:bottom-5">
                             <div className={`flex flex-wrap items-center justify-center rounded-[22px] bg-white/92 border border-[#211827]/10 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-[28px] ${dockShellClass}`}>
-                                <button
-                                    type="button"
-                                    onClick={toggleMute}
-                                    className={`inline-flex items-center gap-2 rounded-full border border-[#211827]/10 bg-white px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#151518] shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_2px_4px_rgba(0,0,0,0.06)] backdrop-blur-[20px] transition hover:border-[#211827]/16 hover:bg-[#f8f6fb] ${dockButtonClass}`}
-                                >
-                                    {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
-                                    {muted ? 'Muted' : 'Audio On'}
-                                </button>
                                 <button
                                     type="button"
                                     onClick={(event) => {
@@ -935,11 +656,6 @@ export default function FlatDetailPage() {
                                             <p className={`mt-3 text-[#1c1c20]/58 ${bodyCopyClass}`}>
                                                 A calmer expression of premium living shaped with balanced proportions, refined daylight, and everyday ease.
                                             </p>
-                                            {useVideoFallback ? (
-                                                <p className="mt-3 border border-[#211827]/10 bg-[#f4f0f7] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#1c1c20]/56">
-                                                    Sample exterior video shown while the flat-specific preview is unavailable.
-                                                </p>
-                                            ) : null}
                                         </div>
 
                                         <div className={`mt-4 p-3.5 ${quietSurfaceClass}`}>

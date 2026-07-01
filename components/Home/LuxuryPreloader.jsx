@@ -52,8 +52,8 @@ function getPreloaderScrubFrames() {
 function getGradualRot360WarmFrames(isConstrainedDevice) {
   const frames = [];
   const seen = new Set();
-  const snapRadius = isConstrainedDevice ? 36 : 72;
-  const coarseStride = isConstrainedDevice ? 12 : 8;
+  const snapRadius = isConstrainedDevice ? 48 : 96;
+  const coarseStride = isConstrainedDevice ? 10 : 6;
 
   getPreloaderScrubFrames().forEach((frameNumber) => {
     appendFrame(frames, seen, frameNumber);
@@ -166,14 +166,14 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
       });
 
       prefetchAssetsInChunks(getGradualRot360WarmAssets(useSafeMedia), {
-        chunkSize: useSafeMedia ? 4 : 8,
-        concurrency: useSafeMedia ? 1 : 2,
+        chunkSize: useSafeMedia ? 8 : 16,
+        concurrency: useSafeMedia ? 2 : 4,
         priority: 'low',
         immediate: true,
-        gapMs: useSafeMedia ? 180 : 90,
-        idleTimeoutMs: useSafeMedia ? 2400 : 1500,
-        delayMs: useSafeMedia ? 160 : 40,
-        timeoutMs: useSafeMedia ? 4200 : 6200,
+        gapMs: useSafeMedia ? 120 : 60,
+        idleTimeoutMs: useSafeMedia ? 1800 : 1000,
+        delayMs: useSafeMedia ? 120 : 20,
+        timeoutMs: useSafeMedia ? 5000 : 7000,
         pauseDuringBackgroundTransition: true,
         pauseOnAmenitiesRoute: true,
         pauseRetryMs: useSafeMedia ? 900 : 560,

@@ -11,13 +11,9 @@ import {
 import { useApartmentsData } from "../../hooks/useApartmentsData";
 import Filters from "./Filters";
 import ApartmentList from "./ApartmentList";
+import { apartment360FrameUrl } from "../../lib/apartment360Frames";
 import { preloadInteriorStartPano } from "../../lib/interior-panos";
 import { warmApartment360Frames } from "../../lib/apartment360Warmup";
-import {
-  cancelIdleFlatVideoWarmup,
-  preloadFlatEntryVideo,
-  scheduleIdleFlatVideoWarmup,
-} from "../../lib/flats";
 import useResponsiveViewport from "../../hooks/useResponsiveViewport";
 
 const DESKTOP_PANEL_WIDTH = 420;
@@ -69,7 +65,7 @@ export default function Apartments() {
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [viewerVersion, setViewerVersion] = useState(0);
   const [shouldMountViewer, setShouldMountViewer] = useState(false);
-  const [isViewerReady, setIsViewerReady] = useState(false);
+  const [, setIsViewerReady] = useState(false);
   const [pendingFlatId, setPendingFlatId] = useState(null);
   const prefetchedFlatRoutesRef = useRef(new Set());
   const hasHandledInitialPathRef = useRef(false);
@@ -143,28 +139,6 @@ export default function Apartments() {
     setIsPanelOpen((current) => (isCompactLayout ? current : true));
   }, [isCompactLayout]);
 
-  const prioritizedWarmupFlatIds = useMemo(
-    () => data.slice(0, 18).map((flat) => flat.id),
-    [data],
-  );
-
-  useEffect(() => {
-    if (pathname !== "/apartments" || !allData?.length) {
-      return undefined;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      scheduleIdleFlatVideoWarmup({
-        prioritizeFlatIds: prioritizedWarmupFlatIds,
-      });
-    }, isCompactLayout ? 300 : 80);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      cancelIdleFlatVideoWarmup();
-    };
-  }, [allData?.length, isCompactLayout, pathname, prioritizedWarmupFlatIds]);
-
   useEffect(() => {
     if (pathname !== "/apartments") {
       return undefined;
@@ -209,7 +183,7 @@ export default function Apartments() {
     };
   }, [shouldMountViewer, viewerVersion]);
 
-  const shouldRevealViewer = shouldMountViewer && isViewerReady;
+  const initialViewerFrameSrc = apartment360FrameUrl(1);
 
   const filteredFlatIds = useMemo(() => {
     if (!allData || data.length === allData.length) return null;
@@ -223,8 +197,16 @@ export default function Apartments() {
       }
 
       const viewKey = typeof options === "string" ? options : options?.viewKey;
-      const apartmentHref = viewKey
-        ? `/apartments/${flatId}?view=${encodeURIComponent(viewKey)}`
+      const frame = typeof options === "object" ? options?.frame : null;
+      const searchParams = new URLSearchParams();
+      if (viewKey) {
+        searchParams.set("view", viewKey);
+      }
+      if (Number.isFinite(frame)) {
+        searchParams.set("frame", String(Math.round(frame)));
+      }
+      const apartmentHref = searchParams.toString()
+        ? `/apartments/${flatId}?${searchParams.toString()}`
         : `/apartments/${flatId}`;
 
       setPendingFlatId(flatId);
@@ -236,30 +218,16 @@ export default function Apartments() {
         router.prefetch(apartmentHref);
       }
 
-      try {
-        await Promise.race([
-          preloadFlatEntryVideo(flatId, {
-            aggressive: true,
-            timeoutMs: isTabletOrBelow ? 900 : 1400,
-          }),
-          new Promise((resolve) => {
-            window.setTimeout(resolve, isTabletOrBelow ? 450 : 700);
-          }),
-        ]);
-      } finally {
-        window.requestAnimationFrame(() => {
-          router.push(apartmentHref);
-        });
-      }
+      window.requestAnimationFrame(() => {
+        router.push(apartmentHref, { scroll: false });
+      });
     },
-    [isTabletOrBelow, pendingFlatId, router],
+    [pendingFlatId, router],
   );
 
   const handleFlatHoverStart = useCallback(
     (flatId) => {
       if (!flatId) return;
-
-      preloadFlatEntryVideo(flatId);
 
       if (!prefetchedFlatRoutesRef.current.has(flatId)) {
         prefetchedFlatRoutesRef.current.add(flatId);
@@ -511,10 +479,10 @@ export default function Apartments() {
           transform: "none",
           overflow: "hidden",
           backgroundColor: "transparent",
-          opacity: shouldRevealViewer ? 1 : 0,
+          opacity: 1,
           transition: isCompactLayout ? "opacity 0.18s linear" : "opacity 0.38s ease",
-          pointerEvents: shouldRevealViewer && !isFlatRoutePreparing ? "auto" : "none",
-          backgroundImage: "linear-gradient(180deg, rgba(11,16,24,0.08), rgba(11,16,24,0.3))",
+          pointerEvents: shouldMountViewer && !isFlatRoutePreparing ? "auto" : "none",
+          backgroundImage: `linear-gradient(180deg, rgba(11,16,24,0.08), rgba(11,16,24,0.3)), url(${initialViewerFrameSrc})`,
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",

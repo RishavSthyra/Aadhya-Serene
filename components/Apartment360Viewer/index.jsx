@@ -1174,6 +1174,7 @@ export default function Apartment360Viewer({
 
         onFlatClick?.(flatId, {
             viewKey: flatViewKeyFromFrame(currentFrameRef.current),
+            frame: normalizeFrame(currentFrameRef.current),
         });
     }, [onFlatClick]);
 
