@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { EVENTS, STATUS } from 'react-joyride';
 import HTMLFlipBook from 'react-pageflip';
 import ProjectOverviewWarmup from './Warmup';
 import DeckPage from './DeckPage';
@@ -108,6 +109,7 @@ export default function ProjectOverviewBook() {
   const [bookState, setBookState] = useState('read');
   const [shouldMountTour, setShouldMountTour] = useState(false);
   const [isTourRunning, setIsTourRunning] = useState(false);
+  const [tourInstanceKey, setTourInstanceKey] = useState(0);
   const viewport = useViewport();
   const bookSize = useMemo(
     () => getBookSize(viewport.width, viewport.height),
@@ -165,14 +167,19 @@ export default function ProjectOverviewBook() {
     goToPage(currentPage + 1, 'bottom');
   };
 
+  const stopTour = useCallback(() => {
+    setIsTourRunning(false);
+    setShouldMountTour(false);
+    setTourInstanceKey((currentKey) => currentKey + 1);
+  }, []);
+
   useEffect(() => {
     activeSpreadInteractionsRef.current.clear();
     setCurrentPage(0);
     setBookState('read');
-    setShouldMountTour(false);
-    setIsTourRunning(false);
+    stopTour();
     hasShownSpreadTourRef.current = false;
-  }, [flipbookKey]);
+  }, [flipbookKey, stopTour]);
 
   const syncSpreadInteractionState = useCallback((hasActiveInteraction) => {
     const pageFlip = bookRef.current?.pageFlip();
@@ -220,11 +227,16 @@ export default function ProjectOverviewBook() {
   ]), [bookSize.isMobile]);
 
   const handleTourEvent = useCallback((data) => {
-    if (data.status === 'finished' || data.status === 'skipped') {
-      setIsTourRunning(false);
-      setShouldMountTour(false);
+    if (
+      data.status === STATUS.FINISHED
+      || data.status === STATUS.SKIPPED
+      || data.type === EVENTS.TOUR_END
+      || data.type === EVENTS.TARGET_NOT_FOUND
+      || data.type === EVENTS.ERROR
+    ) {
+      stopTour();
     }
-  }, []);
+  }, [stopTour]);
 
   const getPageContent = (page) => {
     if (page.key !== 'spread-left' && page.key !== 'spread-right') {
@@ -245,8 +257,7 @@ export default function ProjectOverviewBook() {
 
   useEffect(() => {
     if (!isInteractivePlanSpread || bookState !== 'read') {
-      setIsTourRunning(false);
-      setShouldMountTour(false);
+      stopTour();
       return undefined;
     }
 
@@ -279,7 +290,7 @@ export default function ProjectOverviewBook() {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [bookState, isInteractivePlanSpread]);
+  }, [bookState, isInteractivePlanSpread, stopTour]);
 
   return (
     <main
@@ -288,6 +299,7 @@ export default function ProjectOverviewBook() {
     >
       {shouldMountTour ? (
         <Joyride
+          key={tourInstanceKey}
           continuous
           run={isTourRunning}
           steps={tourSteps}
@@ -301,7 +313,7 @@ export default function ProjectOverviewBook() {
             closeButtonAction: 'skip',
             dismissKeyAction: 'skip',
             overlayClickAction: 'skip',
-            overlayColor: 'rgba(10, 8, 6, 0.38)',
+            overlayColor: 'transparent',
             primaryColor: '#e2c089',
             scrollDuration: 0,
             showProgress: false,
@@ -318,7 +330,9 @@ export default function ProjectOverviewBook() {
             floater: {
               filter: 'none',
             },
-            overlay: {},
+            overlay: {
+              backgroundColor: 'transparent',
+            },
             spotlight: {
               stroke: '#f0d1a1',
               strokeWidth: 2,
