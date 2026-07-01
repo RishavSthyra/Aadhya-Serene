@@ -4,44 +4,15 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { EVENTS, STATUS } from 'react-joyride';
 import HTMLFlipBook from 'react-pageflip';
 import ProjectOverviewWarmup from './Warmup';
 import DeckPage from './DeckPage';
-import ProjectOverviewTourTooltip from './ProjectOverviewTourTooltip';
 import SpreadZoomPage from './SpreadZoomPage';
 import { flipbookPages } from './book-data';
 
 const FLIP_AUDIO_URL = '/project-overview-book/audios/page-flip-01a.mp3';
 const PAGE_ASPECT_RATIO = 1.08;
-const INTERACTIVE_SPREAD_IMAGE = '/FlipbookPages/Page5_And_6.avif';
-const TOUR_TARGET_SELECTORS = {
-  primaryHotspot: '[data-project-overview-tour-hotspot="primary"]',
-};
-const Joyride = dynamic(() => import('react-joyride').then((module) => module.Joyride), { ssr: false });
 const ButterflyOverlay = dynamic(() => import('./ButterflyOverlay'), { ssr: false });
-
-function waitForCondition(check, timeoutMs = 2200) {
-  return new Promise((resolve) => {
-    const deadline = Date.now() + timeoutMs;
-
-    const tick = () => {
-      if (check()) {
-        resolve(true);
-        return;
-      }
-
-      if (Date.now() >= deadline) {
-        resolve(false);
-        return;
-      }
-
-      window.requestAnimationFrame(tick);
-    };
-
-    tick();
-  });
-}
 
 function useViewport() {
   const [viewport, setViewport] = useState({
@@ -104,12 +75,8 @@ function getBookSize(width, height) {
 export default function ProjectOverviewBook() {
   const bookRef = useRef(null);
   const activeSpreadInteractionsRef = useRef(new Set());
-  const hasShownSpreadTourRef = useRef(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [bookState, setBookState] = useState('read');
-  const [shouldMountTour, setShouldMountTour] = useState(false);
-  const [isTourRunning, setIsTourRunning] = useState(false);
-  const [tourInstanceKey, setTourInstanceKey] = useState(0);
   const viewport = useViewport();
   const bookSize = useMemo(
     () => getBookSize(viewport.width, viewport.height),
@@ -140,10 +107,8 @@ export default function ProjectOverviewBook() {
   const flipbookKey = bookSize.isMobile
     ? `mobile-${bookSize.width}`
     : `desktop-${bookSize.width}-${bookSize.height}`;
-  const currentBookPage = flipbookPages[currentPage] ?? null;
   const isFrontCoverView = !bookSize.isMobile && currentPage === 0;
   const isBackCoverView = !bookSize.isMobile && currentPage === lastPageIndex;
-  const isInteractivePlanSpread = currentBookPage?.src === INTERACTIVE_SPREAD_IMAGE;
   const showLeftSide = bookSize.isMobile ? true : !isFrontCoverView;
   const showRightSide = bookSize.isMobile ? true : !isBackCoverView;
   const hideTransitionStacks = !bookSize.isMobile && bookState !== 'read';
@@ -167,19 +132,11 @@ export default function ProjectOverviewBook() {
     goToPage(currentPage + 1, 'bottom');
   };
 
-  const stopTour = useCallback(() => {
-    setIsTourRunning(false);
-    setShouldMountTour(false);
-    setTourInstanceKey((currentKey) => currentKey + 1);
-  }, []);
-
   useEffect(() => {
     activeSpreadInteractionsRef.current.clear();
     setCurrentPage(0);
     setBookState('read');
-    stopTour();
-    hasShownSpreadTourRef.current = false;
-  }, [flipbookKey, stopTour]);
+  }, [flipbookKey]);
 
   const syncSpreadInteractionState = useCallback((hasActiveInteraction) => {
     const pageFlip = bookRef.current?.pageFlip();
@@ -213,31 +170,6 @@ export default function ProjectOverviewBook() {
     syncSpreadInteractionState(nextActiveInteractions.size > 0);
   }, [syncSpreadInteractionState]);
 
-  const tourSteps = useMemo(() => ([
-    {
-      id: 'tour-hotspot',
-      target: TOUR_TARGET_SELECTORS.primaryHotspot,
-      title: 'CLICK A FLAT PLAN',
-      content: null,
-      placement: bookSize.isMobile ? 'bottom' : 'right',
-      skipBeacon: true,
-      targetWaitTimeout: 1600,
-      blockTargetInteraction: true,
-    },
-  ]), [bookSize.isMobile]);
-
-  const handleTourEvent = useCallback((data) => {
-    if (
-      data.status === STATUS.FINISHED
-      || data.status === STATUS.SKIPPED
-      || data.type === EVENTS.TOUR_END
-      || data.type === EVENTS.TARGET_NOT_FOUND
-      || data.type === EVENTS.ERROR
-    ) {
-      stopTour();
-    }
-  }, [stopTour]);
-
   const getPageContent = (page) => {
     if (page.key !== 'spread-left' && page.key !== 'spread-right') {
       return null;
@@ -250,99 +182,15 @@ export default function ProjectOverviewBook() {
         crop={page.crop}
         interactionId={page.key}
         onInteractionChange={handleSpreadInteractionChange}
-        isTourHotspotActive={isTourRunning}
       />
     );
   };
-
-  useEffect(() => {
-    if (!isInteractivePlanSpread || bookState !== 'read') {
-      stopTour();
-      return undefined;
-    }
-
-    if (hasShownSpreadTourRef.current) {
-      return undefined;
-    }
-
-    let cancelled = false;
-
-    const startTour = async () => {
-      const foundTarget = await waitForCondition(
-        () => Boolean(document.querySelector(TOUR_TARGET_SELECTORS.primaryHotspot)),
-        1400,
-      );
-
-      if (cancelled || !foundTarget) {
-        return;
-      }
-
-      hasShownSpreadTourRef.current = true;
-      setShouldMountTour(true);
-      setIsTourRunning(true);
-    };
-
-    const timeoutId = window.setTimeout(() => {
-      void startTour();
-    }, 140);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timeoutId);
-    };
-  }, [bookState, isInteractivePlanSpread, stopTour]);
 
   return (
     <main
       id="project-overview-container"
       className="fixed inset-0 z-10 overflow-hidden bg-[#110d08] text-white"
     >
-      {shouldMountTour ? (
-        <Joyride
-          key={tourInstanceKey}
-          continuous
-          run={isTourRunning}
-          steps={tourSteps}
-          scrollToFirstStep={false}
-          onEvent={handleTourEvent}
-          portalElement="#project-overview-container"
-          tooltipComponent={ProjectOverviewTourTooltip}
-          options={{
-            blockTargetInteraction: true,
-            buttons: ['close', 'primary'],
-            closeButtonAction: 'skip',
-            dismissKeyAction: 'skip',
-            overlayClickAction: 'skip',
-            overlayColor: 'transparent',
-            primaryColor: '#e2c089',
-            scrollDuration: 0,
-            showProgress: false,
-            skipBeacon: true,
-            skipScroll: true,
-            spotlightPadding: 8,
-            spotlightRadius: 0,
-            targetWaitTimeout: 1600,
-            textColor: '#f6f0e7',
-            width: 240,
-            zIndex: 1000,
-          }}
-          styles={{
-            floater: {
-              filter: 'none',
-            },
-            overlay: {
-              backgroundColor: 'transparent',
-            },
-            spotlight: {
-              stroke: '#f0d1a1',
-              strokeWidth: 2,
-            },
-            tooltip: {
-              borderRadius: 0,
-            },
-          }}
-        />
-      ) : null}
       <ProjectOverviewWarmup />
       <div
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
