@@ -99,6 +99,7 @@ export default function SpreadZoomPage({
   crop = 'left',
   interactionId = null,
   onInteractionChange = null,
+  isTourHotspotActive = false,
 }) {
   const [selectedHotspot, setSelectedHotspot] = useState(null);
   const [isClient, setIsClient] = useState(false);
@@ -158,36 +159,52 @@ export default function SpreadZoomPage({
         />
 
         <div className="absolute inset-0 z-20">
-          {visibleHotspots.map((hotspot) => (
-            <button
-              key={hotspot.id}
-              type="button"
-              aria-label={`Open ${hotspot.displayUnitCode} floor plan`}
-              title={hotspot.displayUnitCode}
-              onMouseDown={(event) => event.stopPropagation()}
-              onTouchStart={(event) => event.stopPropagation()}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                setSelectedHotspot(hotspot);
-              }}
-              className="group absolute cursor-pointer rounded-[9px] bg-transparent outline-none"
-              style={{
-                left: `${hotspot.localBox.x * 100}%`,
-                top: `${hotspot.localBox.y * 100}%`,
-                width: `${hotspot.localBox.width * 100}%`,
-                height: `${hotspot.localBox.height * 100}%`,
-              }}
-            >
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[rgba(111,238,228,0.22)] bg-[rgba(8,24,28,0.86)] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[#c8fffa] opacity-0 shadow-[0_8px_18px_rgba(0,0,0,0.18)] transition duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
+          {visibleHotspots.map((hotspot, index) => {
+            const isPrimaryTourHotspot = crop === 'left' && index === 0;
+            const shouldForceTourHint = isPrimaryTourHotspot && isTourHotspotActive;
+
+            return (
+              <button
+                key={hotspot.id}
+                type="button"
+                aria-label={`Open ${hotspot.displayUnitCode} floor plan`}
+                title={hotspot.displayUnitCode}
+                data-project-overview-tour-hotspot={isPrimaryTourHotspot ? 'primary' : undefined}
+                onMouseDown={(event) => event.stopPropagation()}
+                onTouchStart={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setSelectedHotspot(hotspot);
+                }}
+                className="group absolute cursor-pointer bg-transparent outline-none"
+                style={{
+                  left: `${hotspot.localBox.x * 100}%`,
+                  top: `${hotspot.localBox.y * 100}%`,
+                  width: `${hotspot.localBox.width * 100}%`,
+                  height: `${hotspot.localBox.height * 100}%`,
+                }}
               >
-                {hotspot.displayUnitCode}
-              </span>
-            </button>
-          ))}
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute inset-[6%] border transition duration-200 ${
+                    shouldForceTourHint
+                      ? 'border-[#f0d1a1] bg-[#f0d1a1]/10 shadow-[0_0_0_1px_rgba(240,209,161,0.2)]'
+                      : 'border-transparent bg-transparent group-hover:border-[#7ff2e2]/38 group-hover:bg-[#7ff2e2]/10 group-focus-visible:border-[#7ff2e2]/44 group-focus-visible:bg-[#7ff2e2]/12'
+                  }`}
+                />
+                {!shouldForceTourHint ? (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap border border-[rgba(111,238,228,0.22)] bg-[rgba(8,24,28,0.86)] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[#c8fffa] opacity-0 shadow-[0_8px_18px_rgba(0,0,0,0.18)] transition duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
+                  >
+                    {hotspot.displayUnitCode}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       </div>
 

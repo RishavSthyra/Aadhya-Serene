@@ -57,6 +57,9 @@ const LANDING_IMAGES = {
   heroMain: '/landing page images/HERO_1.avif',
   heroSecondary: '/landing page images/HERO_2.avif',
   heroInterior: '/landing page images/HERO_3.avif',
+  homePageRoofImage : 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya_Serene_Home_Page_6_First_Frame.avif',
+  heroKitchen : '/landing page images/HERO_KITCHEN.avif',
+  heroentrance : '/landing page images/HERO_NEW.avif',
   facade: '/landing%20page%20images/image4.avif',
   lifestyle: '/landing%20page%20images/image5.avif',
   delivered: '/landing%20page%20images/image3.avif',
@@ -66,7 +69,7 @@ const LANDING_IMAGES = {
 
 const HERO_SLIDES = [
   {
-    src: LANDING_IMAGES.heroMain,
+    src: LANDING_IMAGES.heroentrance,
     alt: 'Aadhya Serene terrace and pool at golden hour',
     eyebrow: 'Near-Possession 2 & 3 BHK',
     location: 'Thanisandra, North Bangalore',
@@ -80,7 +83,7 @@ const HERO_SLIDES = [
     caption: 'Vastu-compliant · Premium finishes',
   },
   {
-    src: LANDING_IMAGES.heroSecondary,
+    src: LANDING_IMAGES.heroKitchen,
     alt: 'Aadhya Serene building facade',
     eyebrow: 'Boutique Community',
     location: '1.25 Acres · 136 Homes',
