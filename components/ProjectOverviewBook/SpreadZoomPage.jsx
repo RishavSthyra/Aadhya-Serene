@@ -82,7 +82,7 @@ function FloorplanPreviewModal({ hotspot, onClose }) {
           >
             <img
               src={hotspot.previewSrc}
-              alt={`${hotspot.unitCode} individual floor plan`}
+              alt={`${hotspot.displayUnitCode} individual floor plan`}
               className="max-h-[58vh] w-auto max-w-[min(84vw,760px)] object-contain drop-shadow-[0_28px_70px_rgba(0,0,0,0.42)] sm:max-h-[54vh] sm:max-w-[min(56vw,720px)]"
             />
           </motion.div>
@@ -162,8 +162,8 @@ export default function SpreadZoomPage({
             <button
               key={hotspot.id}
               type="button"
-              aria-label={`Open ${hotspot.unitCode} floor plan`}
-              title={hotspot.unitCode}
+              aria-label={`Open ${hotspot.displayUnitCode} floor plan`}
+              title={hotspot.displayUnitCode}
               onMouseDown={(event) => event.stopPropagation()}
               onTouchStart={(event) => event.stopPropagation()}
               onPointerDown={(event) => event.stopPropagation()}
@@ -184,7 +184,7 @@ export default function SpreadZoomPage({
                 aria-hidden="true"
                 className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[rgba(111,238,228,0.22)] bg-[rgba(8,24,28,0.86)] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[#c8fffa] opacity-0 shadow-[0_8px_18px_rgba(0,0,0,0.18)] transition duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
               >
-                {hotspot.unitCode}
+                {hotspot.displayUnitCode}
               </span>
             </button>
           ))}

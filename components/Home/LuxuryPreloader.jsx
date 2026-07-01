@@ -12,6 +12,7 @@ import {
   APARTMENT_360_TOTAL_FRAMES,
   apartment360FrameUrl,
 } from '@/lib/apartment360Frames';
+import { getProjectOverviewShellAssets } from '@/lib/project-overview-assets';
 import styles from '../../app/home.module.css';
 
 const MIN_PRELOADER_DURATION_MS = 1200;
@@ -90,11 +91,13 @@ function shouldUseSafeMedia() {
 
 function getCriticalAssets() {
   const scrubFrameAssets = getPreloaderScrubFrames().map(frameUrl);
+  const projectOverviewShellAssets = getProjectOverviewShellAssets();
 
   return [
     '/favicon.ico',
     HOME_POSTER,
     HOME_VIDEO,
+    ...projectOverviewShellAssets,
     ...scrubFrameAssets,
   ];
 }
