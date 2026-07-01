@@ -8,19 +8,9 @@ import {
     prefetchAssetsInChunks,
     registerAssetCacheServiceWorker,
 } from '@/lib/client-asset-cache';
+import { AMENITY_POSTERS } from '@/lib/amenity-video-sources';
 import useResponsiveViewport from '@/hooks/useResponsiveViewport';
 import styles from '../../app/amenities/amenities.module.css';
-
-const AMENITY_POSTERS = {
-    rooftopLeisureDeck: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/amenities-first-frames/Rooftopnew%20-%20First%20Frame.avif',
-    childrensPlayArea: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/amenities-first-frames/Kids%20%20Play%20Area%202%20-%20First%20Frame.avif',
-    swimmingPool: '/assets/amenities/swimmingPool.jpg',
-    gymnasium: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/amenities-first-frames/Gym%20-%20First%20Frame.avif',
-    indoorGames: '/assets/amenities/indoorGames.jpg',
-    clubhouse: '/assets/amenities/clubhouse.jpg',
-    basketball: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/amenities-first-frames/Basketball%20-%20First%20Frame.avif',
-    badminton: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/amenities-first-frames/Badminton%20-%20First%20Frame.avif',
-};
 
 const AMENITIES_LIST = [
     {

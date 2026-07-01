@@ -13,7 +13,11 @@ import {
     prefetchAssetsInChunks,
     registerAssetCacheServiceWorker,
 } from '@/lib/client-asset-cache';
-import { getAmenityVideoVariant } from '@/lib/amenity-video-sources';
+import {
+    DEFAULT_AMENITY,
+    getAmenityPosterSource,
+    getAmenityVideoVariant,
+} from '@/lib/amenity-video-sources';
 import usePerformanceProfile from '@/hooks/usePerformanceProfile';
 import styles from './background-video.module.css';
 
@@ -36,7 +40,7 @@ const BACKGROUND_POSTERS = {
     about: HOME_POSTER,
     apartments: 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/first_frame_3_1%20(1).jpg',
     contact: HOME_POSTER,
-    amenities: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/umbrella-chair2.jpg',
+    amenities: getAmenityPosterSource(DEFAULT_AMENITY),
     location: HOME_POSTER,
     'project-overview': HOME_POSTER,
 };
@@ -177,6 +181,22 @@ function isHlsSource(source) {
     return typeof source === 'string' && source.toLowerCase().includes('.m3u8');
 }
 
+function resolvePosterForLayout(layout) {
+    if (BACKGROUND_POSTERS[layout]) {
+        return BACKGROUND_POSTERS[layout];
+    }
+
+    if (layout === 'amenities') {
+        return getAmenityPosterSource(DEFAULT_AMENITY);
+    }
+
+    if (typeof layout === 'string' && layout.startsWith('amenities-')) {
+        return getAmenityPosterSource(layout.slice('amenities-'.length));
+    }
+
+    return BACKGROUND_POSTERS.home;
+}
+
 function canPlayHlsNatively(video) {
     if (!video) return false;
 
@@ -262,7 +282,7 @@ export default function BackgroundVideo({ layout = 'home', playing = true, repla
     const shouldEagerlyPrepareLoop = veryHighCapabilityDesktop && !transitionIsHls;
     const shouldDeferLoopPreloadForHls = !shouldConserveData && transitionIsHls && layout !== 'home';
     const shouldHideBackground = layout === 'apartments' || layout === 'location' || layout === 'project-overview';
-    const posterSrc = BACKGROUND_POSTERS[layout] ?? BACKGROUND_POSTERS.home;
+    const posterSrc = resolvePosterForLayout(layout);
     const transitionReadyEvent = shouldConserveData ? 'loadedmetadata' : 'loadeddata';
     const transitionReadyStateThreshold = shouldConserveData ? 1 : 2;
     const loopReadyEvent = shouldConserveData ? 'loadedmetadata' : 'loadeddata';
