@@ -4,15 +4,20 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { EVENTS, STATUS } from 'react-joyride';
 import HTMLFlipBook from 'react-pageflip';
 import ProjectOverviewWarmup from './Warmup';
 import DeckPage from './DeckPage';
+import ProjectOverviewTourTooltip from './ProjectOverviewTourTooltip';
 import SpreadZoomPage from './SpreadZoomPage';
 import { flipbookPages } from './book-data';
 
 const FLIP_AUDIO_URL = '/project-overview-book/audios/page-flip-01a.mp3';
 const PAGE_ASPECT_RATIO = 1.08;
+const TOUR_TARGET_SELECTOR = '#project-overview-tour-anchor';
+const PRIMARY_HOTSPOT_SELECTOR = '[data-project-overview-tour-hotspot="primary"]';
 const ButterflyOverlay = dynamic(() => import('./ButterflyOverlay'), { ssr: false });
+const Joyride = dynamic(() => import('react-joyride').then((module) => module.Joyride), { ssr: false });
 
 function useViewport() {
   const [viewport, setViewport] = useState({
@@ -74,9 +79,17 @@ function getBookSize(width, height) {
 
 export default function ProjectOverviewBook() {
   const bookRef = useRef(null);
+  const bookFrameRef = useRef(null);
   const activeSpreadInteractionsRef = useRef(new Set());
+  const hasShownSpreadTourRef = useRef(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [bookState, setBookState] = useState('read');
+  const [isPrimaryHotspotVisible, setIsPrimaryHotspotVisible] = useState(false);
+  const [shouldMountTour, setShouldMountTour] = useState(false);
+  const [isTourRunning, setIsTourRunning] = useState(false);
+  const [tourAnchorStyle, setTourAnchorStyle] = useState(null);
+  const [tourHighlightStyle, setTourHighlightStyle] = useState(null);
+  const [tourPlacement, setTourPlacement] = useState('right');
   const viewport = useViewport();
   const bookSize = useMemo(
     () => getBookSize(viewport.width, viewport.height),
@@ -109,6 +122,7 @@ export default function ProjectOverviewBook() {
     : `desktop-${bookSize.width}-${bookSize.height}`;
   const isFrontCoverView = !bookSize.isMobile && currentPage === 0;
   const isBackCoverView = !bookSize.isMobile && currentPage === lastPageIndex;
+  const isInteractivePlanSpread = isPrimaryHotspotVisible;
   const showLeftSide = bookSize.isMobile ? true : !isFrontCoverView;
   const showRightSide = bookSize.isMobile ? true : !isBackCoverView;
   const hideTransitionStacks = !bookSize.isMobile && bookState !== 'read';
@@ -132,11 +146,115 @@ export default function ProjectOverviewBook() {
     goToPage(currentPage + 1, 'bottom');
   };
 
+  const dismissTour = useCallback(() => {
+    setIsTourRunning(false);
+    setShouldMountTour(false);
+  }, []);
+
+  const measurePrimaryHotspot = useCallback(() => {
+    if (!bookFrameRef.current || typeof document === 'undefined') {
+      return null;
+    }
+
+    const bounds = bookFrameRef.current.getBoundingClientRect();
+    const hotspots = Array.from(document.querySelectorAll(PRIMARY_HOTSPOT_SELECTOR))
+      .filter((element) => element instanceof HTMLElement);
+
+    if (hotspots.length === 0) {
+      return null;
+    }
+
+    let bestMatch = null;
+    let bestScore = 0;
+
+    for (const hotspot of hotspots) {
+      const hotspotBounds = hotspot.getBoundingClientRect();
+      const overlapWidth = Math.min(bounds.right, hotspotBounds.right) - Math.max(bounds.left, hotspotBounds.left);
+      const overlapHeight = Math.min(bounds.bottom, hotspotBounds.bottom) - Math.max(bounds.top, hotspotBounds.top);
+      const overlapArea = Math.max(0, overlapWidth) * Math.max(0, overlapHeight);
+      const hotspotArea = hotspotBounds.width * hotspotBounds.height;
+      const overlapRatio = hotspotArea > 0 ? overlapArea / hotspotArea : 0;
+      const visibilityScore = overlapArea * overlapRatio;
+
+      if (
+        hotspotBounds.width < 36
+        || hotspotBounds.height < 32
+        || hotspotBounds.right <= bounds.left
+        || hotspotBounds.left >= bounds.right
+        || hotspotBounds.bottom <= bounds.top
+        || hotspotBounds.top >= bounds.bottom
+        || overlapRatio < 0.65
+      ) {
+        continue;
+      }
+
+      if (visibilityScore > bestScore) {
+        bestScore = visibilityScore;
+        bestMatch = hotspotBounds;
+      }
+    }
+
+    return bestMatch;
+  }, []);
+
+  const updateTourAnchorPosition = useCallback(() => {
+    const hotspotBounds = measurePrimaryHotspot();
+
+    if (!hotspotBounds) {
+      setIsPrimaryHotspotVisible(false);
+      setTourAnchorStyle(null);
+      setTourHighlightStyle(null);
+      return;
+    }
+
+    setIsPrimaryHotspotVisible(true);
+
+    const squareLeft = hotspotBounds.left;
+    const squareTop = hotspotBounds.top;
+    const squareWidth = hotspotBounds.width;
+    const squareHeight = hotspotBounds.height;
+    const squareRight = squareLeft + squareWidth;
+    const squareBottom = squareTop + squareHeight;
+    const squareCenterX = squareLeft + (squareWidth / 2);
+    const squareCenterY = squareTop + (squareHeight / 2);
+    const tooltipWidth = Math.min(240, Math.max(180, window.innerWidth - 48));
+    const canPlaceRight = !bookSize.isMobile && (window.innerWidth - squareRight) >= (tooltipWidth + 18);
+
+    setTourHighlightStyle({
+      left: `${squareLeft}px`,
+      top: `${squareTop}px`,
+      width: `${squareWidth}px`,
+      height: `${squareHeight}px`,
+    });
+
+    if (canPlaceRight) {
+      setTourPlacement('right');
+      setTourAnchorStyle({
+        left: `${Math.min(window.innerWidth - 28, squareRight + 4)}px`,
+        top: `${Math.max(28, Math.min(window.innerHeight - 28, squareCenterY))}px`,
+        transform: 'translateY(-50%)',
+      });
+      return;
+    }
+
+    setTourPlacement('bottom');
+    setTourAnchorStyle({
+      left: `${Math.max(24, Math.min(window.innerWidth - 24, squareCenterX))}px`,
+      top: `${Math.min(window.innerHeight - 24, squareBottom + 6)}px`,
+      transform: 'translateX(-50%)',
+    });
+  }, [bookSize.isMobile, measurePrimaryHotspot]);
+
   useEffect(() => {
     activeSpreadInteractionsRef.current.clear();
     setCurrentPage(0);
     setBookState('read');
-  }, [flipbookKey]);
+    dismissTour();
+    setIsPrimaryHotspotVisible(false);
+    hasShownSpreadTourRef.current = false;
+    setTourAnchorStyle(null);
+    setTourHighlightStyle(null);
+  }, [dismissTour, flipbookKey]);
 
   const syncSpreadInteractionState = useCallback((hasActiveInteraction) => {
     const pageFlip = bookRef.current?.pageFlip();
@@ -170,6 +288,153 @@ export default function ProjectOverviewBook() {
     syncSpreadInteractionState(nextActiveInteractions.size > 0);
   }, [syncSpreadInteractionState]);
 
+  useEffect(() => {
+    if (!isTourRunning) {
+      syncSpreadInteractionState(activeSpreadInteractionsRef.current.size > 0);
+      return undefined;
+    }
+
+    syncSpreadInteractionState(true);
+
+    return () => {
+      syncSpreadInteractionState(activeSpreadInteractionsRef.current.size > 0);
+    };
+  }, [isTourRunning, syncSpreadInteractionState]);
+
+  const handleTourDismissFromHotspot = useCallback(() => {
+    if (isTourRunning) {
+      dismissTour();
+    }
+  }, [dismissTour, isTourRunning]);
+
+  const tourSteps = useMemo(() => ([
+    {
+      id: 'tour-hotspot',
+      target: TOUR_TARGET_SELECTOR,
+      title: 'CLICK A FLAT PLAN',
+      content: null,
+      placement: tourPlacement,
+      skipBeacon: true,
+      hideOverlay: true,
+      disableFocusTrap: true,
+      blockTargetInteraction: false,
+      skipScroll: true,
+      scrollDuration: 0,
+      targetWaitTimeout: 600,
+      spotlightPadding: 8,
+      spotlightRadius: 0,
+      isFixed: true,
+    },
+  ]), [tourPlacement]);
+
+  const handleTourEvent = useCallback((data) => {
+    if (
+      data.status === STATUS.FINISHED
+      || data.status === STATUS.SKIPPED
+      || data.type === EVENTS.STEP_AFTER
+      || data.type === EVENTS.TOUR_END
+      || data.type === EVENTS.TARGET_NOT_FOUND
+      || data.type === EVENTS.ERROR
+    ) {
+      dismissTour();
+    }
+  }, [dismissTour]);
+
+  useEffect(() => {
+    if (!isInteractivePlanSpread || bookState !== 'read') {
+      dismissTour();
+      setIsPrimaryHotspotVisible(false);
+      setTourAnchorStyle(null);
+      setTourHighlightStyle(null);
+      return undefined;
+    }
+
+    let resizeObserver;
+    if (hasShownSpreadTourRef.current) {
+      updateTourAnchorPosition();
+    }
+
+    const syncAnchor = () => {
+      window.requestAnimationFrame(() => {
+        updateTourAnchorPosition();
+      });
+    };
+
+    syncAnchor();
+    window.addEventListener('resize', syncAnchor);
+
+    if (bookFrameRef.current && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(syncAnchor);
+      resizeObserver.observe(bookFrameRef.current);
+    }
+
+    let cancelled = false;
+    let timeoutId = 0;
+    let rafId = 0;
+    let settledSince = null;
+
+    timeoutId = window.setTimeout(() => {
+      const waitForStableSpread = () => {
+        if (cancelled) {
+          return;
+        }
+
+        const flipState = bookRef.current?.pageFlip()?.getState();
+        const isSettled = flipState === 'read';
+
+        if (isSettled) {
+          const now = window.performance.now();
+          settledSince = settledSince ?? now;
+
+          if (now - settledSince >= 260) {
+            updateTourAnchorPosition();
+            hasShownSpreadTourRef.current = true;
+            setShouldMountTour(true);
+            setIsTourRunning(true);
+            return;
+          }
+        } else {
+          settledSince = null;
+        }
+
+        rafId = window.requestAnimationFrame(waitForStableSpread);
+      };
+
+      rafId = window.requestAnimationFrame(waitForStableSpread);
+    }, 160);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      window.cancelAnimationFrame(rafId);
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', syncAnchor);
+    };
+  }, [bookState, dismissTour, isInteractivePlanSpread, updateTourAnchorPosition]);
+
+  useEffect(() => {
+    let resizeObserver;
+
+    const syncHotspotVisibility = () => {
+      window.requestAnimationFrame(() => {
+        updateTourAnchorPosition();
+      });
+    };
+
+    syncHotspotVisibility();
+    window.addEventListener('resize', syncHotspotVisibility);
+
+    if (bookFrameRef.current && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(syncHotspotVisibility);
+      resizeObserver.observe(bookFrameRef.current);
+    }
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', syncHotspotVisibility);
+    };
+  }, [currentPage, updateTourAnchorPosition]);
+
   const getPageContent = (page) => {
     if (page.key !== 'spread-left' && page.key !== 'spread-right') {
       return null;
@@ -182,6 +447,8 @@ export default function ProjectOverviewBook() {
         crop={page.crop}
         interactionId={page.key}
         onInteractionChange={handleSpreadInteractionChange}
+        isTourHotspotActive={isTourRunning}
+        onHotspotSelect={handleTourDismissFromHotspot}
       />
     );
   };
@@ -191,6 +458,63 @@ export default function ProjectOverviewBook() {
       id="project-overview-container"
       className="fixed inset-0 z-10 overflow-hidden bg-[#110d08] text-white"
     >
+      {isInteractivePlanSpread && tourAnchorStyle ? (
+        <div
+          id="project-overview-tour-anchor"
+          aria-hidden="true"
+          className="pointer-events-none fixed z-[1001] h-px w-px"
+          style={tourAnchorStyle}
+        />
+      ) : null}
+      {isTourRunning ? (
+        <div className="pointer-events-none fixed inset-0 z-[85] bg-[rgba(10,8,6,0.18)] backdrop-brightness-[0.84]" />
+      ) : null}
+      {isTourRunning && tourHighlightStyle ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed z-[92] border-2 border-[#f0d1a1] bg-[#f0d1a1]/12 shadow-[0_0_0_2px_rgba(240,209,161,0.3),0_0_28px_rgba(240,209,161,0.38)]"
+          style={tourHighlightStyle}
+        />
+      ) : null}
+      {shouldMountTour ? (
+        <Joyride
+          run={isTourRunning}
+          steps={tourSteps}
+          scrollToFirstStep={false}
+          onEvent={handleTourEvent}
+          tooltipComponent={ProjectOverviewTourTooltip}
+          options={{
+            buttons: ['close', 'primary'],
+            closeButtonAction: 'skip',
+            dismissKeyAction: 'skip',
+            overlayClickAction: 'skip',
+            hideOverlay: true,
+            blockTargetInteraction: false,
+            primaryColor: '#e2c089',
+            skipBeacon: true,
+            skipScroll: true,
+            scrollDuration: 0,
+            targetWaitTimeout: 600,
+            textColor: '#f6f0e7',
+            width: Math.min(240, Math.max(180, viewport.width - 48)),
+            zIndex: 1000,
+          }}
+          styles={{
+            floater: {
+              filter: 'none',
+            },
+            overlay: {
+              display: 'none',
+            },
+            spotlight: {
+              display: 'none',
+            },
+            tooltip: {
+              borderRadius: 0,
+            },
+          }}
+        />
+      ) : null}
       <ProjectOverviewWarmup />
       <div
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -231,10 +555,11 @@ export default function ProjectOverviewBook() {
           </div> */}
 
           <div className="relative flex w-full justify-center">
-            <div
-              className="relative mx-auto overflow-visible"
-              style={{ width: totalBookWidth, height: bookSize.height }}
-            >
+          <div
+            className="relative mx-auto overflow-visible"
+            ref={bookFrameRef}
+            style={{ width: totalBookWidth, height: bookSize.height }}
+          >
               {!bookSize.isMobile ? (
                 <>
                   <div className="pointer-events-none absolute bottom-[-28px] left-[8%] right-[8%] h-[54px] rounded-full bg-black/28 blur-[26px]" />

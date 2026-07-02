@@ -1,0 +1,110 @@
+"use client";
+
+import { useState } from "react";
+
+type Status = "idle" | "loading" | "success" | "error";
+
+export default function WhatsAppLeadForm() {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [status, setStatus] = useState<Status>("idle");
+  const [message, setMessage] = useState("");
+
+  async function submitLead(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setStatus("loading");
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/whatsapp/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          phone,
+          projectName: "Abhigna Constructions",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to send WhatsApp message");
+      }
+
+      setStatus("success");
+      setMessage("WhatsApp message sent. Please check your phone.");
+      setName("");
+      setPhone("");
+    } catch (error) {
+      setStatus("error");
+      setMessage(error instanceof Error ? error.message : "Something went wrong");
+    }
+  }
+
+  return (
+    <form onSubmit={submitLead} className="space-y-7">
+      <div>
+        <label
+          htmlFor="name"
+          className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6f5936]"
+        >
+          Name
+        </label>
+        <input
+          id="name"
+          type="text"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          autoComplete="name"
+          required
+          className="w-full border-0 border-b border-[#d9c8aa] bg-transparent px-0 pb-4 pt-0 text-[1rem] font-normal leading-none text-[#17130d] outline-none transition placeholder:text-[1rem] placeholder:text-[#b7a894] focus:border-[#9f7840]"
+          placeholder="Enter your name"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="phone"
+          className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6f5936]"
+        >
+          WhatsApp number
+        </label>
+        <input
+          id="phone"
+          type="tel"
+          value={phone}
+          onChange={(event) => setPhone(event.target.value)}
+          autoComplete="tel"
+          inputMode="numeric"
+          required
+          className="w-full border-0 border-b border-[#d9c8aa] bg-transparent px-0 pb-4 pt-0 text-[1rem] font-normal leading-none text-[#17130d] outline-none transition placeholder:text-[1rem] placeholder:text-[#b7a894] focus:border-[#9f7840]"
+          placeholder="10-digit mobile number"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={status === "loading"}
+        className="inline-flex min-h-[60px] w-full items-center justify-center rounded-full bg-[#17120d] px-7 text-[12px] font-semibold uppercase tracking-[0.24em] text-[#f3e7d1] transition hover:bg-[#241a12] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {status === "loading" ? "Sending..." : "Get details on WhatsApp"}
+      </button>
+
+      {message ? (
+        <p
+          className={
+            status === "error"
+              ? "text-sm leading-7 text-red-700"
+              : "text-sm leading-7 text-emerald-800"
+          }
+        >
+          {message}
+        </p>
+      ) : null}
+    </form>
+  );
+}

@@ -43,7 +43,7 @@ const PREFETCH_ROUTES = [
 ];
 
 const BROCHURE_URL =
-  "https://aadhya-serene-assets-v2.s3.ap-south-1.amazonaws.com/brochure/Aadhya_Serene_brochure.pdf";
+  "https://cdn.sthyra.com/AADHYA%20SERENE/Aadhya%20Serene%20BROCHURE%20FOR%20PRINTING.pdf";
 
 function getContainerId(pathname) {
   if (pathname === "/") return "home-inner";

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import WhatsAppLeadForm from '@/components/WhatsAppLeadForm';
 import {
   ArrowRight,
   BadgeCheck,
@@ -45,10 +46,6 @@ if (typeof window !== 'undefined') {
 
 const PHONE_DISPLAY = '+91 96209 93333';
 const PHONE_LINK = 'tel:+919620993333';
-const WHATSAPP_LINK =
-  'https://wa.me/919620993333?text=Hi,%20I%27m%20interested%20in%20Aadhya%20Serene';
-const WHATSAPP_BROCHURE =
-  'https://wa.me/919620993333?text=Hi%2C%20please%20share%20the%20Aadhya%20Serene%20brochure%20and%20price%20sheet.';
 const RERA_NUMBER = 'PRM/KA/RERA/1251/446/PR/190614/002604';
 const WHATSAPP_IMAGE = '/landing%20page%20images/whatsapp.png';
 const FORM_IMAGE = '/landing%20page%20images/interiorimage7.avif';
@@ -127,7 +124,7 @@ const CONFIGURATIONS = [
   {
     id: '2bhk',
     name: '2 BHK',
-    sqft: 'XXX sq.ft.',
+    sqft: '1119 sq.ft.',
     image:
       'https://cdn.sthyra.com/AADHYA%20SERENE/images/individual-floorplans/Second%20Floor/201-N.png',
     headline: 'Smart, efficient layouts.',
@@ -138,7 +135,7 @@ const CONFIGURATIONS = [
   {
     id: '3bhk',
     name: '3 BHK',
-    sqft: 'XXX sq.ft.',
+    sqft: '`1373` sq.ft.',
     image:
       'https://cdn.sthyra.com/AADHYA%20SERENE/images/individual-floorplans/Second%20Floor/209-N.png',
     headline: 'More space for a growing family.',
@@ -331,6 +328,7 @@ function useGsapReveal() {
 export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   const [activeFaq, setActiveFaq] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isWhatsAppFormOpen, setIsWhatsAppFormOpen] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [activeConfig, setActiveConfig] = useState('2bhk');
   const [activeSlide, setActiveSlide] = useState(0);
@@ -389,11 +387,11 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   }, [enableAutoPopup]);
 
   useEffect(() => {
-    document.body.style.overflow = isFormOpen ? 'hidden' : '';
+    document.body.style.overflow = isFormOpen || isWhatsAppFormOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isFormOpen]);
+  }, [isFormOpen, isWhatsAppFormOpen]);
 
   useEffect(() => {
     const leftCurtain = heroCurtainLeftRef.current;
@@ -524,9 +522,14 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
     submitForm(event);
   };
 
-  const heroWhatsAppClick = () => trackEvent('Contact', { location: 'hero_whatsapp' });
+  const openWhatsAppForm = (location) => {
+    trackEvent('Contact', { location });
+    setIsWhatsAppFormOpen(true);
+  };
+
+  const heroWhatsAppClick = () => openWhatsAppForm('hero_whatsapp');
   const heroCallClick = () => trackEvent('Call', { location: 'hero_call' });
-  const stickyWhatsApp = () => trackEvent('Contact', { location: 'sticky_whatsapp' });
+  const stickyWhatsApp = () => openWhatsAppForm('sticky_whatsapp');
   const stickyCall = () => trackEvent('Call', { location: 'sticky_call' });
 
   const currentConfig = useMemo(
@@ -1046,18 +1049,14 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     </div>
 
                     <div className="mt-8 flex flex-wrap gap-3">
-                      <a
-                        href={WHATSAPP_BROCHURE}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() =>
-                          trackEvent('Contact', { location: 'config_whatsapp' })
-                        }
+                      <button
+                        type="button"
+                        onClick={() => openWhatsAppForm('config_whatsapp')}
                         className="inline-flex min-h-[54px] items-center gap-2 bg-[#1faf5a] px-6 text-sm font-semibold text-white shadow-[0_12px_26px_rgba(31,175,90,0.2)] transition hover:-translate-y-0.5 hover:bg-[#16944a]"
                       >
                         <PiKey className="h-4 w-4" />
                         Get the Exact Price & Floor Plan
-                      </a>
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
@@ -1387,16 +1386,14 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                       Claim Booking Benefit
                     <ArrowRight className="h-4 w-4" />
                   </button>
-                  <a
-                    href={WHATSAPP_BROCHURE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => trackEvent('Contact', { location: 'offer_whatsapp' })}
+                  <button
+                    type="button"
+                    onClick={() => openWhatsAppForm('offer_whatsapp')}
                     className="inline-flex min-h-[54px] items-center gap-2 border border-black/12 bg-white px-6 text-sm font-semibold uppercase tracking-[0.18em] text-black transition hover:-translate-y-0.5"
                   >
                     <PiKey className="h-4 w-4" />
                     WhatsApp Us
-                  </a>
+                  </button>
                 </div>
               </div>
 
@@ -1567,16 +1564,14 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   <Phone className="h-4 w-4 text-[#a9772f]" />
                   Call {PHONE_DISPLAY}
                 </a>
-                <a
-                  href={WHATSAPP_LINK}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
                   onClick={heroWhatsAppClick}
                   className="inline-flex min-h-[52px] items-center gap-2 rounded-full bg-[#1faf5a] px-5 text-sm font-semibold text-white transition hover:-translate-y-0.5"
                 >
                   <PiKey className="h-4 w-4" />
                   WhatsApp Us
-                </a>
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -1638,16 +1633,14 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                       <Phone className="mr-2 inline h-4 w-4" />
                       {PHONE_DISPLAY}
                     </a>
-                    <a
-                      href={WHATSAPP_LINK}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={heroWhatsAppClick}
-                      className="block font-medium text-white transition hover:text-[#d7b177]"
+                    <button
+                      type="button"
+                      onClick={() => openWhatsAppForm('footer_whatsapp')}
+                      className="block w-full bg-transparent p-0 text-left font-medium text-white transition hover:text-[#d7b177]"
                     >
                       <PiKey className="mr-2 inline h-4 w-4" />
                       WhatsApp Us
-                    </a>
+                    </button>
                   </div>
 
                   <div className="mt-5">
@@ -1667,14 +1660,13 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     <a href="#lead-form" className="transition hover:text-white">
                       Get Price Sheet
                     </a>
-                    <a
-                      href={WHATSAPP_BROCHURE}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="transition hover:text-white"
+                    <button
+                      type="button"
+                      onClick={() => openWhatsAppForm('footer_brochure_whatsapp')}
+                      className="bg-transparent p-0 text-left transition hover:text-white"
                     >
                       Brochure on WhatsApp
-                    </a>
+                    </button>
                     <a href="#lead-form" className="transition hover:text-white">
                       Book a Site Visit
                     </a>
@@ -1697,17 +1689,15 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
       </main>
 
       <div className="fixed inset-x-0 bottom-0 z-[85] grid grid-cols-2 border-t border-black/8 bg-white/96 shadow-[0_-12px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl lg:hidden">
-        <a
-          href={WHATSAPP_LINK}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
           onClick={stickyWhatsApp}
           className="inline-flex items-center justify-center gap-2 py-4 text-[14px] font-semibold text-white"
           style={{ background: 'linear-gradient(180deg,#26c66a,#1faf5a)' }}
         >
           <PiKey className="h-4 w-4" />
           WhatsApp
-        </a>
+        </button>
         <a
           href={PHONE_LINK}
           onClick={stickyCall}
@@ -1718,15 +1708,13 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
         </a>
       </div>
 
-      <motion.a
-        href={WHATSAPP_LINK}
-        target="_blank"
-        rel="noopener noreferrer"
+      <motion.button
+        type="button"
         onClick={stickyWhatsApp}
         whileHover={{ y: -2, scale: 1.04 }}
         whileTap={{ scale: 0.97 }}
-        className="fixed bottom-6 right-6 z-[90] hidden h-14 w-14 items-center justify-center lg:inline-flex"
-        aria-label={`Chat on WhatsApp at ${PHONE_DISPLAY}`}
+        className="fixed bottom-6 right-6 z-[90] hidden h-14 w-14 items-center justify-center border-0 bg-transparent p-0 lg:inline-flex"
+        aria-label={`Start WhatsApp enquiry for ${PHONE_DISPLAY}`}
       >
         <motion.span
           aria-hidden="true"
@@ -1751,7 +1739,78 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
           aria-hidden="true"
           className="relative z-[1] h-full w-full shrink-0 object-contain"
         />
-      </motion.a>
+      </motion.button>
+
+      <AnimatePresence>
+        {isWhatsAppFormOpen ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.28, ease: 'easeOut' }}
+            className="fixed inset-0 z-[1210] flex items-center justify-center bg-[rgba(10,10,12,0.74)] p-4 backdrop-blur-xl sm:p-6"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 26, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+              className="relative flex w-full max-w-4xl overflow-hidden rounded-[2.2rem] border border-white/10 bg-[#f7f6f1] shadow-[0_36px_120px_rgba(0,0,0,0.34)]"
+            >
+              <motion.button
+                type="button"
+                onClick={() => setIsWhatsAppFormOpen(false)}
+                whileHover={{ scale: 1.06, rotate: 90 }}
+                whileTap={{ scale: 0.95 }}
+                className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-black/80 text-white shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl transition"
+                aria-label="Close WhatsApp form"
+              >
+                <X className="h-4 w-4" />
+              </motion.button>
+
+              <div className="relative hidden w-[40%] shrink-0 overflow-hidden md:block">
+                <img
+                  src={FORM_IMAGE}
+                  alt="Aadhya Serene interior"
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.16)_0%,rgba(0,0,0,0.54)_100%)]" />
+                <div className="absolute inset-x-4 bottom-4 rounded-[1.3rem] border border-white/15 bg-black/28 px-4 py-4 text-white backdrop-blur-lg">
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-[#9df0ba]">
+                    WhatsApp Flow
+                  </p>
+                  <p className="mt-2 text-[1.45rem] font-semibold tracking-[-0.03em] text-white">
+                    Start the Aadhya Serene enquiry on WhatsApp.
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-white/90">
+                    We&apos;ll send the approved template first, then continue the
+                    brochure, pricing, site visit, app link, or sales conversation
+                    in chat.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex-1 px-5 py-6 sm:px-6 sm:py-7">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-[#0e8a45]">
+                  Start on WhatsApp
+                </p>
+                <h3 className="mt-2 text-[1.65rem] font-semibold tracking-[-0.03em] text-black">
+                  Get brochure, pricing, site visit help, and app access in chat
+                </h3>
+                <p className="mt-1.5 max-w-[36rem] text-[14px] leading-7 text-[#5c5c58]">
+                  Enter your name and WhatsApp number. We&apos;ll send the
+                  approved first message from the server and continue the flow in
+                  WhatsApp.
+                </p>
+                <ReraBadge className="mt-5" />
+                <div className="mt-7">
+                  <WhatsAppLeadForm />
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <AnimatePresence>
         {isFormOpen ? (
