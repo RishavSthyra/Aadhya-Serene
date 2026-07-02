@@ -4,6 +4,18 @@ import { useState } from "react";
 
 type Status = "idle" | "loading" | "success" | "error";
 
+function getReadableErrorMessage(data: unknown) {
+  if (!data || typeof data !== "object") {
+    return "We could not start WhatsApp right now. Please try again shortly.";
+  }
+
+  const payload = data as {
+    error?: string;
+  };
+
+  return payload.error || "We could not start WhatsApp right now. Please try again shortly.";
+}
+
 export default function WhatsAppLeadForm() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -32,7 +44,7 @@ export default function WhatsAppLeadForm() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to send WhatsApp message");
+        throw new Error(getReadableErrorMessage(data));
       }
 
       setStatus("success");
@@ -41,7 +53,11 @@ export default function WhatsAppLeadForm() {
       setPhone("");
     } catch (error) {
       setStatus("error");
-      setMessage(error instanceof Error ? error.message : "Something went wrong");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "We could not start WhatsApp right now. Please try again shortly."
+      );
     }
   }
 
