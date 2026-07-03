@@ -59,6 +59,7 @@ export default function Nav({ siteVariant }) {
   const isInteriorPanosRoute = pathname.startsWith("/interior-panos");
   const isApartmentsRoute = pathname.startsWith("/apartments");
   const isProjectOverviewRoute = pathname.startsWith("/project-overview");
+  const isPrivacyPolicyRoute = pathname.startsWith("/privacy-policy");
   const isThankYouRoute = pathname.startsWith("/thank-you");
   const isLandingRoute = isReadyToMoveExperience(pathname, siteVariant);
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -175,7 +176,7 @@ export default function Nav({ siteVariant }) {
     router.push(href);
   };
 
-  if (isInteriorPanosRoute || isLandingRoute || isThankYouRoute) {
+  if (isInteriorPanosRoute || isLandingRoute || isThankYouRoute || isPrivacyPolicyRoute) {
     return null;
   }
 

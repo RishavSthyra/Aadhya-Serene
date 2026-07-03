@@ -4,6 +4,36 @@ import { useState } from "react";
 
 type Status = "idle" | "loading" | "success" | "error";
 
+function mapWhatsAppErrorMessage(error: {
+  code?: number;
+  details?: string;
+  message?: string;
+}) {
+  const details = (error.details || error.message || "").toLowerCase();
+
+  if (error.code === 132001) {
+    if (details.includes("en_us")) {
+      return "WhatsApp is temporarily unavailable because the selected message template is not available in en_US.";
+    }
+
+    if (details.includes("does not exist in en")) {
+      return "WhatsApp is temporarily unavailable because the selected message template is not available in en.";
+    }
+
+    return "WhatsApp is temporarily unavailable because the selected message template or language does not match Meta.";
+  }
+
+  if (error.code === 131058) {
+    return "This WhatsApp test template only works with Meta public test numbers. Please switch to an approved production template.";
+  }
+
+  if (error.code === 190) {
+    return "WhatsApp authentication failed. Please refresh the production access token.";
+  }
+
+  return "We could not start WhatsApp right now. Please try again shortly.";
+}
+
 function getReadableErrorMessage(data: unknown) {
   if (!data || typeof data !== "object") {
     return "We could not start WhatsApp right now. Please try again shortly.";
@@ -12,6 +42,30 @@ function getReadableErrorMessage(data: unknown) {
   const payload = data as {
     error?: string;
   };
+
+  if (payload.error) {
+    try {
+      const parsed = JSON.parse(payload.error) as {
+        error?: {
+          code?: number;
+          message?: string;
+          error_data?: {
+            details?: string;
+          };
+        };
+      };
+
+      if (parsed?.error) {
+        return mapWhatsAppErrorMessage({
+          code: parsed.error.code,
+          message: parsed.error.message,
+          details: parsed.error.error_data?.details,
+        });
+      }
+    } catch {
+      return payload.error;
+    }
+  }
 
   return payload.error || "We could not start WhatsApp right now. Please try again shortly.";
 }
