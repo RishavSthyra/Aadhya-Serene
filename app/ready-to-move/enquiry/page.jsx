@@ -1,4 +1,3 @@
-import GoogleAdsTag from '@/components/GoogleAdsTag';
 import EnquiryContactPage from '@/components/ReadyToMoveLandingPage/EnquiryContactPage';
 import { createPageMetadata } from '@/lib/seo';
 
@@ -16,10 +15,5 @@ export const metadata = createPageMetadata({
 });
 
 export default function ReadyToMoveEnquiryPage() {
-  return (
-    <>
-      <GoogleAdsTag />
-      <EnquiryContactPage />
-    </>
-  );
+  return <EnquiryContactPage />;
 }

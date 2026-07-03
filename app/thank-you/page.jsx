@@ -1,12 +1,20 @@
 import Link from 'next/link';
+import Script from 'next/script';
 import React from "react";
 import { BackgroundLines } from "@/components/ui/background-lines";
-import GoogleAdsTag from '@/components/GoogleAdsTag';
  
 export default function ThankYouPage() {
   return (
     <>
-      <GoogleAdsTag />
+      <Script id="google-ads-submit-lead-conversion" strategy="afterInteractive">
+        {`
+          gtag('event', 'conversion', {
+            'send_to': 'AW-18286156175/ZtvnCPjAmcgcEI-zwo9E',
+            'value': 1.0,
+            'currency': 'INR'
+          });
+        `}
+      </Script>
       <BackgroundLines className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
         <div className="relative z-20 mx-auto flex w-full max-w-5xl flex-col items-center justify-center bg-transparent pt-24 text-center sm:pt-28">
           <span className="inline-flex rounded-full border border-[#d8c4a2] bg-[#f6efe1] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#a9772f]">

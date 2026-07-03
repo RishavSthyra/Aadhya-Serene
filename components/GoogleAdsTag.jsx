@@ -11,7 +11,6 @@ export default function GoogleAdsTag() {
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
-          window.gtag = window.gtag || gtag;
           gtag('js', new Date());
           gtag('config', 'AW-18286156175');
         `}

@@ -1,6 +1,5 @@
 import Contact from '../../components/Contact';
 import { createPageMetadata } from '@/lib/seo';
-import GoogleAdsTag from '@/components/GoogleAdsTag';
 
 export const metadata = createPageMetadata({
   title: 'Contact and Site Visit',
@@ -16,10 +15,5 @@ export const metadata = createPageMetadata({
 });
 
 export default function Page() {
-  return (
-    <>
-      <GoogleAdsTag />
-      <Contact />
-    </>
-  );
+  return <Contact />;
 }

@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import usePerformanceProfile from "@/hooks/usePerformanceProfile";
 import LuxuryPreloader from "@/components/Home/LuxuryPreloader";
-import GoogleAdsTag from "@/components/GoogleAdsTag";
 import {
   markHomeRefreshLoaderSeen,
   setHomePreloaderComplete,
@@ -237,78 +236,75 @@ export default function HomePageClient() {
   }, [navigateTo, pathname]);
 
   return (
-    <>
-      <GoogleAdsTag />
-      <main className={styles.heroSection}>
-        {showPreloader ? (
-          <LuxuryPreloader
-            onRevealStart={handlePreloaderRevealStart}
-            onCycleComplete={handlePreloaderCycleComplete}
-          />
-        ) : null}
+    <main className={styles.heroSection}>
+      {showPreloader ? (
+        <LuxuryPreloader
+          onRevealStart={handlePreloaderRevealStart}
+          onCycleComplete={handlePreloaderCycleComplete}
+        />
+      ) : null}
 
-        <section
-          id="home-inner"
-          className={styles.heroInner}
-          style={{ opacity: 1, pointerEvents: "auto" }}
-        >
-          <div className={styles.heroContent}>
-            <motion.div
-              initial={false}
-              animate={heroAnimationActive ? "visible" : "hidden"}
-              variants={heroRevealVariants}
-              transition={{ ...heroRevealTransition, delay: 0.12 }}
-              className={styles.heroEyebrow}
+      <section
+        id="home-inner"
+        className={styles.heroInner}
+        style={{ opacity: 1, pointerEvents: "auto" }}
+      >
+        <div className={styles.heroContent}>
+          <motion.div
+            initial={false}
+            animate={heroAnimationActive ? "visible" : "hidden"}
+            variants={heroRevealVariants}
+            transition={{ ...heroRevealTransition, delay: 0.12 }}
+            className={styles.heroEyebrow}
+          >
+            {HERO_EYEBROW}
+          </motion.div>
+
+          <h1 className={styles.heroTitle}>
+            <AnimatedHeroTitle
+              isActive={heroAnimationActive}
+              disableAnimation={shouldUseLightMotion}
+            />
+          </h1>
+
+          <motion.p
+            initial={false}
+            animate={heroAnimationActive ? "visible" : "hidden"}
+            variants={heroRevealVariants}
+            transition={{ ...heroRevealTransition, delay: 0.74 }}
+            className={styles.heroSubtitle}
+          >
+            {HERO_SUBTITLE}
+          </motion.p>
+
+          <motion.div
+            initial={false}
+            animate={heroAnimationActive ? "visible" : "hidden"}
+            variants={heroRevealVariants}
+            transition={{ ...heroRevealTransition, delay: 0.9 }}
+            className={styles.heroActions}
+          >
+            <button
+              type="button"
+              onClick={() => navigateTo("/apartments")}
+              onMouseEnter={primeApartmentsRoute}
+              onTouchStart={primeApartmentsRoute}
+              className={styles.heroPrimaryCta}
             >
-              {HERO_EYEBROW}
-            </motion.div>
+              <span>Explore Homes</span>
+              <ArrowRight className={styles.heroCtaArrow} aria-hidden="true" />
+            </button>
 
-            <h1 className={styles.heroTitle}>
-              <AnimatedHeroTitle
-                isActive={heroAnimationActive}
-                disableAnimation={shouldUseLightMotion}
-              />
-            </h1>
-
-            <motion.p
-              initial={false}
-              animate={heroAnimationActive ? "visible" : "hidden"}
-              variants={heroRevealVariants}
-              transition={{ ...heroRevealTransition, delay: 0.74 }}
-              className={styles.heroSubtitle}
+            <button
+              type="button"
+              onClick={() => navigateTo("/project-overview")}
+              className={styles.heroSecondaryCta}
             >
-              {HERO_SUBTITLE}
-            </motion.p>
-
-            <motion.div
-              initial={false}
-              animate={heroAnimationActive ? "visible" : "hidden"}
-              variants={heroRevealVariants}
-              transition={{ ...heroRevealTransition, delay: 0.9 }}
-              className={styles.heroActions}
-            >
-              <button
-                type="button"
-                onClick={() => navigateTo("/apartments")}
-                onMouseEnter={primeApartmentsRoute}
-                onTouchStart={primeApartmentsRoute}
-                className={styles.heroPrimaryCta}
-              >
-                <span>Explore Homes</span>
-                <ArrowRight className={styles.heroCtaArrow} aria-hidden="true" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigateTo("/project-overview")}
-                className={styles.heroSecondaryCta}
-              >
-                Project Story
-              </button>
-            </motion.div>
-          </div>
-        </section>
-      </main>
-    </>
+              Project Story
+            </button>
+          </motion.div>
+        </div>
+      </section>
+    </main>
   );
 }
