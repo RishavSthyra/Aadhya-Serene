@@ -182,8 +182,14 @@ async function handleIncomingMessage(from: string, incomingText: string) {
   const text = incomingText.trim();
 
   if (!text) {
+    console.log("WhatsApp webhook: received empty inbound text", { from });
     return;
   }
+
+  console.log("WhatsApp webhook: processing inbound message", {
+    from,
+    text,
+  });
 
   let state = getLeadState(from);
 
@@ -295,6 +301,13 @@ ${appLink}`
   }
 
   const option = parseMainOption(text);
+
+  console.log("WhatsApp webhook: parsed main option", {
+    from,
+    text,
+    option,
+    currentStep: state.step,
+  });
 
   if (option === "BROCHURE") {
     const updated = upsertLeadState(from, {
@@ -420,6 +433,11 @@ export async function POST(req: Request) {
 
     const entries = body.entry || [];
 
+    console.log("WhatsApp webhook: payload received", {
+      entryCount: entries.length,
+      object: body.object,
+    });
+
     for (const entry of entries) {
       const changes = entry.changes || [];
 
@@ -427,9 +445,22 @@ export async function POST(req: Request) {
         const value = change.value;
         const messages = value?.messages || [];
 
+        console.log("WhatsApp webhook: change received", {
+          field: change.field,
+          messageCount: messages.length,
+          hasStatuses: Array.isArray(value?.statuses) ? value.statuses.length : 0,
+          metadataPhoneNumberId: value?.metadata?.phone_number_id || null,
+        });
+
         for (const message of messages) {
           const from = message.from;
           const text = getIncomingMessageText(message);
+
+          console.log("WhatsApp webhook: inbound message snapshot", {
+            from: from || null,
+            type: message?.type || null,
+            text: text || null,
+          });
 
           if (from && text) {
             await handleIncomingMessage(from, text);
