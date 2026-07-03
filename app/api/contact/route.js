@@ -1,81 +1,15 @@
-import nodemailer from 'nodemailer';
 import { NextResponse } from 'next/server';
-
-const REQUEST_TYPE_LABELS = {
-  register_interest: 'Register Interest',
-  book_unit: 'Book a Unit',
-  site_visit: 'Schedule a Site Visit',
-  brochure: 'Request Brochure',
-};
-
-const DEFAULT_TO_EMAIL = 'sales@abhignaconstructions.com';
-const DEFAULT_FROM_EMAIL = 'website@aadhyaserene.com';
-
-function cleanValue(value) {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function escapeHtml(value) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-function buildInfoRow(label, value) {
-  return `
-    <tr>
-      <td style="padding:12px 0;color:#7f8a98;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;border-bottom:1px solid rgba(129,146,173,0.18);vertical-align:top;">
-        ${escapeHtml(label)}
-      </td>
-      <td style="padding:12px 0 12px 18px;color:#f5f7fb;font-size:14px;border-bottom:1px solid rgba(129,146,173,0.18);">
-        ${escapeHtml(value)}
-      </td>
-    </tr>
-  `;
-}
-
-function getMailConfig() {
-  const user = cleanValue(process.env.EMAIL_USER);
-  const pass = cleanValue(process.env.GOOGLE_APP_PASSWORD);
-  const to = cleanValue(
-    process.env.CONTACT_TO_EMAIL || process.env.EMAIL_USER || DEFAULT_TO_EMAIL
-  );
-  const from = cleanValue(
-    process.env.CONTACT_FROM_EMAIL || process.env.EMAIL_USER || DEFAULT_FROM_EMAIL
-  );
-
-  return {
-    user,
-    pass,
-    to,
-    from,
-  };
-}
-
-function getMissingConfigFields(mailConfig) {
-  const missingFields = [];
-
-  if (!mailConfig.user) {
-    missingFields.push('EMAIL_USER');
-  }
-
-  if (!mailConfig.pass) {
-    missingFields.push('GOOGLE_APP_PASSWORD');
-  }
-
-  if (!mailConfig.to) {
-    missingFields.push('CONTACT_TO_EMAIL');
-  }
-
-  return missingFields;
-}
+import {
+  cleanValue,
+  createEnquiryRecord,
+  getMissingMailConfigFields,
+  getRequestLabel,
+  sendEnquiryNotificationEmail,
+  updateEnquiryRecord,
+} from '@/lib/enquiry-service';
 
 export async function POST(request) {
-  const mailConfig = getMailConfig();
-  const missingConfigFields = getMissingConfigFields(mailConfig);
+  const missingConfigFields = getMissingMailConfigFields();
 
   if (missingConfigFields.length) {
     console.error('Contact mail service is not configured yet:', missingConfigFields);
@@ -117,96 +51,69 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Please provide a valid email address.' }, { status: 400 });
   }
 
-  const requestLabel = REQUEST_TYPE_LABELS[submission.requestType] || 'General Enquiry';
-  const enquirySource = submission.source || 'website';
-  const submittedAt = new Date().toLocaleString('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Asia/Kolkata',
-  });
-
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: mailConfig.user,
-      pass: mailConfig.pass,
-    },
-  });
-
-  const html = `
-    <div style="background:#0b0f14;padding:32px;font-family:Arial,sans-serif;color:#f5f7fb;">
-      <div style="max-width:680px;margin:0 auto;background:linear-gradient(180deg,rgba(24,31,40,0.96),rgba(13,17,24,0.96));border:1px solid rgba(205,183,123,0.24);border-radius:28px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.35);">
-        <div style="padding:28px 32px;border-bottom:1px solid rgba(205,183,123,0.16);background:radial-gradient(circle at top left,rgba(214,188,128,0.16),transparent 42%),linear-gradient(135deg,rgba(255,255,255,0.03),rgba(255,255,255,0));">
-          <div style="display:inline-block;padding:8px 14px;border-radius:999px;border:1px solid rgba(205,183,123,0.26);background:rgba(255,255,255,0.04);color:#efe5c3;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;">
-            New Website Enquiry
-          </div>
-          <h1 style="margin:18px 0 10px;font-size:30px;line-height:1.15;font-weight:600;color:#ffffff;">
-            ${escapeHtml(requestLabel)} from ${escapeHtml(submission.name)}
-          </h1>
-          <p style="margin:0;color:#b9c2d0;font-size:14px;line-height:1.7;">
-            A fresh enquiry was submitted through the Aadhya Serene contact page.
-          </p>
-        </div>
-
-        <div style="padding:18px 32px 32px;">
-          <table style="width:100%;border-collapse:collapse;">
-            <tbody>
-              ${buildInfoRow('Source', enquirySource)}
-              ${buildInfoRow('Name', submission.name)}
-              ${buildInfoRow('Phone', submission.phone)}
-              ${buildInfoRow('Email', submission.email || 'Not provided')}
-              ${buildInfoRow('Request', requestLabel)}
-              ${buildInfoRow('Preferred Time', submission.preferredTime || 'Not specified')}
-              ${buildInfoRow('Submitted', submittedAt)}
-            </tbody>
-          </table>
-
-          <div style="margin-top:24px;padding:22px 24px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
-            <div style="margin-bottom:10px;color:#7f8a98;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;">
-              Client Message
-            </div>
-            <p style="margin:0;color:#f5f7fb;font-size:15px;line-height:1.8;white-space:pre-wrap;">
-              ${escapeHtml(submission.message || 'No additional message was provided.')}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  const text = [
-    `Aadhya Serene contact enquiry`,
-    ``,
-    `Source: ${enquirySource}`,
-    `Request: ${requestLabel}`,
-    `Name: ${submission.name}`,
-    `Phone: ${submission.phone}`,
-    `Email: ${submission.email || 'Not provided'}`,
-    `Preferred time: ${submission.preferredTime || 'Not specified'}`,
-    `Submitted: ${submittedAt}`,
-    ``,
-    `Message:`,
-    submission.message || 'No additional message was provided.',
-  ].join('\n');
+  const requestLabel = getRequestLabel(submission.requestType);
+  let record = null;
 
   try {
-    await transporter.sendMail({
-      from: `Aadhya Serene <${mailConfig.from}>`,
-      to: mailConfig.to,
-      replyTo: submission.email || undefined,
-      subject: `[Aadhya Serene] ${requestLabel} - ${submission.name} (${enquirySource})`,
-      text,
-      html,
+    record = await createEnquiryRecord({
+      projectName: 'Aadhya Serene',
+      source: submission.source || 'website',
+      channel: 'contact_form',
+      name: submission.name,
+      phone: submission.phone,
+      email: submission.email,
+      requestType: submission.requestType,
+      requestLabel,
+      preferredTime: submission.preferredTime,
+      message: submission.message,
+      emailDelivery: { status: 'pending' },
+      whatsappDelivery: { status: 'not_requested' },
+    });
+
+    await sendEnquiryNotificationEmail({
+      projectName: 'Aadhya Serene',
+      source: submission.source || 'website',
+      channel: 'contact_form',
+      name: submission.name,
+      phone: submission.phone,
+      email: submission.email,
+      requestType: submission.requestType,
+      requestLabel,
+      preferredTime: submission.preferredTime,
+      message: submission.message,
+    });
+
+    await updateEnquiryRecord(record?._id, {
+      $set: {
+        emailDelivery: {
+          status: 'sent',
+          sentAt: new Date(),
+          error: '',
+        },
+      },
     });
 
     return NextResponse.json({
-      message: 'Your enquiry has been emailed to our team. We will reach out shortly.',
+      message: 'Your enquiry has been saved and emailed to our team. We will reach out shortly.',
     });
   } catch (error) {
-    console.error('Contact form email failed:', error);
+    console.error('Contact enquiry processing failed:', error);
+
+    if (record?._id) {
+      await updateEnquiryRecord(record._id, {
+        $set: {
+          emailDelivery: {
+            status: 'failed',
+            error: error instanceof Error ? error.message : String(error),
+          },
+        },
+      }).catch((updateError) => {
+        console.error('Failed to update enquiry delivery state:', updateError);
+      });
+    }
 
     return NextResponse.json(
-      { error: 'We could not send your enquiry right now. Please try again in a moment.' },
+      { error: 'We could not complete your enquiry right now. Please try again in a moment.' },
       { status: 500 }
     );
   }

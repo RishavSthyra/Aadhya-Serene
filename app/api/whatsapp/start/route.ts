@@ -2,10 +2,17 @@ import { NextResponse } from "next/server";
 import { normalizeIndianWhatsAppNumber } from "@/lib/phone";
 import { sendTemplateMessage, WhatsAppRequestError } from "@/lib/whatsapp";
 import { upsertLeadState } from "@/lib/lead-store";
+import {
+  createEnquiryRecord,
+  sendEnquiryNotificationEmail,
+  updateEnquiryRecord,
+} from "@/lib/enquiry-service";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  let enquiryRecordId: string | undefined;
+
   try {
     const body = await req.json();
 
@@ -13,6 +20,7 @@ export async function POST(req: Request) {
     const projectName = String(
       body.projectName || process.env.PROJECT_NAME || "Abhigna Constructions"
     ).trim();
+    const source = String(body.source || "ready_to_move_whatsapp_form").trim();
 
     const phone = normalizeIndianWhatsAppNumber(String(body.phone || ""));
 
@@ -22,10 +30,59 @@ export async function POST(req: Request) {
       step: "STARTED",
     });
 
+    const enquiryRecord = await createEnquiryRecord({
+      projectName: "Aadhya Serene",
+      source,
+      channel: "whatsapp_form",
+      name,
+      phone,
+      requestType: "whatsapp_flow",
+      requestLabel: "WhatsApp Flow Start",
+      message: "Lead started from the WhatsApp enquiry form.",
+      emailDelivery: { status: "pending" },
+      whatsappDelivery: { status: "pending" },
+      metadata: {
+        businessName: projectName,
+      },
+    });
+
+    enquiryRecordId = String(enquiryRecord._id);
+
+    await sendEnquiryNotificationEmail({
+      projectName: "Aadhya Serene",
+      source,
+      channel: "whatsapp_form",
+      name,
+      phone,
+      requestType: "whatsapp_flow",
+      requestLabel: "WhatsApp Flow Start",
+      message: "Lead started from the WhatsApp enquiry form.",
+    });
+
+    await updateEnquiryRecord(enquiryRecordId, {
+      $set: {
+        emailDelivery: {
+          status: "sent",
+          sentAt: new Date(),
+          error: "",
+        },
+      },
+    });
+
     const result = await sendTemplateMessage({
       to: phone,
       name,
       projectName,
+    });
+
+    await updateEnquiryRecord(enquiryRecordId, {
+      $set: {
+        whatsappDelivery: {
+          status: "sent",
+          sentAt: new Date(),
+          error: "",
+        },
+      },
     });
 
     return NextResponse.json({
@@ -36,6 +93,22 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("Start WhatsApp flow error:", error);
+
+    if (enquiryRecordId) {
+      const failedField =
+        error instanceof WhatsAppRequestError ? "whatsappDelivery" : "emailDelivery";
+
+      await updateEnquiryRecord(enquiryRecordId, {
+        $set: {
+          [failedField]: {
+            status: "failed",
+            error: error instanceof Error ? error.message : String(error),
+          },
+        },
+      }).catch((updateError) => {
+        console.error("Failed to update WhatsApp enquiry delivery state:", updateError);
+      });
+    }
 
     if (error instanceof WhatsAppRequestError) {
       return NextResponse.json(
