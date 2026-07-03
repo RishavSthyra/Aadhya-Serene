@@ -167,6 +167,17 @@
   line-height: 1.95;
 }
 
+.sectionBody a {
+  color: #16584a;
+  text-decoration: underline;
+  text-decoration-color: rgba(22, 88, 74, 0.26);
+  text-underline-offset: 0.18em;
+}
+
+.sectionBody a:hover {
+  color: #0f3e34;
+}
+
 .list {
   margin: 0 0 18px;
   padding-left: 22px;
