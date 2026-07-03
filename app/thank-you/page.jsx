@@ -9,7 +9,7 @@ export default function ThankYouPage() {
       <Script id="google-ads-submit-lead-conversion" strategy="afterInteractive">
         {`
           gtag('event', 'conversion', {
-            'send_to': 'AW-18286156175/ZtvnCPjAmcgcEI-zwo9E',
+            'send_to': 'AW-18286156175/gN3uCL7IwskcEI-zwo9E',
             'value': 1.0,
             'currency': 'INR'
           });

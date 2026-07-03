@@ -3,6 +3,7 @@ import {
   cleanValue,
   createEnquiryRecord,
   getMissingMailConfigFields,
+  getRequestMetadataFromHeaders,
   getRequestLabel,
   sendEnquiryNotificationEmail,
   updateEnquiryRecord,
@@ -52,6 +53,7 @@ export async function POST(request) {
   }
 
   const requestLabel = getRequestLabel(submission.requestType);
+  const requestMetadata = getRequestMetadataFromHeaders(request.headers);
   let record = null;
 
   try {
@@ -66,6 +68,9 @@ export async function POST(request) {
       requestLabel,
       preferredTime: submission.preferredTime,
       message: submission.message,
+      metadata: {
+        requestContext: requestMetadata,
+      },
       emailDelivery: { status: 'pending' },
       whatsappDelivery: { status: 'not_requested' },
     });

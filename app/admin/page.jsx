@@ -6,10 +6,12 @@ import {
     Building2,
     CheckCircle2,
     Copy,
+    Download,
     Home,
     KeyRound,
     LayoutDashboard,
     LogOut,
+    MessageSquare,
     RefreshCcw,
     Search,
     ShieldCheck,
@@ -33,6 +35,7 @@ const ROLE_LABELS = {
 };
 
 const STATUS_OPTIONS = ['available', 'reserved', 'blocked', 'sold out'];
+
 const STATUS_COLORS = {
     available: '#111111',
     reserved: '#4b5563',
@@ -45,6 +48,38 @@ function normalizeStatus(status) {
 }
 
 const TYPE_COLORS = ['#111111', '#6b7280', '#a3a3a3', '#d4d4d4'];
+const CHANNEL_LABELS = {
+    contact_form: 'Website Form',
+    whatsapp_form: 'WhatsApp Form',
+};
+
+function formatAdminDate(value) {
+    if (!value) return 'Not available';
+
+    return new Intl.DateTimeFormat('en-IN', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: 'Asia/Kolkata',
+    }).format(new Date(value));
+}
+
+function getLeadJourneySummary(lead) {
+    const journey = lead?.metadata?.whatsappJourney;
+
+    if (!journey) {
+        return 'Website enquiry saved.';
+    }
+
+    const parts = [
+        journey.selectedOption ? `Intent: ${journey.selectedOption}` : '',
+        journey.unitType ? `Unit: ${journey.unitType}` : '',
+        journey.budget ? `Budget: ${journey.budget}` : '',
+        journey.visitTime ? `Visit: ${journey.visitTime}` : '',
+        journey.callTime ? `Call: ${journey.callTime}` : '',
+    ].filter(Boolean);
+
+    return parts.length ? parts.join(' | ') : 'WhatsApp flow started.';
+}
 
 function AuthPanel({ onAuthed }) {
     const [mode, setMode] = useState('login');
@@ -323,18 +358,41 @@ function SelectControl({ value, options, onChange, disabled = false, className =
     );
 }
 
+function DeliveryPill({ label, state }) {
+    const status = state?.status || 'pending';
+    const sentAt = state?.sentAt ? formatAdminDate(state.sentAt) : '';
+    const error = state?.error || '';
+    const tone =
+        status === 'sent'
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            : status === 'failed'
+                ? 'border-red-200 bg-red-50 text-red-700'
+                : 'border-[#111]/10 bg-[#fafafa] text-[#6b7280]';
+
+    return (
+        <div className={`rounded-2xl border px-3 py-2 text-xs font-bold ${tone}`}>
+            <p>{label}: {status}</p>
+            {sentAt ? <p className="mt-1 font-medium">{sentAt}</p> : null}
+            {error ? <p className="mt-1 break-words font-medium">{error}</p> : null}
+        </div>
+    );
+}
+
 export default function AdminPage() {
     const [user, setUser] = useState(null);
     const [checking, setChecking] = useState(true);
     const [flats, setFlats] = useState([]);
+    const [leads, setLeads] = useState([]);
     const [busyFlat, setBusyFlat] = useState('');
     const [keyRole, setKeyRole] = useState('channel_partner');
     const [latestKey, setLatestKey] = useState('');
     const [notice, setNotice] = useState('');
     const [query, setQuery] = useState('');
+    const [leadQuery, setLeadQuery] = useState('');
     const [activeSection, setActiveSection] = useState('dashboard');
     const contentRef = useRef(null);
     const dashboardRef = useRef(null);
+    const leadsRef = useRef(null);
     const reportsRef = useRef(null);
     const keysRef = useRef(null);
     const inventoryRef = useRef(null);
@@ -347,6 +405,17 @@ export default function AdminPage() {
         if (!response.ok) return;
         const payload = await response.json();
         setFlats(Array.isArray(payload.flats) ? payload.flats : []);
+    }
+
+    async function loadLeads() {
+        const response = await fetch('/api/admin/leads', { cache: 'no-store' });
+        if (!response.ok) return;
+        const payload = await response.json();
+        setLeads(Array.isArray(payload.leads) ? payload.leads : []);
+    }
+
+    async function refreshAll() {
+        await Promise.all([loadFlats(), loadLeads()]);
     }
 
     useEffect(() => {
@@ -375,8 +444,8 @@ export default function AdminPage() {
     useEffect(() => {
         if (!user) return undefined;
 
-        void loadFlats();
-        const intervalId = window.setInterval(loadFlats, 30000);
+        void refreshAll();
+        const intervalId = window.setInterval(refreshAll, 30000);
         return () => window.clearInterval(intervalId);
     }, [user]);
 
@@ -412,6 +481,54 @@ export default function AdminPage() {
         );
     }, [flats, query]);
 
+    const leadStats = useMemo(() => {
+        return leads.reduce(
+            (acc, lead) => {
+                acc.total += 1;
+                acc[lead.channel] = (acc[lead.channel] || 0) + 1;
+
+                if (lead.emailDelivery?.status === 'sent') {
+                    acc.emailSent += 1;
+                }
+
+                if (lead.whatsappDelivery?.status === 'sent') {
+                    acc.whatsappSent += 1;
+                }
+
+                return acc;
+            },
+            {
+                total: 0,
+                contact_form: 0,
+                whatsapp_form: 0,
+                emailSent: 0,
+                whatsappSent: 0,
+            },
+        );
+    }, [leads]);
+
+    const visibleLeads = useMemo(() => {
+        const normalizedQuery = leadQuery.trim().toLowerCase();
+        if (!normalizedQuery) return leads;
+
+        return leads.filter((lead) =>
+            [
+                lead.name,
+                lead.phone,
+                lead.email,
+                lead.source,
+                lead.channel,
+                lead.requestLabel,
+                lead.message,
+                lead.preferredTime,
+                getLeadJourneySummary(lead),
+            ]
+                .join(' ')
+                .toLowerCase()
+                .includes(normalizedQuery),
+        );
+    }, [leadQuery, leads]);
+
     const statusEntries = useMemo(
         () =>
             STATUS_OPTIONS.map((status) => ({
@@ -432,7 +549,46 @@ export default function AdminPage() {
         [stats.byType],
     );
 
+    const sectionMeta = {
+        dashboard: {
+            eyebrow: 'Inventory dashboard',
+            title: `Welcome back, ${user?.name || 'Admin'}`,
+        },
+        leads: {
+            eyebrow: 'Lead management',
+            title: 'Website and WhatsApp Leads',
+        },
+        inventory: {
+            eyebrow: 'Inventory control',
+            title: 'Flat Status Management',
+        },
+        users: {
+            eyebrow: 'Access management',
+            title: 'RBAC Users',
+        },
+        keys: {
+            eyebrow: 'Access management',
+            title: 'Signup Keys',
+        },
+        reports: {
+            eyebrow: 'Reporting',
+            title: 'Inventory Analytics',
+        },
+    };
+
+    const activeSectionMeta =
+        activeSection === 'leads' ? sectionMeta.leads : sectionMeta.dashboard;
+
     function goToSection(section) {
+        if (section === 'leads') {
+            setActiveSection('leads');
+            contentRef.current?.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+            });
+            return;
+        }
+
         const sectionRefs = {
             dashboard: dashboardRef,
             inventory: inventoryRef,
@@ -440,6 +596,7 @@ export default function AdminPage() {
             keys: keysRef,
             reports: reportsRef,
         };
+
         setActiveSection(section);
         sectionRefs[section]?.current?.scrollIntoView({
             behavior: 'smooth',
@@ -494,6 +651,11 @@ export default function AdminPage() {
         await fetch('/api/admin/auth/logout', { method: 'POST' });
         setUser(null);
         setFlats([]);
+        setLeads([]);
+    }
+
+    function downloadLeadCsv() {
+        window.location.assign('/api/admin/leads/export');
     }
 
     if (checking) {
@@ -524,6 +686,7 @@ export default function AdminPage() {
                 <nav className="flex-1 space-y-2 px-5 py-7">
                     {[
                         [LayoutDashboard, 'Dashboard', 'dashboard'],
+                        [MessageSquare, 'Leads', 'leads'],
                         [Home, 'Inventory', 'inventory'],
                         [UsersRound, 'RBAC Users', 'users'],
                         [KeyRound, 'Signup Keys', 'keys'],
@@ -556,15 +719,17 @@ export default function AdminPage() {
             <section className="flex min-w-0 flex-1 flex-col">
                 <header className="flex h-24 shrink-0 items-center justify-between gap-4 border-b border-[#111]/10 bg-[#fbfbfa] px-6 shadow-[0_14px_40px_rgba(17,17,17,0.05)] lg:px-9">
                     <div className="min-w-0">
-                        <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Inventory dashboard</p>
+                        <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">
+                            {activeSectionMeta.eyebrow}
+                        </p>
                         <h1 className="mt-1 truncate font-display text-3xl font-bold tracking-tight text-[#111]">
-                            Welcome back, {user.name}
+                            {activeSectionMeta.title}
                         </h1>
                     </div>
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
-                            onClick={loadFlats}
+                            onClick={refreshAll}
                             className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[#111]/10 bg-white px-4 text-sm font-bold text-[#111] shadow-[0_7px_0_rgba(17,17,17,0.04),0_16px_32px_rgba(17,17,17,0.06)] transition hover:-translate-y-0.5"
                         >
                             <RefreshCcw className="h-4 w-4" />
@@ -588,6 +753,120 @@ export default function AdminPage() {
                         </p>
                     ) : null}
 
+                    {activeSection === 'leads' ? (
+                    <section ref={leadsRef} className="scroll-mt-8 overflow-hidden rounded-[30px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)]">
+                        <div className="flex flex-col gap-5 border-b border-[#111]/10 px-7 py-6">
+                            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                                <div>
+                                    <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Lead Management</p>
+                                    <h2 className="mt-1 font-display text-2xl font-bold text-[#111]">Website and WhatsApp Leads</h2>
+                                    <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6b7280]">
+                                        Every new website enquiry and WhatsApp lead now lands in MongoDB and can be exported as CSV.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={downloadLeadCsv}
+                                    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#111] px-5 text-sm font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Download CSV
+                                </button>
+                            </div>
+
+                            <div className="grid gap-4 xl:grid-cols-4">
+                                <div className="rounded-[24px] border border-[#111]/10 bg-[#fafafa] px-5 py-4">
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">Total Leads</p>
+                                    <p className="mt-3 text-3xl font-bold text-[#111]">{leadStats.total}</p>
+                                </div>
+                                <div className="rounded-[24px] border border-[#111]/10 bg-[#fafafa] px-5 py-4">
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">Website Forms</p>
+                                    <p className="mt-3 text-3xl font-bold text-[#111]">{leadStats.contact_form}</p>
+                                </div>
+                                <div className="rounded-[24px] border border-[#111]/10 bg-[#fafafa] px-5 py-4">
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">WhatsApp Leads</p>
+                                    <p className="mt-3 text-3xl font-bold text-[#111]">{leadStats.whatsapp_form}</p>
+                                </div>
+                                <div className="rounded-[24px] border border-[#111]/10 bg-[#fafafa] px-5 py-4">
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">Messages Sent</p>
+                                    <p className="mt-3 text-3xl font-bold text-[#111]">{leadStats.emailSent + leadStats.whatsappSent}</p>
+                                </div>
+                            </div>
+
+                            <div className="relative w-full xl:w-[460px]">
+                                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98a2b3]" />
+                                <input
+                                    value={leadQuery}
+                                    onChange={(event) => setLeadQuery(event.target.value)}
+                                    placeholder="Search by name, phone, email, source, request..."
+                                    className="h-12 w-full rounded-2xl border border-[#111]/14 bg-white pl-10 pr-4 text-sm font-medium text-[#111] outline-none shadow-[0_7px_0_rgba(17,17,17,0.035),0_16px_32px_rgba(17,17,17,0.05)] transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="max-h-[620px] overflow-auto">
+                            <table className="w-full min-w-[1320px] border-collapse text-left">
+                                <thead className="sticky top-0 z-10 bg-[#f7f7f7] text-xs uppercase tracking-[0.1em] text-[#6b7280]">
+                                    <tr>
+                                        <th className="px-7 py-5 font-bold">Submitted</th>
+                                        <th className="px-7 py-5 font-bold">Lead</th>
+                                        <th className="px-7 py-5 font-bold">Channel</th>
+                                        <th className="px-7 py-5 font-bold">Request</th>
+                                        <th className="px-7 py-5 font-bold">Journey</th>
+                                        <th className="px-7 py-5 font-bold">Delivery</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[#111]/10 text-sm">
+                                    {visibleLeads.map((lead) => (
+                                        <tr key={lead.id} className="align-top transition hover:bg-[#fafafa]">
+                                            <td className="px-7 py-5 font-medium text-[#6b7280]">
+                                                <p className="font-bold text-[#111]">{formatAdminDate(lead.createdAt)}</p>
+                                                <p className="mt-2 text-xs">Updated {formatAdminDate(lead.updatedAt)}</p>
+                                            </td>
+                                            <td className="px-7 py-5">
+                                                <p className="font-bold text-[#111]">{lead.name || 'Unknown lead'}</p>
+                                                <p className="mt-1 text-sm font-medium text-[#374151]">{lead.phone || 'No phone'}</p>
+                                                <p className="mt-1 text-sm text-[#6b7280]">{lead.email || 'No email captured'}</p>
+                                            </td>
+                                            <td className="px-7 py-5">
+                                                <span className="inline-flex items-center gap-2 rounded-2xl border border-[#111]/10 bg-[#fafafa] px-4 py-2 text-xs font-bold text-[#111]">
+                                                    <MessageSquare className="h-4 w-4" />
+                                                    {CHANNEL_LABELS[lead.channel] || lead.channel}
+                                                </span>
+                                                <p className="mt-3 text-xs font-medium uppercase tracking-[0.08em] text-[#6b7280]">
+                                                    {lead.source || 'website'}
+                                                </p>
+                                            </td>
+                                            <td className="px-7 py-5">
+                                                <p className="font-bold text-[#111]">{lead.requestLabel || 'General Enquiry'}</p>
+                                                <p className="mt-2 text-sm leading-6 text-[#4b5563]">
+                                                    {lead.message || 'No message provided.'}
+                                                </p>
+                                                {lead.preferredTime ? (
+                                                    <p className="mt-2 text-xs font-bold text-[#6b7280]">
+                                                        Preferred time: {lead.preferredTime}
+                                                    </p>
+                                                ) : null}
+                                            </td>
+                                            <td className="px-7 py-5">
+                                                <p className="text-sm font-medium leading-6 text-[#374151]">
+                                                    {getLeadJourneySummary(lead)}
+                                                </p>
+                                            </td>
+                                            <td className="px-7 py-5">
+                                                <div className="grid gap-2">
+                                                    <DeliveryPill label="Email" state={lead.emailDelivery} />
+                                                    <DeliveryPill label="WhatsApp" state={lead.whatsappDelivery} />
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                    ) : (
+                    <>
                     <section ref={dashboardRef} className="scroll-mt-8 grid gap-5 xl:grid-cols-4">
                         <KpiCard label="Total Flats" value={stats.total} helper="Live MongoDB inventory" icon={Building2} />
                         <KpiCard label="Available" value={stats.available} helper="Ready for sale" icon={CheckCircle2} />
@@ -727,6 +1006,8 @@ export default function AdminPage() {
                             </table>
                         </div>
                     </section>
+                    </>
+                    )}
                 </div>
             </section>
         </main>

@@ -4,6 +4,7 @@ import { sendTemplateMessage, WhatsAppRequestError } from "@/lib/whatsapp";
 import { upsertLeadState } from "@/lib/lead-store";
 import {
   createEnquiryRecord,
+  getRequestMetadataFromHeaders,
   sendEnquiryNotificationEmail,
   updateEnquiryRecord,
 } from "@/lib/enquiry-service";
@@ -21,6 +22,7 @@ export async function POST(req: Request) {
       body.projectName || process.env.PROJECT_NAME || "Abhigna Constructions"
     ).trim();
     const source = String(body.source || "ready_to_move_whatsapp_form").trim();
+    const requestMetadata = getRequestMetadataFromHeaders(req.headers);
 
     const phone = normalizeIndianWhatsAppNumber(String(body.phone || ""));
 
@@ -43,10 +45,14 @@ export async function POST(req: Request) {
       whatsappDelivery: { status: "pending" },
       metadata: {
         businessName: projectName,
+        requestContext: requestMetadata,
       },
     });
 
     enquiryRecordId = String(enquiryRecord._id);
+    upsertLeadState(phone, {
+      enquiryRecordId,
+    });
 
     await sendEnquiryNotificationEmail({
       projectName: "Aadhya Serene",

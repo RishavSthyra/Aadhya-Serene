@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getLeadState, upsertLeadState } from "@/lib/lead-store";
 import { sendTextMessage } from "@/lib/whatsapp";
+import {
+  findLatestEnquiryRecord,
+  updateEnquiryRecord,
+} from "@/lib/enquiry-service";
 
 export const runtime = "nodejs";
 
@@ -113,6 +117,67 @@ async function sendMainMenu(to: string) {
   );
 }
 
+function buildWhatsAppLeadSummary(state: ReturnType<typeof getLeadState>) {
+  if (!state) {
+    return "WhatsApp lead started.";
+  }
+
+  const parts = [
+    state.selectedOption ? `Intent: ${state.selectedOption}` : "",
+    state.unitType ? `Unit Type: ${state.unitType}` : "",
+    state.budget ? `Budget: ${state.budget}` : "",
+    state.visitTime ? `Visit Time: ${state.visitTime}` : "",
+    state.callTime ? `Call Time: ${state.callTime}` : "",
+  ].filter(Boolean);
+
+  return parts.length
+    ? `WhatsApp journey update. ${parts.join(" | ")}`
+    : "WhatsApp lead started.";
+}
+
+async function syncLeadStateToRecord(
+  phone: string,
+  incomingText: string,
+  stateOverride?: ReturnType<typeof getLeadState>
+) {
+  const state = stateOverride || getLeadState(phone);
+
+  if (!state) {
+    return;
+  }
+
+  let recordId = state.enquiryRecordId;
+
+  if (!recordId) {
+    const latestRecord = await findLatestEnquiryRecord({
+      phone,
+      channel: "whatsapp_form",
+    });
+
+    if (!latestRecord?._id) {
+      return;
+    }
+
+    recordId = String(latestRecord._id);
+    upsertLeadState(phone, { enquiryRecordId: recordId });
+  }
+
+  await updateEnquiryRecord(recordId, {
+    $set: {
+      preferredTime: state.visitTime || state.callTime || "",
+      message: buildWhatsAppLeadSummary(state),
+      "metadata.whatsappJourney.step": state.step,
+      "metadata.whatsappJourney.selectedOption": state.selectedOption || "",
+      "metadata.whatsappJourney.unitType": state.unitType || "",
+      "metadata.whatsappJourney.budget": state.budget || "",
+      "metadata.whatsappJourney.visitTime": state.visitTime || "",
+      "metadata.whatsappJourney.callTime": state.callTime || "",
+      "metadata.whatsappJourney.lastIncomingText": incomingText,
+      "metadata.whatsappJourney.updatedAt": new Date(),
+    },
+  });
+}
+
 async function handleIncomingMessage(from: string, incomingText: string) {
   const text = incomingText.trim();
 
@@ -140,10 +205,11 @@ async function handleIncomingMessage(from: string, incomingText: string) {
   if (state.step === "ASKED_UNIT_TYPE") {
     const unitType = parseUnitType(text);
 
-    upsertLeadState(from, {
+    const updated = upsertLeadState(from, {
       unitType,
       step: "ASKED_BUDGET",
     });
+    await syncLeadStateToRecord(from, text, updated);
 
     await sendTextMessage(
       from,
@@ -165,6 +231,7 @@ async function handleIncomingMessage(from: string, incomingText: string) {
       budget,
       step: "COMPLETED",
     });
+    await syncLeadStateToRecord(from, text, updated);
 
     await sendTextMessage(
       from,
@@ -187,10 +254,11 @@ Reply with: Site Visit`
   if (state.step === "ASKED_VISIT_TIME") {
     const visitTime = text;
 
-    upsertLeadState(from, {
+    const updated = upsertLeadState(from, {
       visitTime,
       step: "COMPLETED",
     });
+    await syncLeadStateToRecord(from, text, updated);
 
     await sendTextMessage(
       from,
@@ -207,10 +275,11 @@ Our team will confirm the visit shortly.`
   if (state.step === "ASKED_CALL_TIME") {
     const callTime = text;
 
-    upsertLeadState(from, {
+    const updated = upsertLeadState(from, {
       callTime,
       step: "COMPLETED",
     });
+    await syncLeadStateToRecord(from, text, updated);
 
     await sendTextMessage(
       from,
@@ -228,10 +297,11 @@ ${appLink}`
   const option = parseMainOption(text);
 
   if (option === "BROCHURE") {
-    upsertLeadState(from, {
+    const updated = upsertLeadState(from, {
       selectedOption: "Project Brochure",
       step: "STARTED",
     });
+    await syncLeadStateToRecord(from, text, updated);
 
     await sendTextMessage(
       from,
@@ -250,10 +320,11 @@ Site Visit`
   }
 
   if (option === "PRICING") {
-    upsertLeadState(from, {
+    const updated = upsertLeadState(from, {
       selectedOption: "Pricing",
       step: "ASKED_UNIT_TYPE",
     });
+    await syncLeadStateToRecord(from, text, updated);
 
     await sendTextMessage(
       from,
@@ -269,10 +340,11 @@ Site Visit`
   }
 
   if (option === "SITE_VISIT") {
-    upsertLeadState(from, {
+    const updated = upsertLeadState(from, {
       selectedOption: "Book Site Visit",
       step: "ASKED_VISIT_TIME",
     });
+    await syncLeadStateToRecord(from, text, updated);
 
     await sendTextMessage(
       from,
@@ -286,10 +358,11 @@ Tomorrow 11 AM`
   }
 
   if (option === "APP_LINK") {
-    upsertLeadState(from, {
+    const updated = upsertLeadState(from, {
       selectedOption: "App Link",
       step: "STARTED",
     });
+    await syncLeadStateToRecord(from, text, updated);
 
     await sendTextMessage(
       from,
@@ -305,10 +378,11 @@ Reply with: Talk to Sales`
   }
 
   if (option === "SALES") {
-    upsertLeadState(from, {
+    const updated = upsertLeadState(from, {
       selectedOption: "Talk to Sales",
       step: "ASKED_CALL_TIME",
     });
+    await syncLeadStateToRecord(from, text, updated);
 
     await sendTextMessage(
       from,

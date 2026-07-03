@@ -10,6 +10,7 @@ export type LeadState = {
   phone: string;
   name?: string;
   projectName?: string;
+  enquiryRecordId?: string;
   step: LeadStep;
   selectedOption?: string;
   unitType?: string;
@@ -45,6 +46,7 @@ export function upsertLeadState(
     phone,
     name: existing?.name,
     projectName: existing?.projectName,
+    enquiryRecordId: existing?.enquiryRecordId,
     step: existing?.step || "STARTED",
     selectedOption: existing?.selectedOption,
     unitType: existing?.unitType,
