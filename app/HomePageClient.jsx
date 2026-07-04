@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import usePerformanceProfile from "@/hooks/usePerformanceProfile";
 import LuxuryPreloader from "@/components/Home/LuxuryPreloader";
+import { primeApartment360FramesForTransition } from "@/lib/apartment360Warmup";
 import {
   markHomeRefreshLoaderSeen,
   setHomePreloaderComplete,
@@ -93,7 +94,10 @@ export default function HomePageClient() {
 
   const primeApartmentsRoute = useCallback(() => {
     router.prefetch("/apartments");
-  }, [router]);
+    return primeApartment360FramesForTransition({
+      isConstrainedDevice: isTabletOrBelow,
+    });
+  }, [isTabletOrBelow, router]);
 
   const handlePreloaderRevealStart = useCallback(() => {
     markHomeRefreshLoaderSeen();
@@ -106,8 +110,8 @@ export default function HomePageClient() {
 
   useEffect(() => {
     router.prefetch("/project-overview");
-    router.prefetch("/apartments");
-  }, [router]);
+    void primeApartmentsRoute();
+  }, [primeApartmentsRoute]);
 
   useEffect(() => {
     if (typeof window === "undefined" || pathname !== "/") {
@@ -175,7 +179,19 @@ export default function HomePageClient() {
       const routePushDelay = path === "/apartments" && isTabletOrBelow ? 80 : 120;
 
       setTimeout(() => {
-        router.push(path);
+        if (path !== "/apartments") {
+          router.push(path);
+          return;
+        }
+
+        void Promise.race([
+          primeApartmentsRoute(),
+          new Promise((resolve) => {
+            window.setTimeout(resolve, isTabletOrBelow ? 220 : 360);
+          }),
+        ]).finally(() => {
+          router.push(path);
+        });
       }, routePushDelay);
     },
     [isTabletOrBelow, primeApartmentsRoute, router],

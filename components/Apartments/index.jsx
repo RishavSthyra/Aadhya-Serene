@@ -4,9 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  ChevronDown,
   ChevronRight,
-  ChevronUp,
 } from "lucide-react";
 import { useApartmentsData } from "../../hooks/useApartmentsData";
 import Filters from "./Filters";
@@ -136,7 +134,12 @@ export default function Apartments() {
   }, [pathname, resetApartmentsExperience]);
 
   useEffect(() => {
-    setIsPanelOpen((current) => (isCompactLayout ? current : true));
+    if (isCompactLayout) {
+      setIsPanelOpen(true);
+      return;
+    }
+
+    setIsPanelOpen(true);
   }, [isCompactLayout]);
 
   useEffect(() => {
@@ -344,18 +347,6 @@ export default function Apartments() {
 
   const renderCompactSheet = (
     <>
-      {isPanelOpen ? (
-        <button
-          type="button"
-          aria-label="Close apartments panel backdrop"
-          onClick={() => setIsPanelOpen(false)}
-          className="fixed inset-0 z-[109] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),rgba(20,16,26,0.2))] backdrop-blur-[3px] xl:hidden"
-          style={{
-            top: `calc(${compactMediaHeight} - ${compactSheetOverlap}px)`,
-          }}
-        />
-      ) : null}
-
       <div
         className="fixed inset-x-0 bottom-0 z-[120] xl:hidden"
         style={{
@@ -364,10 +355,8 @@ export default function Apartments() {
           opacity: 1,
           pointerEvents: isFlatRoutePreparing ? "none" : "auto",
           height: "auto",
-          transform: isPanelOpen
-            ? "translateY(0)"
-            : "translateY(calc(100% - 82px))",
-          transition: "transform 300ms cubic-bezier(0.22,1,0.36,1)",
+          transform: "translateY(0)",
+          transition: "opacity 200ms ease",
         }}
       >
         <aside className="relative flex h-full flex-col overflow-hidden rounded-t-[22px] border border-b-0 border-x-0 border-[#eadff3] bg-[linear-gradient(145deg,rgba(255,252,248,0.98)_0%,rgba(255,251,247,0.96)_42%,rgba(250,244,255,0.94)_100%)] shadow-[0_-16px_42px_rgba(190,170,220,0.16),inset_0_1px_0_rgba(255,255,255,0.98)] saturate-[120%] md:backdrop-blur-[18px]">
@@ -394,14 +383,6 @@ export default function Apartments() {
               >
                 Reset
               </button>
-              <button
-                type="button"
-                onClick={() => setIsPanelOpen((current) => !current)}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#eee4f7] bg-[linear-gradient(180deg,#fffefd_0%,#faf4ff_100%)] text-[#7c7190] shadow-[0_14px_32px_rgba(194,175,221,0.14),inset_0_1px_0_rgba(255,255,255,0.98)] backdrop-blur-[18px] transition hover:border-[#ddcfee] hover:text-[#564b64]"
-                aria-label={isPanelOpen ? "Collapse apartments panel" : "Expand apartments panel"}
-              >
-                {isPanelOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
-              </button>
             </div>
           </div>
 
@@ -422,7 +403,7 @@ export default function Apartments() {
                     onToggle={toggleFilter}
                     onSetRange={setAreaRange}
                     onToggleBoolean={toggleBoolean}
-                    onClose={() => setIsPanelOpen(false)}
+                    onClose={() => {}}
                     onReset={resetFilters}
                     resultCount={data.length}
                     totalCount={allData?.length ?? data.length}

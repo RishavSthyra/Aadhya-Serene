@@ -11,6 +11,7 @@ import {
 } from '../../lib/apartment360Frames';
 import {
     cacheAssetOnce,
+    prefetchAssetsInChunks,
     registerAssetCacheServiceWorker,
 } from '../../lib/client-asset-cache';
 
@@ -53,9 +54,18 @@ const INITIAL_INTERACTION_PRIME_CONCURRENCY = 3;
 const MOBILE_INITIAL_INTERACTION_PRIME_CONCURRENCY = 2;
 const INITIAL_INTERACTION_UNLOCK_COUNT = 8;
 const MOBILE_INITIAL_INTERACTION_UNLOCK_COUNT = 4;
+const GLOBAL_TRANSITION_PRIME_CONCURRENCY = 5;
+const MOBILE_GLOBAL_TRANSITION_PRIME_CONCURRENCY = 3;
+const GLOBAL_TRANSITION_PRIME_TIMEOUT_MS = 900;
+const MOBILE_GLOBAL_TRANSITION_PRIME_TIMEOUT_MS = 1400;
+const GLOBAL_TRANSITION_READY_FRAME_COUNT = 96;
+const MOBILE_GLOBAL_TRANSITION_READY_FRAME_COUNT = 32;
+const GLOBAL_TRANSITION_CACHE_CONCURRENCY = 4;
+const MOBILE_GLOBAL_TRANSITION_CACHE_CONCURRENCY = 2;
 const warmedStartupFrames = new Set();
 const warmedStartupImages = new Map();
 const startupWarmPromises = new Map();
+const transitionPrimePromises = new Map();
 let startupWarmQueue = [];
 let startupWarmActiveLoads = 0;
 let startupWarmIdleHandle = null;
@@ -259,19 +269,129 @@ function getPreloaderScrubWarmSequence(isConstrainedDevice) {
     return orderedFrames;
 }
 
-async function warmFramesWithConcurrency(frameNumbers, { concurrency, timeoutMs }) {
+function appendWarmFrame(frameNumbers, seen, frameNumber) {
+    const normalizedFrame = normalizeFrame(frameNumber);
+
+    if (seen.has(normalizedFrame)) {
+        return;
+    }
+
+    seen.add(normalizedFrame);
+    frameNumbers.push(normalizedFrame);
+}
+
+function getGlobalTransitionWarmSequence(isConstrainedDevice) {
+    const orderedFrames = [];
+    const seen = new Set();
+    const snapRadius = isConstrainedDevice ? 32 : 84;
+    const coarseStride = isConstrainedDevice ? 6 : 3;
+
+    getPreloaderScrubWarmSequence(isConstrainedDevice).forEach((frameNumber) => {
+        appendWarmFrame(orderedFrames, seen, frameNumber);
+    });
+
+    SNAP_POINTS.slice(0, -1).forEach((snapFrame) => {
+        getPreloadSequence(snapFrame, snapRadius).forEach((frameNumber) => {
+            appendWarmFrame(orderedFrames, seen, frameNumber);
+        });
+    });
+
+    for (let frameNumber = 1; frameNumber <= TOTAL_FRAMES; frameNumber += coarseStride) {
+        appendWarmFrame(orderedFrames, seen, frameNumber);
+    }
+
+    for (let frameNumber = 1; frameNumber <= TOTAL_FRAMES; frameNumber += 1) {
+        appendWarmFrame(orderedFrames, seen, frameNumber);
+    }
+
+    return orderedFrames;
+}
+
+async function warmFramesWithConcurrency(frameNumbers, {
+    concurrency,
+    timeoutMs,
+    priority = 'low',
+}) {
     const queue = [...new Set(frameNumbers.map((frameNumber) => normalizeFrame(frameNumber)))];
     let index = 0;
+    let successCount = 0;
 
     const workers = Array.from({ length: Math.max(1, concurrency) }, async () => {
         while (index < queue.length) {
             const nextIndex = index;
             index += 1;
-            await warmStartupFrame(queue[nextIndex], timeoutMs);
+            const didWarm = await warmStartupFrame(queue[nextIndex], timeoutMs, priority);
+
+            if (didWarm) {
+                successCount += 1;
+            }
         }
     });
 
     await Promise.all(workers);
+    return {
+        requestedCount: queue.length,
+        successCount,
+    };
+}
+
+export function prewarmApartment360FramesForTransition({
+    isConstrainedDevice = false,
+} = {}) {
+    if (typeof window === 'undefined') {
+        return Promise.resolve(false);
+    }
+
+    const cacheKey = isConstrainedDevice ? 'constrained' : 'default';
+    const existingPromise = transitionPrimePromises.get(cacheKey);
+    if (existingPromise) {
+        return existingPromise;
+    }
+
+    const warmSequence = getGlobalTransitionWarmSequence(isConstrainedDevice);
+    const readyFrameCount = Math.min(
+        isConstrainedDevice ? MOBILE_GLOBAL_TRANSITION_READY_FRAME_COUNT : GLOBAL_TRANSITION_READY_FRAME_COUNT,
+        warmSequence.length,
+    );
+    const readySequence = warmSequence.slice(0, readyFrameCount);
+    const concurrency = isConstrainedDevice
+        ? MOBILE_GLOBAL_TRANSITION_PRIME_CONCURRENCY
+        : GLOBAL_TRANSITION_PRIME_CONCURRENCY;
+    const cacheConcurrency = isConstrainedDevice
+        ? MOBILE_GLOBAL_TRANSITION_CACHE_CONCURRENCY
+        : GLOBAL_TRANSITION_CACHE_CONCURRENCY;
+    const timeoutMs = isConstrainedDevice
+        ? MOBILE_GLOBAL_TRANSITION_PRIME_TIMEOUT_MS
+        : GLOBAL_TRANSITION_PRIME_TIMEOUT_MS;
+
+    void registerAssetCacheServiceWorker();
+
+    const primePromise = (async () => {
+        prefetchAssetsInChunks(warmSequence.map((frameNumber) => getFrameUrl(frameNumber)), {
+            chunkSize: isConstrainedDevice ? 6 : 12,
+            concurrency: cacheConcurrency,
+            priority: 'low',
+            immediate: true,
+            gapMs: isConstrainedDevice ? 80 : 40,
+            idleTimeoutMs: isConstrainedDevice ? 1200 : 800,
+            delayMs: 0,
+            timeoutMs,
+        });
+        const { requestedCount, successCount } = await warmFramesWithConcurrency(readySequence, {
+            concurrency,
+            timeoutMs,
+            priority: 'high',
+        });
+
+        if (requestedCount === 0) {
+            return false;
+        }
+
+        return successCount >= Math.max(1, Math.floor(requestedCount * 0.6));
+    })();
+
+    transitionPrimePromises.set(cacheKey, primePromise);
+    return primePromise;
 }
 
 function pumpStartupWarmQueue(runId, options) {

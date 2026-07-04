@@ -8,10 +8,10 @@ import {
 } from '@/lib/client-asset-cache';
 import {
   APARTMENT_360_PRIMARY_PRELOAD_COUNT,
-  APARTMENT_360_SNAP_POINTS,
   APARTMENT_360_TOTAL_FRAMES,
   apartment360FrameUrl,
 } from '@/lib/apartment360Frames';
+import { primeApartment360FramesForTransition } from '@/lib/apartment360Warmup';
 import { getProjectOverviewShellAssets } from '@/lib/project-overview-assets';
 import styles from '../../app/home.module.css';
 
@@ -23,24 +23,9 @@ const EASE_OUT_CUBIC = (value) => 1 - ((1 - value) ** 3);
 const HOME_VIDEO = 'https://cdn.sthyra.com/AADHYA%20SERENE/videos/Aadhya%20Serene%20Home%20Page%206%201%20Chr2.mp4';
 const HOME_POSTER = 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya_Serene_Home_Page_6_First_Frame.avif';
 const ROT360_TOTAL_FRAMES = APARTMENT_360_TOTAL_FRAMES;
-const ROT360_SNAP_POINTS = APARTMENT_360_SNAP_POINTS;
 
 function frameUrl(frameNumber) {
   return apartment360FrameUrl(frameNumber);
-}
-
-function normalizeFrameNumber(frameNumber) {
-  return (((Math.round(frameNumber) - 1) % ROT360_TOTAL_FRAMES) + ROT360_TOTAL_FRAMES) % ROT360_TOTAL_FRAMES + 1;
-}
-
-function appendFrame(frames, seen, frameNumber) {
-  const normalizedFrame = normalizeFrameNumber(frameNumber);
-  if (seen.has(normalizedFrame)) {
-    return;
-  }
-
-  seen.add(normalizedFrame);
-  frames.push(normalizedFrame);
 }
 
 function getPreloaderScrubFrames() {
@@ -48,34 +33,6 @@ function getPreloaderScrubFrames() {
     { length: Math.min(APARTMENT_360_PRIMARY_PRELOAD_COUNT, ROT360_TOTAL_FRAMES) },
     (_, index) => index + 1,
   );
-}
-
-function getGradualRot360WarmFrames(isConstrainedDevice) {
-  const frames = [];
-  const seen = new Set();
-  const snapRadius = isConstrainedDevice ? 48 : 96;
-  const coarseStride = isConstrainedDevice ? 10 : 6;
-
-  getPreloaderScrubFrames().forEach((frameNumber) => {
-    appendFrame(frames, seen, frameNumber);
-  });
-
-  ROT360_SNAP_POINTS.forEach((centerFrame) => {
-    for (let offset = 0; offset <= snapRadius; offset += 1) {
-      appendFrame(frames, seen, centerFrame + offset);
-      appendFrame(frames, seen, centerFrame - offset);
-    }
-  });
-
-  for (let frameNumber = APARTMENT_360_PRIMARY_PRELOAD_COUNT + 1; frameNumber <= ROT360_TOTAL_FRAMES; frameNumber += coarseStride) {
-    appendFrame(frames, seen, frameNumber);
-  }
-
-  for (let frameNumber = APARTMENT_360_PRIMARY_PRELOAD_COUNT + 1; frameNumber <= ROT360_TOTAL_FRAMES; frameNumber += 1) {
-    appendFrame(frames, seen, frameNumber);
-  }
-
-  return frames;
 }
 
 function shouldUseSafeMedia() {
@@ -109,10 +66,6 @@ function getIdleWarmAssets() {
   ];
 }
 
-function getGradualRot360WarmAssets(isConstrainedDevice) {
-  return getGradualRot360WarmFrames(isConstrainedDevice).map(frameUrl);
-}
-
 export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
   const completionReportedRef = useRef(false);
   const revealReportedRef = useRef(false);
@@ -132,6 +85,7 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
     const startTime = performance.now();
     const useSafeMedia = shouldUseSafeMedia();
     const criticalAssets = getCriticalAssets();
+    const trackedAssetCount = criticalAssets.length + 1;
     let completedAssets = 0;
     let criticalDone = false;
     let timedOut = false;
@@ -168,20 +122,6 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
         pauseRetryMs: useSafeMedia ? 900 : 560,
       });
 
-      prefetchAssetsInChunks(getGradualRot360WarmAssets(useSafeMedia), {
-        chunkSize: useSafeMedia ? 8 : 16,
-        concurrency: useSafeMedia ? 2 : 4,
-        priority: 'low',
-        immediate: true,
-        gapMs: useSafeMedia ? 120 : 60,
-        idleTimeoutMs: useSafeMedia ? 1800 : 1000,
-        delayMs: useSafeMedia ? 120 : 20,
-        timeoutMs: useSafeMedia ? 5000 : 7000,
-        pauseDuringBackgroundTransition: true,
-        pauseOnAmenitiesRoute: true,
-        pauseRetryMs: useSafeMedia ? 900 : 560,
-      });
-
       window.setTimeout(() => {
         if (cancelled || completionReportedRef.current) return;
         completionReportedRef.current = true;
@@ -191,8 +131,8 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
 
     const tick = (now) => {
       const elapsed = now - startTime;
-      const assetProgress = criticalAssets.length > 0
-        ? completedAssets / criticalAssets.length
+      const assetProgress = trackedAssetCount > 0
+        ? completedAssets / trackedAssetCount
         : 1;
       const timeProgress = Math.min(elapsed / MIN_PRELOADER_DURATION_MS, 1);
       const maxTimeProgress = Math.min(elapsed / MAX_PRELOADER_DURATION_MS, 1);
@@ -215,6 +155,9 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
     };
 
     void registerAssetCacheServiceWorker();
+    const transitionPrimePromise = primeApartment360FramesForTransition({
+      isConstrainedDevice: useSafeMedia,
+    }).finally(reportAssetComplete);
     const criticalQueue = [...criticalAssets];
     const criticalWorkers = Array.from({ length: criticalWorkerCount }, async () => {
       while (!cancelled && criticalQueue.length > 0) {
@@ -229,7 +172,7 @@ export default function LuxuryPreloader({ onRevealStart, onCycleComplete }) {
       }
     });
 
-    Promise.allSettled(criticalWorkers).then(() => {
+    Promise.allSettled([...criticalWorkers, transitionPrimePromise]).then(() => {
       criticalDone = true;
     });
 
