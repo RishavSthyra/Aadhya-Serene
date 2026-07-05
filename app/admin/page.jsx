@@ -11,12 +11,14 @@ import {
     KeyRound,
     LayoutDashboard,
     LogOut,
+    Menu,
     MessageSquare,
     RefreshCcw,
     Search,
     ShieldCheck,
     UserPlus,
     UsersRound,
+    X,
 } from 'lucide-react';
 import { RiArrowDownSLine } from 'react-icons/ri';
 import {
@@ -53,6 +55,19 @@ const CHANNEL_LABELS = {
     whatsapp_form: 'WhatsApp Form',
 };
 
+const ADMIN_NAV_ITEMS = [
+    { icon: LayoutDashboard, label: 'Dashboard', section: 'dashboard' },
+    { icon: MessageSquare, label: 'Leads', section: 'leads' },
+    { icon: Home, label: 'Inventory', section: 'inventory' },
+    { icon: UsersRound, label: 'RBAC Users', section: 'users' },
+    { icon: KeyRound, label: 'Signup Keys', section: 'keys' },
+    { icon: BarChart3, label: 'Reports', section: 'reports' },
+];
+
+function isActiveAdminSection(activeSection, section) {
+    return activeSection === section || (section === 'users' && activeSection === 'keys');
+}
+
 function formatAdminDate(value) {
     if (!value) return 'Not available';
 
@@ -79,6 +94,59 @@ function getLeadJourneySummary(lead) {
     ].filter(Boolean);
 
     return parts.length ? parts.join(' | ') : 'WhatsApp flow started.';
+}
+
+function AdminSidebar({ user, activeSection, onNavigate, onClose = null, className = '' }) {
+    return (
+        <aside className={className}>
+            <div className="flex h-20 items-center justify-between gap-3 border-b border-[#111]/10 px-5 sm:h-24 sm:px-7">
+                <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#111] text-white shadow-[0_10px_0_rgba(17,17,17,0.12),0_22px_32px_rgba(17,17,17,0.18)]">
+                        <Building2 className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                        <p className="truncate font-display text-base font-bold text-[#111] sm:text-lg">Aadhya Admin</p>
+                        <p className="text-xs font-bold text-[#6b7280]">Serene inventory</p>
+                    </div>
+                </div>
+                {onClose ? (
+                    <button
+                        type="button"
+                        aria-label="Close navigation menu"
+                        onClick={onClose}
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#111]/10 bg-white text-[#111] shadow-[0_7px_0_rgba(17,17,17,0.04),0_16px_32px_rgba(17,17,17,0.06)] lg:hidden"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
+                ) : null}
+            </div>
+
+            <nav className="flex-1 space-y-2 px-4 py-5 sm:px-5 sm:py-7">
+                {ADMIN_NAV_ITEMS.map(({ icon: Icon, label, section }) => (
+                    <button
+                        key={label}
+                        type="button"
+                        onClick={() => onNavigate(section)}
+                        className={`flex h-12 w-full items-center gap-3 rounded-2xl px-4 text-sm font-bold transition ${
+                            isActiveAdminSection(activeSection, section)
+                                ? 'bg-[#111] text-white shadow-[0_8px_0_rgba(17,17,17,0.08),0_18px_32px_rgba(17,17,17,0.16)]'
+                                : 'text-[#6b7280] hover:bg-white hover:text-[#111] hover:shadow-[0_10px_24px_rgba(17,17,17,0.07)]'
+                        }`}
+                    >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{label}</span>
+                    </button>
+                ))}
+            </nav>
+
+            <div className="border-t border-[#111]/10 p-4 sm:p-5">
+                <div className="rounded-[24px] border border-[#111]/10 bg-white p-4 shadow-[0_10px_0_rgba(17,17,17,0.035),inset_0_1px_0_rgba(255,255,255,1)]">
+                    <p className="truncate text-sm font-bold text-[#111]">{user.name}</p>
+                    <p className="mt-1 text-xs font-medium text-[#6b7280]">{ROLE_LABELS[user.role]}</p>
+                </div>
+            </div>
+        </aside>
+    );
 }
 
 function AuthPanel({ onAuthed }) {
@@ -120,8 +188,8 @@ function AuthPanel({ onAuthed }) {
     }
 
     return (
-        <main className="font-display fixed inset-0 z-[999] grid min-h-screen bg-[#f4f4f2] text-[#111] lg:grid-cols-[520px_1fr]">
-            <section className="flex min-h-screen flex-col justify-between bg-[#fbfbfa] px-8 py-8 shadow-[12px_0_40px_rgba(17,17,17,0.06)]">
+        <main className="font-display fixed inset-0 z-[999] overflow-y-auto bg-[#f4f4f2] text-[#111] lg:grid lg:min-h-screen lg:grid-cols-[520px_1fr] lg:overflow-hidden">
+            <section className="flex flex-col justify-between gap-8 bg-[#fbfbfa] px-5 py-6 shadow-[12px_0_40px_rgba(17,17,17,0.06)] sm:px-8 sm:py-8 lg:min-h-screen">
                 <div>
                     <div className="flex items-center gap-3">
                         <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#111] text-white shadow-[0_8px_0_rgba(17,17,17,0.1)]">
@@ -133,11 +201,11 @@ function AuthPanel({ onAuthed }) {
                         </div>
                     </div>
 
-                    <div className="mt-16 max-w-sm">
+                    <div className="mt-10 max-w-md sm:mt-16">
                         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#6b7280]">
                             Secure dashboard
                         </p>
-                        <h1 className="mt-4 text-4xl font-bold leading-tight text-[#111]">
+                        <h1 className="mt-4 text-3xl font-bold leading-tight text-[#111] sm:text-4xl">
                             Manage every flat from one clean control room.
                         </h1>
                         <p className="mt-4 text-sm leading-6 text-[#6b7280]">
@@ -156,10 +224,10 @@ function AuthPanel({ onAuthed }) {
                 </div>
             </section>
 
-            <section className="flex items-center justify-center px-6 py-10">
+            <section className="flex items-center justify-center px-4 py-6 sm:px-6 sm:py-10">
                 <form
                     onSubmit={submit}
-                    className="w-full max-w-md rounded-3xl border border-[#111]/10 bg-white p-7 shadow-[0_12px_0_rgba(17,17,17,0.04),0_24px_70px_rgba(17,17,17,0.08)]"
+                    className="w-full max-w-lg rounded-3xl border border-[#111]/10 bg-white p-5 shadow-[0_12px_0_rgba(17,17,17,0.04),0_24px_70px_rgba(17,17,17,0.08)] sm:p-7 lg:max-w-md"
                 >
                     <div className="mb-6">
                         <h2 className="text-2xl font-bold text-[#111]">
@@ -252,12 +320,12 @@ function AuthPanel({ onAuthed }) {
 
 function KpiCard({ label, value, helper, icon: Icon }) {
     return (
-        <article className="group relative overflow-hidden rounded-[26px] border border-[#111]/10 bg-white p-6 shadow-[0_18px_0_rgba(17,17,17,0.04),0_28px_60px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)]">
+        <article className="group relative overflow-hidden rounded-[24px] border border-[#111]/10 bg-white p-5 shadow-[0_18px_0_rgba(17,17,17,0.04),0_28px_60px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[26px] sm:p-6">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white" />
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">{label}</p>
-                    <p className="mt-4 font-display text-[2.55rem] font-bold leading-none tracking-tight text-[#111]">{value}</p>
+                    <p className="mt-4 font-display text-[2.1rem] font-bold leading-none tracking-tight text-[#111] sm:text-[2.55rem]">{value}</p>
                     <p className="mt-3 text-xs font-bold text-[#111]/70">{helper}</p>
                 </div>
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#111]/10 bg-[#f7f7f7] text-[#111] shadow-[inset_0_1px_0_rgba(255,255,255,1),0_8px_0_rgba(17,17,17,0.04)]">
@@ -270,7 +338,7 @@ function KpiCard({ label, value, helper, icon: Icon }) {
 
 function PremiumPieChart({ title, subtitle, entries, total }) {
     return (
-        <div className="rounded-[26px] border border-[#111]/10 bg-white p-5 shadow-[0_16px_0_rgba(17,17,17,0.035),0_26px_54px_rgba(17,17,17,0.07)]">
+        <div className="rounded-[24px] border border-[#111]/10 bg-white p-4 shadow-[0_16px_0_rgba(17,17,17,0.035),0_26px_54px_rgba(17,17,17,0.07)] sm:rounded-[26px] sm:p-5">
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">{subtitle}</p>
@@ -282,7 +350,7 @@ function PremiumPieChart({ title, subtitle, entries, total }) {
             </div>
 
             <div className="mt-5 grid items-center gap-5 lg:grid-cols-[1fr_190px]">
-                <div className="h-[240px] min-w-0">
+                <div className="h-[220px] min-w-0 sm:h-[240px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Tooltip
@@ -390,6 +458,7 @@ export default function AdminPage() {
     const [query, setQuery] = useState('');
     const [leadQuery, setLeadQuery] = useState('');
     const [activeSection, setActiveSection] = useState('dashboard');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const contentRef = useRef(null);
     const dashboardRef = useRef(null);
     const leadsRef = useRef(null);
@@ -448,6 +517,29 @@ export default function AdminPage() {
         const intervalId = window.setInterval(refreshAll, 30000);
         return () => window.clearInterval(intervalId);
     }, [user]);
+
+    useEffect(() => {
+        const previousOverflow = document.body.style.overflow;
+
+        if (sidebarOpen) {
+            document.body.style.overflow = 'hidden';
+        }
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [sidebarOpen]);
+
+    useEffect(() => {
+        function handleResize() {
+            if (window.innerWidth >= 1024) {
+                setSidebarOpen(false);
+            }
+        }
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const stats = useMemo(() => {
         const byStatus = STATUS_OPTIONS.reduce((acc, status) => ({ ...acc, [status]: 0 }), {});
@@ -576,10 +668,11 @@ export default function AdminPage() {
         },
     };
 
-    const activeSectionMeta =
-        activeSection === 'leads' ? sectionMeta.leads : sectionMeta.dashboard;
+    const activeSectionMeta = sectionMeta[activeSection] || sectionMeta.dashboard;
 
     function goToSection(section) {
+        setSidebarOpen(false);
+
         if (section === 'leads') {
             setActiveSection('leads');
             contentRef.current?.scrollTo({
@@ -598,9 +691,19 @@ export default function AdminPage() {
         };
 
         setActiveSection(section);
-        sectionRefs[section]?.current?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
+        window.requestAnimationFrame(() => {
+            if (section === 'dashboard') {
+                contentRef.current?.scrollTo({
+                    top: 0,
+                    behavior: 'smooth',
+                });
+                return;
+            }
+
+            sectionRefs[section]?.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+            });
         });
     }
 
@@ -649,6 +752,7 @@ export default function AdminPage() {
 
     async function logout() {
         await fetch('/api/admin/auth/logout', { method: 'POST' });
+        setSidebarOpen(false);
         setUser(null);
         setFlats([]);
         setLeads([]);
@@ -672,65 +776,56 @@ export default function AdminPage() {
 
     return (
         <main className="font-display fixed inset-0 z-[999] flex min-h-screen overflow-hidden bg-[#f4f4f2] text-[#111]">
-            <aside className="hidden w-[292px] shrink-0 border-r border-[#111]/10 bg-[#fbfbfa] shadow-[18px_0_55px_rgba(17,17,17,0.06)] lg:flex lg:flex-col">
-                <div className="flex h-24 items-center gap-3 border-b border-[#111]/10 px-7">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#111] text-white shadow-[0_10px_0_rgba(17,17,17,0.12),0_22px_32px_rgba(17,17,17,0.18)]">
-                        <Building2 className="h-5 w-5" />
-                    </span>
-                    <div>
-                        <p className="font-display text-lg font-bold text-[#111]">Aadhya Admin</p>
-                        <p className="text-xs font-bold text-[#6b7280]">Serene inventory</p>
-                    </div>
-                </div>
+            {sidebarOpen ? (
+                <button
+                    type="button"
+                    aria-label="Close navigation menu"
+                    onClick={() => setSidebarOpen(false)}
+                    className="fixed inset-0 z-40 bg-black/35 lg:hidden"
+                />
+            ) : null}
 
-                <nav className="flex-1 space-y-2 px-5 py-7">
-                    {[
-                        [LayoutDashboard, 'Dashboard', 'dashboard'],
-                        [MessageSquare, 'Leads', 'leads'],
-                        [Home, 'Inventory', 'inventory'],
-                        [UsersRound, 'RBAC Users', 'users'],
-                        [KeyRound, 'Signup Keys', 'keys'],
-                        [BarChart3, 'Reports', 'reports'],
-                    ].map(([Icon, label, section]) => (
-                        <button
-                            key={label}
-                            type="button"
-                            onClick={() => goToSection(section)}
-                            className={`flex h-12 w-full items-center gap-3 rounded-2xl px-4 text-sm font-bold transition ${
-                                activeSection === section || (section === 'users' && activeSection === 'keys')
-                                    ? 'bg-[#111] text-white shadow-[0_8px_0_rgba(17,17,17,0.08),0_18px_32px_rgba(17,17,17,0.16)]'
-                                    : 'text-[#6b7280] hover:bg-white hover:text-[#111] hover:shadow-[0_10px_24px_rgba(17,17,17,0.07)]'
-                            }`}
-                        >
-                            <Icon className="h-4 w-4" />
-                            {label}
-                        </button>
-                    ))}
-                </nav>
+            <AdminSidebar
+                user={user}
+                activeSection={activeSection}
+                onNavigate={goToSection}
+                className="hidden w-[292px] shrink-0 border-r border-[#111]/10 bg-[#fbfbfa] shadow-[18px_0_55px_rgba(17,17,17,0.06)] lg:flex lg:flex-col"
+            />
 
-                <div className="border-t border-[#111]/10 p-5">
-                    <div className="rounded-[24px] border border-[#111]/10 bg-white p-4 shadow-[0_10px_0_rgba(17,17,17,0.035),inset_0_1px_0_rgba(255,255,255,1)]">
-                        <p className="text-sm font-bold text-[#111]">{user.name}</p>
-                        <p className="mt-1 text-xs font-medium text-[#6b7280]">{ROLE_LABELS[user.role]}</p>
-                    </div>
-                </div>
-            </aside>
+            <AdminSidebar
+                user={user}
+                activeSection={activeSection}
+                onNavigate={goToSection}
+                onClose={() => setSidebarOpen(false)}
+                className={`fixed inset-y-0 left-0 z-50 flex w-[min(86vw,292px)] flex-col border-r border-[#111]/10 bg-[#fbfbfa] shadow-[18px_0_55px_rgba(17,17,17,0.14)] transition-transform duration-300 lg:hidden ${
+                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                }`}
+            />
 
             <section className="flex min-w-0 flex-1 flex-col">
-                <header className="flex h-24 shrink-0 items-center justify-between gap-4 border-b border-[#111]/10 bg-[#fbfbfa] px-6 shadow-[0_14px_40px_rgba(17,17,17,0.05)] lg:px-9">
-                    <div className="min-w-0">
-                        <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">
-                            {activeSectionMeta.eyebrow}
-                        </p>
-                        <h1 className="mt-1 truncate font-display text-3xl font-bold tracking-tight text-[#111]">
-                            {activeSectionMeta.title}
-                        </h1>
+                <header className="flex min-h-[88px] shrink-0 flex-wrap items-start justify-between gap-4 border-b border-[#111]/10 bg-[#fbfbfa] px-4 py-4 shadow-[0_14px_40px_rgba(17,17,17,0.05)] sm:px-6 lg:h-24 lg:flex-nowrap lg:items-center lg:px-9">
+                    <div className="flex min-w-0 items-start gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setSidebarOpen(true)}
+                            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#111]/10 bg-white text-[#111] shadow-[0_7px_0_rgba(17,17,17,0.04),0_16px_32px_rgba(17,17,17,0.06)] lg:hidden"
+                        >
+                            <Menu className="h-5 w-5" />
+                        </button>
+                        <div className="min-w-0">
+                            <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">
+                                {activeSectionMeta.eyebrow}
+                            </p>
+                            <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#111] sm:text-3xl">
+                                {activeSectionMeta.title}
+                            </h1>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
                         <button
                             type="button"
                             onClick={refreshAll}
-                            className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[#111]/10 bg-white px-4 text-sm font-bold text-[#111] shadow-[0_7px_0_rgba(17,17,17,0.04),0_16px_32px_rgba(17,17,17,0.06)] transition hover:-translate-y-0.5"
+                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[#111]/10 bg-white px-4 text-sm font-bold text-[#111] shadow-[0_7px_0_rgba(17,17,17,0.04),0_16px_32px_rgba(17,17,17,0.06)] transition hover:-translate-y-0.5 sm:w-auto"
                         >
                             <RefreshCcw className="h-4 w-4" />
                             Refresh
@@ -738,7 +833,7 @@ export default function AdminPage() {
                         <button
                             type="button"
                             onClick={logout}
-                            className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#111] px-5 text-sm font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0"
+                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#111] px-5 text-sm font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0 sm:w-auto"
                         >
                             <LogOut className="h-4 w-4" />
                             Logout
@@ -746,16 +841,16 @@ export default function AdminPage() {
                     </div>
                 </header>
 
-                <div ref={contentRef} className="min-h-0 flex-1 scroll-smooth overflow-auto px-6 py-7 lg:px-9">
+                <div ref={contentRef} className="min-h-0 flex-1 scroll-smooth overflow-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-9 lg:py-7">
                     {notice ? (
-                        <p className="mb-6 rounded-2xl border border-[#111]/10 bg-white px-5 py-3 text-sm font-bold text-[#111] shadow-[0_12px_28px_rgba(17,17,17,0.08)]">
+                        <p className="mb-5 rounded-2xl border border-[#111]/10 bg-white px-4 py-3 text-sm font-bold text-[#111] shadow-[0_12px_28px_rgba(17,17,17,0.08)] sm:mb-6 sm:px-5">
                             {notice}
                         </p>
                     ) : null}
 
                     {activeSection === 'leads' ? (
-                    <section ref={leadsRef} className="scroll-mt-8 overflow-hidden rounded-[30px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)]">
-                        <div className="flex flex-col gap-5 border-b border-[#111]/10 px-7 py-6">
+                    <section ref={leadsRef} className="scroll-mt-8 overflow-hidden rounded-[24px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px]">
+                        <div className="flex flex-col gap-5 border-b border-[#111]/10 px-4 py-5 sm:px-7 sm:py-6">
                             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                                 <div>
                                     <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Lead Management</p>
@@ -767,14 +862,14 @@ export default function AdminPage() {
                                 <button
                                     type="button"
                                     onClick={downloadLeadCsv}
-                                    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#111] px-5 text-sm font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0"
+                                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#111] px-5 text-sm font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0 sm:w-auto"
                                 >
                                     <Download className="h-4 w-4" />
                                     Download CSV
                                 </button>
                             </div>
 
-                            <div className="grid gap-4 xl:grid-cols-4">
+                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                                 <div className="rounded-[24px] border border-[#111]/10 bg-[#fafafa] px-5 py-4">
                                     <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">Total Leads</p>
                                     <p className="mt-3 text-3xl font-bold text-[#111]">{leadStats.total}</p>
@@ -804,7 +899,67 @@ export default function AdminPage() {
                             </div>
                         </div>
 
-                        <div className="max-h-[620px] overflow-auto">
+                        <div className="divide-y divide-[#111]/10 xl:hidden">
+                            {visibleLeads.length ? (
+                                visibleLeads.map((lead) => (
+                                    <article key={lead.id} className="px-4 py-5 sm:px-6">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                            <div>
+                                                <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#6b7280]">
+                                                    {formatAdminDate(lead.createdAt)}
+                                                </p>
+                                                <h3 className="mt-2 text-lg font-bold text-[#111]">
+                                                    {lead.name || 'Unknown lead'}
+                                                </h3>
+                                                <p className="mt-1 text-sm font-medium text-[#374151]">{lead.phone || 'No phone'}</p>
+                                                <p className="mt-1 break-words text-sm text-[#6b7280]">{lead.email || 'No email captured'}</p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <span className="inline-flex items-center gap-2 rounded-2xl border border-[#111]/10 bg-[#fafafa] px-4 py-2 text-xs font-bold text-[#111]">
+                                                    <MessageSquare className="h-4 w-4" />
+                                                    {CHANNEL_LABELS[lead.channel] || lead.channel}
+                                                </span>
+                                                <span className="inline-flex items-center rounded-2xl border border-[#111]/10 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">
+                                                    {lead.source || 'website'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                                            <div className="rounded-[22px] border border-[#111]/10 bg-[#fafafa] p-4">
+                                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Request</p>
+                                                <p className="mt-2 font-bold text-[#111]">{lead.requestLabel || 'General Enquiry'}</p>
+                                                <p className="mt-2 text-sm leading-6 text-[#4b5563]">{lead.message || 'No message provided.'}</p>
+                                                {lead.preferredTime ? (
+                                                    <p className="mt-2 text-xs font-bold text-[#6b7280]">
+                                                        Preferred time: {lead.preferredTime}
+                                                    </p>
+                                                ) : null}
+                                            </div>
+
+                                            <div className="rounded-[22px] border border-[#111]/10 bg-[#fafafa] p-4">
+                                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Journey</p>
+                                                <p className="mt-2 text-sm leading-6 text-[#374151]">{getLeadJourneySummary(lead)}</p>
+                                                <p className="mt-3 text-xs font-medium text-[#6b7280]">
+                                                    Updated {formatAdminDate(lead.updatedAt)}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                                            <DeliveryPill label="Email" state={lead.emailDelivery} />
+                                            <DeliveryPill label="WhatsApp" state={lead.whatsappDelivery} />
+                                        </div>
+                                    </article>
+                                ))
+                            ) : (
+                                <div className="px-4 py-10 text-center text-sm font-medium text-[#6b7280] sm:px-6">
+                                    No leads match your current search.
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="hidden max-h-[620px] overflow-auto xl:block">
                             <table className="w-full min-w-[1320px] border-collapse text-left">
                                 <thead className="sticky top-0 z-10 bg-[#f7f7f7] text-xs uppercase tracking-[0.1em] text-[#6b7280]">
                                     <tr>
@@ -867,7 +1022,7 @@ export default function AdminPage() {
                     </section>
                     ) : (
                     <>
-                    <section ref={dashboardRef} className="scroll-mt-8 grid gap-5 xl:grid-cols-4">
+                    <section ref={dashboardRef} className="scroll-mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
                         <KpiCard label="Total Flats" value={stats.total} helper="Live MongoDB inventory" icon={Building2} />
                         <KpiCard label="Available" value={stats.available} helper="Ready for sale" icon={CheckCircle2} />
                         <KpiCard label="Reserved" value={stats.byStatus.reserved} helper="Temporarily held" icon={ShieldCheck} />
@@ -875,8 +1030,8 @@ export default function AdminPage() {
                     </section>
 
                     <section ref={reportsRef} className="mt-7 scroll-mt-8 grid gap-6 xl:grid-cols-[1fr_380px]">
-                        <div className="rounded-[30px] border border-[#111]/10 bg-white p-6 shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)]">
-                            <div className="mb-6 flex items-center justify-between">
+                        <div className="rounded-[24px] border border-[#111]/10 bg-white p-4 shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px] sm:p-6">
+                            <div className="mb-6 flex items-center justify-between gap-4">
                                 <div>
                                     <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Overview</p>
                                     <h2 className="mt-1 font-display text-2xl font-bold text-[#111]">Inventory Analytics</h2>
@@ -902,7 +1057,7 @@ export default function AdminPage() {
                             </div>
                         </div>
 
-                        <aside ref={keysRef} className="scroll-mt-8 rounded-[30px] border border-[#111]/10 bg-white p-6 shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)]">
+                        <aside ref={keysRef} className="scroll-mt-8 rounded-[24px] border border-[#111]/10 bg-white p-4 shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px] sm:p-6">
                             <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Super Admin Tools</p>
                             <h2 className="mt-1 font-display text-2xl font-bold text-[#111]">Signup Keys</h2>
                             {isSuperAdmin ? (
@@ -942,8 +1097,8 @@ export default function AdminPage() {
                         </aside>
                     </section>
 
-                    <section ref={inventoryRef} className="mt-7 scroll-mt-8 overflow-hidden rounded-[30px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)]">
-                        <div className="flex flex-col gap-5 border-b border-[#111]/10 px-7 py-6 xl:flex-row xl:items-center xl:justify-between">
+                    <section ref={inventoryRef} className="mt-7 scroll-mt-8 overflow-hidden rounded-[24px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px]">
+                        <div className="flex flex-col gap-5 border-b border-[#111]/10 px-4 py-5 sm:px-7 sm:py-6 xl:flex-row xl:items-center xl:justify-between">
                             <div>
                                 <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Inventory Control</p>
                                 <h2 className="mt-1 font-display text-2xl font-bold text-[#111]">Flat Status Management</h2>
@@ -959,7 +1114,67 @@ export default function AdminPage() {
                             </div>
                         </div>
 
-                        <div className="max-h-[560px] overflow-auto">
+                        <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6 xl:hidden">
+                            {visibleFlats.length ? (
+                                visibleFlats.map((flat) => (
+                                    <article key={flat.flat} className="rounded-[24px] border border-[#111]/10 bg-[#fafafa] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,1)]">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div>
+                                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Flat</p>
+                                                <h3 className="mt-2 text-xl font-bold tracking-[0.06em] text-[#111]">{flat.flat}</h3>
+                                                <p className="mt-1 text-sm font-bold text-[#374151]">{flat.type}</p>
+                                            </div>
+                                            {!canWrite ? (
+                                                <span className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-[#111]/10 bg-white px-4 py-2 text-sm font-bold capitalize text-[#374151]">
+                                                    <CheckCircle2 className="h-4 w-4 text-[#111]" />
+                                                    {normalizeStatus(flat.status)}
+                                                </span>
+                                            ) : null}
+                                        </div>
+
+                                        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                            <div className="rounded-2xl border border-[#111]/10 bg-white px-3 py-3">
+                                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Floor</p>
+                                                <p className="mt-1 font-bold text-[#111]">{flat.floor}</p>
+                                            </div>
+                                            <div className="rounded-2xl border border-[#111]/10 bg-white px-3 py-3">
+                                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Facing</p>
+                                                <p className="mt-1 font-bold capitalize text-[#111]">{flat.facing}</p>
+                                            </div>
+                                            <div className="rounded-2xl border border-[#111]/10 bg-white px-3 py-3">
+                                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Area</p>
+                                                <p className="mt-1 font-bold text-[#111]">{flat.area} sqft</p>
+                                            </div>
+                                            <div className="rounded-2xl border border-[#111]/10 bg-white px-3 py-3">
+                                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Balconies</p>
+                                                <p className="mt-1 font-bold text-[#111]">{flat.balconies}</p>
+                                            </div>
+                                        </div>
+
+                                        {canWrite ? (
+                                            <div className="mt-4">
+                                                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Status</p>
+                                                <SelectControl
+                                                    value={normalizeStatus(flat.status)}
+                                                    disabled={busyFlat === flat.flat}
+                                                    onChange={(status) => updateStatus(flat.flat, status)}
+                                                    options={STATUS_OPTIONS.map((status) => ({
+                                                        value: status,
+                                                        label: status,
+                                                    }))}
+                                                />
+                                            </div>
+                                        ) : null}
+                                    </article>
+                                ))
+                            ) : (
+                                <div className="col-span-full py-6 text-center text-sm font-medium text-[#6b7280]">
+                                    No flats match your current search.
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="hidden max-h-[560px] overflow-auto xl:block">
                             <table className="w-full min-w-[920px] border-collapse text-left">
                                 <thead className="sticky top-0 z-10 bg-[#f7f7f7] text-xs uppercase tracking-[0.1em] text-[#6b7280]">
                                     <tr>
