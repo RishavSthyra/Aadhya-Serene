@@ -4,7 +4,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import AadhyaLogo from '@/components/Home/AadhyaLogo';
 import WhatsAppLeadForm from '@/components/WhatsAppLeadForm';
+import { spreadFloorplanHotspots } from '@/components/ProjectOverviewBook/floorplan-hotspots';
+import { useApartmentsData } from '@/hooks/useApartmentsData';
 import {
   ArrowRight,
   BadgeCheck,
@@ -53,10 +56,10 @@ const FORM_IMAGE = '/landing%20page%20images/interiorimage7.avif';
 const LANDING_IMAGES = {
   heroMain: '/landing page images/HERO_1.avif',
   heroSecondary: '/landing page images/HERO_2.avif',
-  heroInterior: '/landing page images/HERO_3.avif',
+  heroInterior: '/landing page images/HERO_2_NEW.avif',
   homePageRoofImage : 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya_Serene_Home_Page_6_First_Frame.avif',
   heroKitchen : '/landing page images/HERO_KITCHEN.avif',
-  heroentrance : '/landing page images/HERO_NEW.avif',
+  heroentrance : '/landing page images/HERO_1_NEW.avif',
   facade: '/landing%20page%20images/image4.avif',
   lifestyle: '/landing%20page%20images/image5.avif',
   delivered: '/landing%20page%20images/image3.avif',
@@ -135,7 +138,7 @@ const CONFIGURATIONS = [
   {
     id: '3bhk',
     name: '3 BHK',
-    sqft: '`1373` sq.ft.',
+    sqft: '1373 sq.ft.',
     image:
       'https://cdn.sthyra.com/AADHYA%20SERENE/images/individual-floorplans/Second%20Floor/209-N.png',
     headline: 'More space for a growing family.',
@@ -175,7 +178,44 @@ const SPEC_CHECKLIST = [
   'Rainwater harvesting & STP',
   'Vastu-compliant layouts',
   '24x7 CCTV + manned security',
+  'RCC framed structure designed as per Seismic Zone II requirements',
+  'Internal walls: 100mm / 4 inch solid cement concrete blocks',
+  'External walls: 150mm / 6 inch solid cement concrete blocks',
+  'Roof slab with reinforced cement concrete and waterproofing with CC screed',
+  'Internal walls finished with wall putty and Asian Premier Emulsion Paint',
+  'External walls finished with exterior waterproof emulsion paint',
+  'All internal walls smoothly plastered',
+  'Staircase with MS hand rail and balcony with MS grill',
+  'Anti-skid ceramic tiles for balcony, utility, and toilets',
+  '4 inch skirting to all rooms',
+  'Granite flooring in common areas',
+  'Granite kitchen platform with stainless steel sink',
+  '2 feet ceramic glazed dado tile above granite kitchen platform',
+  'Provision for water purifier point in kitchen',
+  'Provision for washing machine in utility area',
+  'Provision for refrigerator, microwave / oven, mixer, and modular chimney',
+  'Main door with engineered hard wood frame and veneer finished flush shutters',
+  'Bedroom doors with engineered hard wood frames and veneer / laminate finished flush shutters',
+  'Toilet and utility doors with laminate on the wet face',
+  'French doors in UPVC with clear glass',
+  'Ceramic glazed dado tiles up to 7 feet in toilets',
+  'White colored CERA / American Standard or equal sanitary ware in all toilets',
+  'Hot and cold mixture unit, shower, and bathroom fittings of GROHE or equal make',
+  'Provision of points for geyser and exhaust fan',
+  'UPVC toilet ventilators with louvers',
+  'TV point in living room',
+  'Elegant modular electrical switches of Legrand or equivalent make',
+  'Earth leakage circuit breaker for safety',
+  'MCB based main distribution box for each flat',
+  'A/C power point in bedrooms',
+  'Water supply system from borewell',
+  'Rainwater harvesting system to recharge the water table',
+  'STP sewage treatment plant',
+  "Total 5 No's - 8 passenger lifts of Johnson / Schindler / OTIS or equivalent make",
+  'Standby generator for lights in common areas, lifts, and pumps',
 ];
+const SPEC_INITIAL_COUNT = 9;
+const SPEC_BATCH_SIZE = 9;
 
 const FAQS = [
   {
@@ -331,6 +371,12 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   const [isWhatsAppFormOpen, setIsWhatsAppFormOpen] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [activeConfig, setActiveConfig] = useState('2bhk');
+  const [floorplanFilters, setFloorplanFilters] = useState({
+    balconies: 'all',
+    area: 'all',
+  });
+  const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
+  const [visibleSpecCount, setVisibleSpecCount] = useState(SPEC_INITIAL_COUNT);
   const [activeSlide, setActiveSlide] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitState, setSubmitState] = useState({ type: '', message: '' });
@@ -346,12 +392,16 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   const openedRef = useRef(false);
   const scrollOpenRef = useRef(false);
   const slideTimerRef = useRef(null);
+  const floorplanTrackRef = useRef(null);
+  const floorplanScrollRafRef = useRef(null);
   const isTransitioningRef = useRef(false);
   const heroSlidesRef = useRef([]);
   const heroCurtainLeftRef = useRef(null);
   const heroCurtainRightRef = useRef(null);
 
   useGsapReveal();
+
+  const { allData: apartmentFloorplanData } = useApartmentsData();
 
   const openForm = () => {
     if (openedRef.current) return;
@@ -537,8 +587,147 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
     [activeConfig]
   );
 
+  const floorplanFlatById = useMemo(() => {
+    return new Map(
+      apartmentFloorplanData.map((flat) => [
+        String(flat.flat || flat.id).trim(),
+        flat,
+      ])
+    );
+  }, [apartmentFloorplanData]);
+
+  const currentConfigFloorplans = useMemo(() => {
+    if (!currentConfig) return [];
+
+    return spreadFloorplanHotspots
+      .map((hotspot) => {
+        const flatId = String(hotspot.displayUnitCode || hotspot.unitCode).split('-')[0];
+        const flat = floorplanFlatById.get(flatId);
+
+        if (!flat || flat.type !== currentConfig.name) {
+          return null;
+        }
+
+        return {
+          ...flat,
+          flat: flat.flat || flat.id || flatId,
+          image: hotspot.previewSrc,
+          unitCode: hotspot.unitCode,
+          sectionLabel: hotspot.sectionLabel,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => {
+        const aEastPriority = a.facing === 'east' ? 0 : 1;
+        const bEastPriority = b.facing === 'east' ? 0 : 1;
+
+        if (aEastPriority !== bEastPriority) {
+          return aEastPriority - bEastPriority;
+        }
+
+        return Number(a.flat) - Number(b.flat);
+      });
+  }, [currentConfig, floorplanFlatById]);
+
+  const balconyFilterOptions = useMemo(() => {
+    return Array.from(
+      new Set(currentConfigFloorplans.map((floorplan) => Number(floorplan.balconies)))
+    ).sort((a, b) => a - b);
+  }, [currentConfigFloorplans]);
+
+  const areaFilterOptions = useMemo(() => {
+    return Array.from(
+      new Set(currentConfigFloorplans.map((floorplan) => Number(floorplan.area)))
+    ).sort((a, b) => a - b);
+  }, [currentConfigFloorplans]);
+
+  const filteredFloorplans = useMemo(() => {
+    return currentConfigFloorplans.filter((floorplan) => {
+      if (
+        floorplanFilters.balconies !== 'all' &&
+        String(floorplan.balconies) !== floorplanFilters.balconies
+      ) {
+        return false;
+      }
+
+      if (
+        floorplanFilters.area !== 'all' &&
+        String(floorplan.area) !== floorplanFilters.area
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [currentConfigFloorplans, floorplanFilters]);
+
+  const activeFloorplan =
+    filteredFloorplans[activeFloorplanIndex] || filteredFloorplans[0] || null;
+
+  useEffect(() => {
+    setActiveFloorplanIndex(0);
+    floorplanTrackRef.current?.scrollTo({ left: 0, behavior: 'auto' });
+  }, [activeConfig, floorplanFilters.area, floorplanFilters.balconies]);
+
+  useEffect(() => {
+    if (activeFloorplanIndex >= filteredFloorplans.length) {
+      setActiveFloorplanIndex(0);
+      floorplanTrackRef.current?.scrollTo({ left: 0, behavior: 'auto' });
+    }
+  }, [activeFloorplanIndex, filteredFloorplans.length]);
+
+  useEffect(() => {
+    return () => {
+      if (floorplanScrollRafRef.current) {
+        window.cancelAnimationFrame(floorplanScrollRafRef.current);
+      }
+    };
+  }, []);
+
+  const updateFloorplanFilter = (key, value) => {
+    setFloorplanFilters((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
+
+  const goToFloorplan = (index) => {
+    if (!filteredFloorplans.length) return;
+
+    const nextIndex = Math.min(Math.max(index, 0), filteredFloorplans.length - 1);
+    setActiveFloorplanIndex(nextIndex);
+    floorplanTrackRef.current?.scrollTo({
+      left: floorplanTrackRef.current.clientWidth * nextIndex,
+      behavior: 'smooth',
+    });
+  };
+
+  const handleFloorplanScroll = () => {
+    if (!floorplanTrackRef.current || filteredFloorplans.length <= 1) return;
+
+    if (floorplanScrollRafRef.current) {
+      window.cancelAnimationFrame(floorplanScrollRafRef.current);
+    }
+
+    floorplanScrollRafRef.current = window.requestAnimationFrame(() => {
+      const track = floorplanTrackRef.current;
+      if (!track) return;
+
+      const nextIndex = Math.min(
+        filteredFloorplans.length - 1,
+        Math.max(0, Math.round(track.scrollLeft / Math.max(track.clientWidth, 1)))
+      );
+      setActiveFloorplanIndex(nextIndex);
+    });
+  };
+
+  const visibleSpecs = SPEC_CHECKLIST.slice(0, visibleSpecCount);
+  const hasMoreSpecs = visibleSpecCount < SPEC_CHECKLIST.length;
+  const hasExpandedSpecs = visibleSpecCount > SPEC_INITIAL_COUNT;
+
   return (
     <>
+      <ReraBadge className="fixed right-3 top-3 z-[95] max-w-[calc(100vw-1.5rem)] bg-white/90 shadow-[0_14px_34px_rgba(0,0,0,0.12)] sm:right-5 sm:top-5" />
       <main className="min-h-screen bg-[#f3efe6] text-[#111111]">
         <section className="relative h-[100svh] min-h-[760px] overflow-hidden bg-[#090a0d] text-white">
           <div className="absolute inset-0">
@@ -606,44 +795,29 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
           </div>
 
           <div className="relative z-10 flex h-[100svh] min-h-[760px] flex-col px-3 py-4 sm:px-4 sm:py-6 lg:px-5">
-            <div className="gsap-entry flex w-full items-center justify-between px-0.5 py-2 sm:px-1">
-              <div className="flex items-center gap-6">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.24em] text-white">
-                    Aadhya Serene
-                  </p>
-                  <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/55">
-                    Near-possession 2 & 3 BHK
-                  </p>
-                </div>
-                <nav className="hidden items-center gap-5 text-[11px] uppercase tracking-[0.18em] text-white/55 lg:flex">
-                  <a href="#why-us" className="transition hover:text-white">
+            <div className="gsap-entry flex w-full items-center justify-between gap-4 px-0.5 py-2 sm:px-1">
+              <div className="flex min-w-0 items-center gap-5">
+                <a
+                  href="#"
+                  aria-label="Aadhya Serene"
+                  className="inline-flex shrink-0 items-center rounded-[2rem]  px-5 py-3"
+                >
+                  <AadhyaLogo className="h-10 w-auto md:h-11" />
+                </a>
+                <nav className="hidden items-center gap-1 rounded-full border border-white/18 bg-black/24 px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/88 shadow-[0_14px_42px_rgba(0,0,0,0.16)] backdrop-blur-xl lg:flex xl:gap-2">
+                  <a href="#why-us" className="rounded-full px-4 py-2.5 transition hover:bg-white/12 hover:text-white">
                     Advantages
                   </a>
-                  <a href="#walkthrough" className="transition hover:text-white">
+                  <a href="#walkthrough" className="rounded-full px-4 py-2.5 transition hover:bg-white/12 hover:text-white">
                     Walkthrough
                   </a>
-                  <a href="#amenities" className="transition hover:text-white">
+                  <a href="#amenities" className="rounded-full px-4 py-2.5 transition hover:bg-white/12 hover:text-white">
                     Amenities
                   </a>
-                  <a href="#faq" className="transition hover:text-white">
+                  <a href="#faq" className="rounded-full px-4 py-2.5 transition hover:bg-white/12 hover:text-white">
                     FAQ
                   </a>
                 </nav>
-              </div>
-
-              <div className="flex items-center gap-5 text-[11px] uppercase tracking-[0.16em] text-white/65">
-                <span className="hidden items-center gap-2 sm:inline-flex">
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                  Site visits open today
-                </span>
-                <a
-                  href={PHONE_LINK}
-                  onClick={heroCallClick}
-                  className="hidden transition hover:text-white lg:inline"
-                >
-                  {PHONE_DISPLAY}
-                </a>
               </div>
             </div>
 
@@ -658,7 +832,28 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                       <span className="block whitespace-nowrap">Live Beside</span>
                       <span className="block whitespace-nowrap">Manyata Tech Park.</span>
                     </h1>
-                    <ReraBadge theme="dark" className="mt-6" />
+                    <div className="mt-6 flex max-w-[46rem] flex-wrap gap-3">
+                      <span className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl">
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                        Site visits open today
+                      </span>
+                      <a
+                        href={PHONE_LINK}
+                        onClick={heroCallClick}
+                        className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl transition hover:bg-white hover:text-black"
+                      >
+                        <Phone className="h-3.5 w-3.5" />
+                        {PHONE_DISPLAY}
+                      </a>
+                      <span className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl">
+                        <ShieldCheck className="h-3.5 w-3.5 text-[#e8d0a8]" />
+                        Vastu compliant
+                      </span>
+                      <span className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl">
+                        <BadgeCheck className="h-3.5 w-3.5 text-[#e8d0a8]" />
+                        BBMP approved
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -699,7 +894,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   eyebrow="Get the Price Sheet"
                   title="Talk to us in 30 seconds."
                   description="Drop your details and our team will reach out with the price sheet, floor plans, and site visit support by email or phone."
-                  showRera
                 />
                 {/* <div className="mt-8 flex items-center gap-2 text-sm text-[#5d5d5a]">
                   <BadgeCheck className="h-4 w-4 text-emerald-600" />
@@ -776,9 +970,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                 ))}
               </div>
 
-              <div className="gsap-reveal flex justify-center sm:justify-end">
-                <ReraBadge className="w-full justify-between rounded-[1.4rem] px-5 py-3 sm:w-auto" />
-              </div>
             </div>
           </PanelShell>
 
@@ -799,7 +990,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     Ready now, priced clearly, and placed where daily life gets easier.
                     The content stays the same - the experience just feels sharper.
                   </p>
-                  <ReraBadge className="mt-5" />
                 </div>
               </div>
 
@@ -851,7 +1041,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     you a 3D model. We show you the actual flat, in actual light, on
                     an actual afternoon.
                   </p>
-                  <ReraBadge className="mt-5" />
                   <p className="mt-5 text-[11px] uppercase tracking-[0.22em] text-black/45">
                     02 min 18 sec · Cinematic tour
                   </p>
@@ -880,40 +1069,25 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                       02:18
                     </p>
                   </div>
-                  {/* <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                    <motion.button
-                      type="button"
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                    <motion.a
+                      href="https://app.aadhyaserene.com/walkthrough"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       aria-label="Play walkthrough video"
-                      whileHover={{ scale: 1.08 }}
+                      whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() =>
                         trackEvent('VideoPlay', { location: 'hero_walkthrough' })
                       }
-                      className="relative flex h-28 w-28 items-center justify-center lg:h-32 lg:w-32"
+                      className="relative flex h-16 w-16 items-center justify-center rounded-full border border-white/40 bg-white/92 text-black shadow-[0_18px_46px_rgba(0,0,0,0.28)] backdrop-blur-sm transition sm:h-20 sm:w-20"
                     >
-                      <span
-                        aria-hidden="true"
-                        className="absolute inset-0 rounded-full border border-white/30"
-                        style={{ animation: 'pulseRing 2.6s ease-out infinite' }}
-                      />
-                      <span
-                        aria-hidden="true"
-                        className="absolute inset-0 rounded-full border border-[#e6ceaa]/35"
-                        style={{
-                          animation: 'pulseRing 2.6s ease-out infinite',
-                          animationDelay: '0.55s',
-                        }}
-                      />
-                      <span className="absolute inset-3 rounded-full bg-white shadow-[0_24px_60px_rgba(0,0,0,0.4)]" />
                       <Play
-                        className="relative h-12 w-12 fill-black text-black lg:h-14 lg:w-14"
+                        className="ml-1 h-7 w-7 fill-black text-black sm:h-8 sm:w-8"
                         strokeWidth={0.8}
                       />
-                    </motion.button>
-                    <p className="mt-6 text-[11px] uppercase tracking-[0.32em] text-[#e6ceaa]">
-                      Press to play
-                    </p>
-                  </div> */}
+                    </motion.a>
+                  </div>
 
                   <div className="absolute inset-x-5 bottom-5 sm:inset-x-8 sm:bottom-8">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -968,7 +1142,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     <span className="block">Thoughtfully Designed</span>
                     <span className="block">2 & 3 BHK Homes</span>
                   </h2>
-                  <ReraBadge className="mt-5" />
                 </div>
                 <div className="gsap-from-right flex items-center justify-start lg:justify-end lg:self-center">
                   <div className="inline-flex border border-black/10 bg-white/90 p-1 shadow-[0_10px_28px_rgba(0,0,0,0.05)]">
@@ -1005,16 +1178,131 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   transition={{ duration: 0.3 }}
                   className="mt-10 grid items-stretch gap-8 lg:grid-cols-[1.06fr_0.94fr]"
                 >
-                  <img
-                    src={currentConfig.image}
-                    alt={`${currentConfig.name} floor plan`}
-                    className="gsap-scale h-[320px] w-full object-contain sm:h-[420px] lg:h-[520px]"
-                  />
+                  <div className="gsap-scale min-w-0">
+                    <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8e8576]">
+                          Balconies
+                        </span>
+                        <div className="relative">
+                          <select
+                            value={floorplanFilters.balconies}
+                            onChange={(event) =>
+                              updateFloorplanFilter('balconies', event.target.value)
+                            }
+                            className="h-14 w-full appearance-none rounded-full border border-black/10 bg-white/82 px-5 pr-14 text-sm font-semibold text-black shadow-[0_12px_28px_rgba(0,0,0,0.04)] outline-none transition focus:border-black/30 focus:bg-white focus:ring-4 focus:ring-black/5"
+                          >
+                            <option value="all">All balconies</option>
+                            {balconyFilterOptions.map((balconies) => (
+                              <option key={balconies} value={String(balconies)}>
+                                {balconies} {balconies === 1 ? 'balcony' : 'balconies'}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/64" />
+                        </div>
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8e8576]">
+                          Sq Ft
+                        </span>
+                        <div className="relative">
+                          <select
+                            value={floorplanFilters.area}
+                            onChange={(event) =>
+                              updateFloorplanFilter('area', event.target.value)
+                            }
+                            className="h-14 w-full appearance-none rounded-full border border-black/10 bg-white/82 px-5 pr-14 text-sm font-semibold text-black shadow-[0_12px_28px_rgba(0,0,0,0.04)] outline-none transition focus:border-black/30 focus:bg-white focus:ring-4 focus:ring-black/5"
+                          >
+                            <option value="all">All sizes</option>
+                            {areaFilterOptions.map((area) => (
+                              <option key={area} value={String(area)}>
+                                {area} sq.ft.
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/64" />
+                        </div>
+                      </label>
+                    </div>
+
+                    <div className="relative overflow-hidden">
+                      {filteredFloorplans.length > 0 ? (
+                        <>
+                          <div
+                            ref={floorplanTrackRef}
+                            onScroll={handleFloorplanScroll}
+                            className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                          >
+                            {filteredFloorplans.map((floorplan) => (
+                              <div
+                                key={`${floorplan.flat}-${floorplan.unitCode}`}
+                                className="min-w-full snap-start"
+                              >
+                                <img
+                                  src={floorplan.image}
+                                  alt={`Aadhya Serene flat ${floorplan.flat} ${floorplan.type} floor plan`}
+                                  className="h-[320px] w-full object-contain sm:h-[420px] lg:h-[520px]"
+                                />
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="absolute left-4 top-4 rounded-full border border-black/8 bg-white/92 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5f5548] shadow-[0_10px_24px_rgba(0,0,0,0.06)] backdrop-blur">
+                            Flat {activeFloorplan?.flat} · {activeFloorplan?.facing} · {activeFloorplan?.area} sq.ft.
+                          </div>
+
+                          {filteredFloorplans.length > 1 ? (
+                            <div className="absolute inset-x-5 top-1/2 flex -translate-y-1/2 items-center justify-between sm:inset-x-7 lg:inset-x-8">
+                              <button
+                                type="button"
+                                onClick={() => goToFloorplan(activeFloorplanIndex - 1)}
+                                className="flex h-11 w-11 items-center justify-center rounded-full border border-black/8 bg-white/92 text-black shadow-[0_12px_26px_rgba(0,0,0,0.12)] backdrop-blur transition hover:-translate-x-0.5 hover:bg-black hover:text-white"
+                                aria-label="Previous floor plan"
+                              >
+                                <ArrowRight className="h-4 w-4 rotate-180" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => goToFloorplan(activeFloorplanIndex + 1)}
+                                className="flex h-11 w-11 items-center justify-center rounded-full border border-black/8 bg-white/92 pr-0.5 text-black shadow-[0_12px_26px_rgba(0,0,0,0.12)] backdrop-blur transition hover:translate-x-0.5 hover:bg-black hover:text-white"
+                                aria-label="Next floor plan"
+                              >
+                                <ArrowRight className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : null}
+                        </>
+                      ) : (
+                        <div className="flex h-[320px] flex-col items-center justify-center p-8 text-center sm:h-[420px] lg:h-[520px]">
+                          <img
+                            src={currentConfig.image}
+                            alt={`${currentConfig.name} floor plan`}
+                            className="max-h-full w-full object-contain opacity-70"
+                          />
+                          <p className="mt-5 max-w-sm text-sm leading-6 text-[#6a635a]">
+                            No floor plans match the selected filters. Try another balcony
+                            or sqft option.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {filteredFloorplans.length > 0 ? (
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[11px] uppercase tracking-[0.18em] text-[#7b7164]">
+                        <span>
+                          {activeFloorplanIndex + 1} / {filteredFloorplans.length} plans
+                        </span>
+                        <span>{activeFloorplan?.sectionLabel}</span>
+                      </div>
+                    ) : null}
+                  </div>
 
                   <div className="gsap-from-right flex flex-col justify-between border border-black/10 bg-[linear-gradient(180deg,#fffdf8_0%,#f8f2e7_100%)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.04)] sm:p-8">
                     <div>
                     <p className="text-[11px] uppercase tracking-[0.28em] text-[#9a7a45]">
-                      {currentConfig.name} · {currentConfig.sqft}
+                      {currentConfig.name} · {activeFloorplan ? `${activeFloorplan.area} sq.ft.` : currentConfig.sqft}
                     </p>
                     <h3 className="mt-3 max-w-[10ch] font-[var(--font-hero)] text-[clamp(2.2rem,3.4vw,3.8rem)] leading-[0.94] tracking-[-0.05em] text-black">
                       {currentConfig.headline}
@@ -1043,7 +1331,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                           Availability
                         </p>
                         <p className="mt-2 text-lg font-semibold text-black">
-                          Ready to inspect
+                          {activeFloorplan ? `Flat ${activeFloorplan.flat}` : 'Ready to inspect'}
                         </p>
                       </div>
                     </div>
@@ -1093,7 +1381,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     live - not a checklist copied from every other brochure in North
                     Bangalore.
                   </p>
-                  <ReraBadge className="mt-5" />
                 </div>
               </div>
 
@@ -1120,7 +1407,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                         </p>
                         <p className="mt-2 text-[15px] font-semibold">{item.label}</p>
                       </div>
-                      <ArrowRight className="h-4 w-4 opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100" />
+                      {/* <ArrowRight className="h-4 w-4 opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100" /> */}
                     </div>
                   </div>
                 ))}
@@ -1172,7 +1459,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     Thanisandra Main Road, beside Manyata Tech Park - North
                     Bangalore&apos;s most-appreciating micro-market.
                   </p>
-                  <ReraBadge className="mt-5" />
                 </div>
               </div>
 
@@ -1276,17 +1562,16 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     Every spec, every brand, every fitting - chosen for durability
                     and daily comfort. No compromises, no last-minute swaps.
                   </p>
-                  <ReraBadge className="mt-5" />
                 </div>
                 <div className="gsap-from-right grid gap-4 border-t border-black/10 pt-5 sm:grid-cols-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
                   <SpecStat value="136" label="Homes" />
                   <SpecStat value="1.25" label="Acres" />
-                  <SpecStat value="24x7" label="Manned Security" />
+                  <SpecStat value="99L" label="STARTING PRICE" />
                 </div>
               </div>
 
               <div className="gsap-stagger mt-10 grid gap-x-8 gap-y-0 border-t border-black/8 sm:grid-cols-2 lg:grid-cols-3">
-                {SPEC_CHECKLIST.map((spec) => (
+                {visibleSpecs.map((spec) => (
                   <div
                     key={spec}
                     className="flex items-start gap-3 border-b border-black/8 py-4"
@@ -1296,6 +1581,35 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   </div>
                 ))}
               </div>
+
+              {(hasMoreSpecs || hasExpandedSpecs) ? (
+                <div className="mt-8 flex flex-wrap items-center justify-center gap-3 border-t border-black/8 pt-6">
+                  {hasMoreSpecs ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisibleSpecCount((current) =>
+                          Math.min(current + SPEC_BATCH_SIZE, SPEC_CHECKLIST.length)
+                        )
+                      }
+                      className="inline-flex min-h-[52px] items-center gap-3 rounded-full bg-black px-7 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-[#a9772f]"
+                    >
+                      View more specs
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  ) : null}
+
+                  {hasExpandedSpecs ? (
+                    <button
+                      type="button"
+                      onClick={() => setVisibleSpecCount(SPEC_INITIAL_COUNT)}
+                      className="inline-flex min-h-[52px] items-center gap-3 rounded-full border border-black/10 bg-white/80 px-7 text-sm font-semibold uppercase tracking-[0.18em] text-black transition hover:-translate-y-0.5 hover:border-black hover:bg-black hover:text-white"
+                    >
+                      View less
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </PanelShell>
 
@@ -1312,7 +1626,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                 <p className="mt-5 max-w-[38rem] text-[15px] leading-8 text-[#5c5c58]">
                   Aadhya Serene comes from the team behind <span className="font-semibold text-black">Misty Woods - 128 homes delivered with trust.</span> We don&apos;t sell distant promises; we build with visible progress and delivery confidence.
                 </p>
-                <ReraBadge className="mt-5" />
 
                 <div className="gsap-stagger mt-8 grid gap-5 border-t border-black/8 pt-5 sm:grid-cols-3">
                   {[
@@ -1368,7 +1681,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   Only <span className="font-semibold text-black">136 homes</span> in
                   the community, and they&apos;re ready now.
                 </p>
-                <ReraBadge className="mt-5" />
                 <p className="mt-3 text-sm text-[#7b756a]">
                   *Limited-period offer. T&amp;C apply.
                 </p>
@@ -1427,7 +1739,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   eyebrow="Get the Details"
                   title="Get the Price Sheet, Floor Plans & a Free Site Visit"
                   description="Drop your details and our team will follow up by email or phone with the price sheet, floor plans, available inventory, and a site visit slot."
-                  showRera
                 />
                 <div className="mt-7 inline-flex items-center gap-2 text-sm text-[#5c5c58]">
                   <BadgeCheck className="h-4 w-4 text-emerald-600" />
@@ -1505,7 +1816,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   <span className="text-black/28">/</span> Buying Questions, Answered
                   Clearly
                 </h2>
-                <ReraBadge className="mt-5" />
               </div>
 
               <div className="gsap-stagger mt-8 space-y-3">
@@ -1552,7 +1862,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                 <h2 className="mt-3 max-w-[13ch] font-[var(--font-hero)] text-[clamp(2rem,3.8vw,3.5rem)] leading-[0.96] tracking-[-0.05em] text-black">
                   Visit this weekend. See how close your home is to possession.
                 </h2>
-                <ReraBadge className="mt-5" />
               </div>
 
               <div className="flex flex-wrap gap-3">
@@ -1643,13 +1952,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     </button>
                   </div>
 
-                  <div className="mt-5">
-                    <ReraBadge
-                      theme="dark"
-                      className="w-full rounded-[1.4rem] border-white/10 bg-white/[0.04] px-4 py-3"
-                    />
-                    <p className="mt-2 text-[10px] text-white/40">BBMP Approved</p>
-                  </div>
+                  <p className="mt-5 text-[10px] text-white/40">BBMP Approved</p>
                 </div>
 
                 <div>
@@ -1748,7 +2051,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.28, ease: 'easeOut' }}
-            className="fixed inset-0 z-[1210] flex items-center justify-center bg-[rgba(10,10,12,0.74)] p-4 backdrop-blur-xl sm:p-6"
+            className="fixed inset-0 z-[1210] flex items-start justify-center overflow-y-auto overscroll-contain bg-[rgba(10,10,12,0.74)] px-3 py-4 backdrop-blur-xl sm:p-6 lg:items-center"
           >
             <motion.div
               initial={{ opacity: 0, y: 26, scale: 0.97 }}
@@ -1802,7 +2105,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   approved first message from the server and continue the flow in
                   WhatsApp.
                 </p>
-                <ReraBadge className="mt-5" />
                 <div className="mt-7">
                   <WhatsAppLeadForm />
                 </div>
@@ -1819,7 +2121,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.28, ease: 'easeOut' }}
-            className="fixed inset-0 z-[1200] flex items-center justify-center bg-[rgba(10,10,12,0.7)] p-4 backdrop-blur-xl sm:p-6"
+            className="fixed inset-0 z-[1200] flex items-start justify-center overflow-y-auto overscroll-contain bg-[rgba(10,10,12,0.7)] px-3 py-4 backdrop-blur-xl sm:p-6 lg:items-center"
           >
             <motion.div
               initial={{ opacity: 0, y: 26, scale: 0.97 }}
@@ -1869,7 +2171,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     Takes 30 seconds. We&apos;ll only contact you about Aadhya
                     Serene.
                   </p>
-                  <ReraBadge className="mt-5" />
                 </div>
 
                 <div className="min-h-0 flex-1 px-5 py-5 sm:px-6">
@@ -1987,8 +2288,6 @@ function SectionHeading({
   eyebrow,
   title,
   description,
-  showRera = false,
-  reraTheme = 'light',
 }) {
   return (
     <div>
@@ -1999,7 +2298,6 @@ function SectionHeading({
       <p className="mt-5 max-w-[36rem] text-[15px] leading-8 text-[#5c5c58]">
         {description}
       </p>
-      {showRera ? <ReraBadge theme={reraTheme} className="mt-6" /> : null}
     </div>
   );
 }
