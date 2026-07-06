@@ -1387,7 +1387,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
               <div className="gsap-reveal mt-10 grid gap-px overflow-hidden rounded-[2rem] border border-black/10 bg-black/10 lg:grid-cols-3">
                 {[
                   { src: LANDING_IMAGES.heroMain, label: "Entrance" },
-                  { src: LANDING_IMAGES.heroInterior, label: 'Luxury Interiors' },
+                  { src: LANDING_IMAGES.heroKitchen, label: 'Luxury Interiors' },
                   { src: LANDING_IMAGES.heroSecondary, label: 'Premium Rooftop' },
                 ].map((item, index) => (
                   <div
