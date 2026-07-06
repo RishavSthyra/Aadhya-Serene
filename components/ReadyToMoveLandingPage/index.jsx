@@ -57,14 +57,16 @@ const LANDING_IMAGES = {
   heroMain: '/landing page images/HERO_1.avif',
   heroSecondary: '/landing page images/HERO_2.avif',
   heroInterior: '/landing page images/HERO_2_NEW.avif',
-  homePageRoofImage : 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya_Serene_Home_Page_6_First_Frame.avif',
-  heroKitchen : '/landing page images/HERO_KITCHEN.avif',
-  heroentrance : '/landing page images/HERO_1_NEW.avif',
+  homePageRoofImage: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya_Serene_Home_Page_6_First_Frame.avif',
+  heroKitchen: '/landing page images/HERO_KITCHEN.avif',
+  heroentrance: '/landing page images/HERO_1_NEW.avif',
   facade: '/landing%20page%20images/image4.avif',
   lifestyle: '/landing%20page%20images/image5.avif',
   delivered: '/landing%20page%20images/image3.avif',
-  mistywoods : '/landing page images/ABMW.avif',
+  mistywoods: '/landing page images/ABMW.avif',
   deliveredAlt: '/landing%20page%20images/iamge6.avif',
+  herobedroom: '/landing page images/HERO_3_NEW.avif',
+  heroRoof: '/landing page images/ROOF.avif'
 };
 
 const HERO_SLIDES = [
@@ -83,7 +85,21 @@ const HERO_SLIDES = [
     caption: 'Vastu-compliant · Premium finishes',
   },
   {
+    src: LANDING_IMAGES.herobedroom,
+    alt: 'Aadhya Serene building facade',
+    eyebrow: 'Boutique Community',
+    location: '1.25 Acres · 136 Homes',
+    caption: 'BBMP + K-RERA Approved',
+  },
+  {
     src: LANDING_IMAGES.heroKitchen,
+    alt: 'Aadhya Serene building facade',
+    eyebrow: 'Boutique Community',
+    location: '1.25 Acres · 136 Homes',
+    caption: 'BBMP + K-RERA Approved',
+  },
+  {
+    src: LANDING_IMAGES.heroRoof,
     alt: 'Aadhya Serene building facade',
     eyebrow: 'Boutique Community',
     location: '1.25 Acres · 136 Homes',
@@ -162,10 +178,11 @@ const AMENITIES = [
 ];
 
 const LOCATION_POINTS = [
-  { label: 'Manyata Tech Park', eta: 'Beside' },
-  { label: 'Hebbal', eta: 'Nearby' },
-  { label: 'Outer Ring Road', eta: 'Connected' },
-  { label: 'Airport', eta: 'Airport Route' },
+  { label: 'Nagavara Metro Station', eta: 'Proximity · 10 mins' },
+  { label: 'Manyata Tech Park', eta: 'Tech park · 5 mins' },
+  { label: 'Chirayu Hospital', eta: 'Healthcare · 3 mins' },
+  { label: 'Phoenix Mall of Asia', eta: 'Shopping · 15 mins' },
+  { label: 'Rashtrotthana Vidya Kendra', eta: 'Education · 2 mins' },
 ];
 
 const SPEC_CHECKLIST = [
@@ -250,17 +267,17 @@ function trackEvent(name, params) {
   try {
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({ event: name, ...(params || {}) });
-  } catch (_) {}
+  } catch (_) { }
   try {
     if (typeof window.fbq === 'function') {
       window.fbq('trackCustom', name, params || {});
     }
-  } catch (_) {}
+  } catch (_) { }
   try {
     if (typeof window.gtag === 'function') {
       window.gtag('event', name, params || {});
     }
-  } catch (_) {}
+  } catch (_) { }
 }
 
 function useGsapReveal() {
@@ -748,6 +765,10 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   alt={slide.alt}
                   className="absolute inset-0 h-full w-full object-cover"
                 />
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 bg-[radial-gradient(ellipse_at_0%_100%,rgba(0,0,0,0.62)_0%,rgba(0,0,0,0.42)_24%,rgba(0,0,0,0.18)_44%,transparent_68%)]"
+                />
                 {/* <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,10,0.42)_0%,rgba(5,6,10,0.24)_28%,rgba(5,6,10,0.62)_100%)]" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_left,rgba(255,255,255,0.08),transparent_30%),radial-gradient(circle_at_right,rgba(0,0,0,0.3),transparent_42%)]" /> */}
               </div>
@@ -837,14 +858,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                         <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
                         Site visits open today
                       </span>
-                      <a
-                        href={PHONE_LINK}
-                        onClick={heroCallClick}
-                        className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl transition hover:bg-white hover:text-black"
-                      >
-                        <Phone className="h-3.5 w-3.5" />
-                        {PHONE_DISPLAY}
-                      </a>
+
                       <span className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl">
                         <ShieldCheck className="h-3.5 w-3.5 text-[#e8d0a8]" />
                         Vastu compliant
@@ -853,6 +867,14 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                         <BadgeCheck className="h-3.5 w-3.5 text-[#e8d0a8]" />
                         BBMP approved
                       </span>
+                      <a
+                        href={PHONE_LINK}
+                        onClick={heroCallClick}
+                        className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl transition hover:bg-white hover:text-black"
+                      >
+                        <Phone className="h-3.5 w-3.5" />
+                        {PHONE_DISPLAY}
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -943,11 +965,10 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
 
                 {submitState.message ? (
                   <div
-                    className={`mt-4 rounded-[1rem] px-4 py-3 text-sm ${
-                      submitState.type === 'success'
+                    className={`mt-4 rounded-[1rem] px-4 py-3 text-sm ${submitState.type === 'success'
                         ? 'bg-emerald-50 text-emerald-700'
                         : 'bg-red-50 text-red-700'
-                    }`}
+                      }`}
                   >
                     {submitState.message}
                   </div>
@@ -1156,11 +1177,10 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                             config: config.name,
                           });
                         }}
-                        className={`px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] transition ${
-                          activeConfig === config.id
+                        className={`px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] transition ${activeConfig === config.id
                             ? 'bg-black text-white shadow-[0_8px_18px_rgba(0,0,0,0.12)]'
                             : 'text-black/55 hover:bg-black/[0.03] hover:text-black'
-                        }`}
+                          }`}
                       >
                         {config.name}
                       </button>
@@ -1301,20 +1321,20 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
 
                   <div className="gsap-from-right flex flex-col justify-between border border-black/10 bg-[linear-gradient(180deg,#fffdf8_0%,#f8f2e7_100%)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.04)] sm:p-8">
                     <div>
-                    <p className="text-[11px] uppercase tracking-[0.28em] text-[#9a7a45]">
-                      {currentConfig.name} · {activeFloorplan ? `${activeFloorplan.area} sq.ft.` : currentConfig.sqft}
-                    </p>
-                    <h3 className="mt-3 max-w-[10ch] font-[var(--font-hero)] text-[clamp(2.2rem,3.4vw,3.8rem)] leading-[0.94] tracking-[-0.05em] text-black">
-                      {currentConfig.headline}
-                    </h3>
-                    <p className="mt-5 max-w-[30rem] text-[15px] leading-8 text-[#5c5c58]">
-                      {currentConfig.blurb}
-                    </p>
+                      <p className="text-[11px] uppercase tracking-[0.28em] text-[#9a7a45]">
+                        {currentConfig.name} · {activeFloorplan ? `${activeFloorplan.area} sq.ft.` : currentConfig.sqft}
+                      </p>
+                      <h3 className="mt-3 max-w-[10ch] font-[var(--font-hero)] text-[clamp(2.2rem,3.4vw,3.8rem)] leading-[0.94] tracking-[-0.05em] text-black">
+                        {currentConfig.headline}
+                      </h3>
+                      <p className="mt-5 max-w-[30rem] text-[15px] leading-8 text-[#5c5c58]">
+                        {currentConfig.blurb}
+                      </p>
 
-                    <div className="mt-6 inline-flex items-center gap-2 border border-[#e5dac7] bg-white px-4 py-2 text-sm font-semibold text-[#8f7242] shadow-[0_8px_22px_rgba(0,0,0,0.03)]">
-                      <IndianRupee className="h-4 w-4" />
-                      {currentConfig.sub}
-                    </div>
+                      <div className="mt-6 inline-flex items-center gap-2 border border-[#e5dac7] bg-white px-4 py-2 text-sm font-semibold text-[#8f7242] shadow-[0_8px_22px_rgba(0,0,0,0.03)]">
+                        <IndianRupee className="h-4 w-4" />
+                        {currentConfig.sub}
+                      </div>
                     </div>
 
                     <div className="mt-8 grid gap-px overflow-hidden border border-black/10 bg-black/10 sm:grid-cols-2">
@@ -1694,8 +1714,8 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     }}
                     className="inline-flex min-h-[54px] items-center gap-3 bg-black px-6 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5"
                   >
-                      <Gift className="h-4 w-4" />
-                      Claim Booking Benefit
+                    <Gift className="h-4 w-4" />
+                    Claim Booking Benefit
                     <ArrowRight className="h-4 w-4" />
                   </button>
                   <button
@@ -1788,11 +1808,10 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
 
                 {submitState.message ? (
                   <div
-                    className={`mt-4 rounded-[1.2rem] px-4 py-3 text-sm ${
-                      submitState.type === 'success'
+                    className={`mt-4 rounded-[1.2rem] px-4 py-3 text-sm ${submitState.type === 'success'
                         ? 'bg-emerald-50 text-emerald-700'
                         : 'bg-red-50 text-red-700'
-                    }`}
+                      }`}
                   >
                     {submitState.message}
                   </div>
@@ -1836,9 +1855,8 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                           {item.question}
                         </span>
                         <ChevronDown
-                          className={`h-4 w-4 shrink-0 text-[#a9772f] transition ${
-                            open ? 'rotate-180' : ''
-                          }`}
+                          className={`h-4 w-4 shrink-0 text-[#a9772f] transition ${open ? 'rotate-180' : ''
+                            }`}
                         />
                       </button>
                       {open ? (
@@ -1898,97 +1916,97 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
 
         </div>
 
-          <footer className="w-full bg-[#111111] text-[#f3efe6]">
-            <div className="w-full px-5 pb-4 pt-8 sm:px-6 sm:pb-5 sm:pt-9 lg:px-8 lg:pb-6 lg:pt-10">
-              <div className="grid gap-8 border-b border-white/10 pb-7 lg:grid-cols-[1.2fr_0.9fr_0.8fr]">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-white/6 text-white">
-                      <Building2 className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-white">Aadhya Serene</p>
-                      <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-white/42">
-                        Near-possession 2 &amp; 3 BHK homes
-                      </p>
-                    </div>
+        <footer className="w-full bg-[#111111] text-[#f3efe6]">
+          <div className="w-full px-5 pb-4 pt-8 sm:px-6 sm:pb-5 sm:pt-9 lg:px-8 lg:pb-6 lg:pt-10">
+            <div className="grid gap-8 border-b border-white/10 pb-7 lg:grid-cols-[1.2fr_0.9fr_0.8fr]">
+              <div>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-white/6 text-white">
+                    <Building2 className="h-4 w-4" />
                   </div>
-
-                  <h3 className="mt-6 max-w-[10ch] font-[var(--font-hero)] text-[clamp(1.9rem,3.7vw,3.4rem)] leading-[0.94] tracking-[-0.055em] text-white">
-                    Visit this weekend.
-                    <span className="block text-[#d7b177]">See how close you are to possession.</span>
-                  </h3>
-
-                  <p className="mt-5 max-w-[30rem] text-[12px] leading-6 text-white/58">
-                    Near-possession 2 &amp; 3 BHK homes on Thanisandra Main Road,
-                    North Bangalore. By Abhigna.
-                  </p>
-                  <p className="mt-3 inline-flex items-center gap-2 text-[11px] text-white/48">
-                    <MapPin className="h-3.5 w-3.5 text-[#d7b177]" />
-                    Thanisandra Main Road, North Bangalore
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-[#d7b177]">
-                    Contact
-                  </p>
-                  <div className="mt-4 space-y-2.5 text-[13px]">
-                    <a
-                      href={PHONE_LINK}
-                      onClick={heroCallClick}
-                      className="block font-medium text-white transition hover:text-[#d7b177]"
-                    >
-                      <Phone className="mr-2 inline h-4 w-4" />
-                      {PHONE_DISPLAY}
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => openWhatsAppForm('footer_whatsapp')}
-                      className="block w-full bg-transparent p-0 text-left font-medium text-white transition hover:text-[#d7b177]"
-                    >
-                      <PiKey className="mr-2 inline h-4 w-4" />
-                      WhatsApp Us
-                    </button>
-                  </div>
-
-                  <p className="mt-5 text-[10px] text-white/40">BBMP Approved</p>
-                </div>
-
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-[#d7b177]">
-                    Quick Links
-                  </p>
-                  <div className="mt-4 flex flex-col gap-2.5 text-[12px] text-white/62">
-                    <a href="#lead-form" className="transition hover:text-white">
-                      Get Price Sheet
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => openWhatsAppForm('footer_brochure_whatsapp')}
-                      className="bg-transparent p-0 text-left transition hover:text-white"
-                    >
-                      Brochure on WhatsApp
-                    </button>
-                    <a href="#lead-form" className="transition hover:text-white">
-                      Book a Site Visit
-                    </a>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Aadhya Serene</p>
+                    <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-white/42">
+                      Near-possession 2 &amp; 3 BHK homes
+                    </p>
                   </div>
                 </div>
+
+                <h3 className="mt-6 max-w-[10ch] font-[var(--font-hero)] text-[clamp(1.9rem,3.7vw,3.4rem)] leading-[0.94] tracking-[-0.055em] text-white">
+                  Visit this weekend.
+                  <span className="block text-[#d7b177]">See how close you are to possession.</span>
+                </h3>
+
+                <p className="mt-5 max-w-[30rem] text-[12px] leading-6 text-white/58">
+                  Near-possession 2 &amp; 3 BHK homes on Thanisandra Main Road,
+                  North Bangalore. By Abhigna.
+                </p>
+                <p className="mt-3 inline-flex items-center gap-2 text-[11px] text-white/48">
+                  <MapPin className="h-3.5 w-3.5 text-[#d7b177]" />
+                  Thanisandra Main Road, North Bangalore
+                </p>
               </div>
 
-              <div className="flex flex-col gap-2 pt-4 text-[10px] leading-5 text-white/38 lg:flex-row lg:items-center lg:justify-between">
-                <p>
-                  Disclaimer: Prices, images, and specifications are indicative and
-                  subject to change. *Starting price for limited units. T&amp;C
-                  apply. This is not a legal offer.
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.22em] text-[#d7b177]">
+                  Contact
                 </p>
-                <p className="uppercase tracking-[0.16em] text-white/24">
-                  Aadhya Serene · North Bangalore
+                <div className="mt-4 space-y-2.5 text-[13px]">
+                  <a
+                    href={PHONE_LINK}
+                    onClick={heroCallClick}
+                    className="block font-medium text-white transition hover:text-[#d7b177]"
+                  >
+                    <Phone className="mr-2 inline h-4 w-4" />
+                    {PHONE_DISPLAY}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => openWhatsAppForm('footer_whatsapp')}
+                    className="block w-full bg-transparent p-0 text-left font-medium text-white transition hover:text-[#d7b177]"
+                  >
+                    <PiKey className="mr-2 inline h-4 w-4" />
+                    WhatsApp Us
+                  </button>
+                </div>
+
+                <p className="mt-5 text-[10px] text-white/40">BBMP Approved</p>
+              </div>
+
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.22em] text-[#d7b177]">
+                  Quick Links
                 </p>
+                <div className="mt-4 flex flex-col gap-2.5 text-[12px] text-white/62">
+                  <a href="#lead-form" className="transition hover:text-white">
+                    Get Price Sheet
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => openWhatsAppForm('footer_brochure_whatsapp')}
+                    className="bg-transparent p-0 text-left transition hover:text-white"
+                  >
+                    Brochure on WhatsApp
+                  </button>
+                  <a href="#lead-form" className="transition hover:text-white">
+                    Book a Site Visit
+                  </a>
+                </div>
               </div>
             </div>
-          </footer>
+
+            <div className="flex flex-col gap-2 pt-4 text-[10px] leading-5 text-white/38 lg:flex-row lg:items-center lg:justify-between">
+              <p>
+                Disclaimer: Prices, images, and specifications are indicative and
+                subject to change. *Starting price for limited units. T&amp;C
+                apply. This is not a legal offer.
+              </p>
+              <p className="uppercase tracking-[0.16em] text-white/24">
+                Aadhya Serene · North Bangalore
+              </p>
+            </div>
+          </div>
+        </footer>
       </main>
 
       <div className="fixed inset-x-0 bottom-0 z-[85] grid grid-cols-2 border-t border-black/8 bg-white/96 shadow-[0_-12px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl lg:hidden">
@@ -2216,11 +2234,10 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
 
                   {submitState.message ? (
                     <div
-                      className={`mt-4 rounded-[1.2rem] px-4 py-3 text-[13px] font-medium ${
-                        submitState.type === 'success'
+                      className={`mt-4 rounded-[1.2rem] px-4 py-3 text-[13px] font-medium ${submitState.type === 'success'
                           ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
                           : 'border border-red-200 bg-red-50 text-red-700'
-                      }`}
+                        }`}
                     >
                       {submitState.message}
                     </div>
@@ -2307,25 +2324,22 @@ function ReraBadge({ className = '', theme = 'light' }) {
 
   return (
     <div
-      className={`inline-flex max-w-full flex-wrap items-center gap-3 rounded-full border px-4 py-2.5 shadow-[0_12px_28px_rgba(0,0,0,0.05)] backdrop-blur-sm ${
-        isDark
+      className={`inline-flex max-w-full flex-wrap items-center gap-3 rounded-full border px-4 py-2.5 shadow-[0_12px_28px_rgba(0,0,0,0.05)] backdrop-blur-sm ${isDark
           ? 'border-white/12 bg-black/24 text-white/72'
           : 'border-[#e5dac7] bg-white/86 text-[#6c624f]'
-      } ${className}`}
+        } ${className}`}
     >
       <span
-        className={`inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] ${
-          isDark ? 'text-[#e9d2ae]' : 'text-[#9a7a45]'
-        }`}
+        className={`inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] ${isDark ? 'text-[#e9d2ae]' : 'text-[#9a7a45]'
+          }`}
       >
         <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.6} />
         K-RERA
       </span>
       <span className={`hidden h-3.5 w-px sm:block ${isDark ? 'bg-white/16' : 'bg-black/10'}`} />
       <span
-        className={`min-w-0 text-[10px] font-medium leading-5 [overflow-wrap:anywhere] sm:text-[11px] ${
-          isDark ? 'text-white/78' : 'text-[#2f2b25]'
-        }`}
+        className={`min-w-0 text-[10px] font-medium leading-5 [overflow-wrap:anywhere] sm:text-[11px] ${isDark ? 'text-white/78' : 'text-[#2f2b25]'
+          }`}
       >
         {RERA_NUMBER}
       </span>
