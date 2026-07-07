@@ -214,11 +214,11 @@ const AMENITIES = [
 ];
 
 const LOCATION_POINTS = [
-  { label: 'Nagavara Metro Station', eta: 'Proximity · 10 mins' },
   { label: 'Manyata Tech Park', eta: 'Tech park · 5 mins' },
   { label: 'Chirayu Hospital', eta: 'Healthcare · 3 mins' },
   { label: 'Phoenix Mall of Asia', eta: 'Shopping · 15 mins' },
-  { label: 'International Airport', eta: 'Travel · 30 mins' },
+  { label: 'Nagavara Metro Station', eta: 'Proximity · 10 mins' },
+  { label: 'Kempegowda International Airport', eta: 'Travel · 30 mins' },
 ];
 
 const SPEC_CHECKLIST = [
