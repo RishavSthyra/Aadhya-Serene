@@ -58,7 +58,7 @@ const LANDING_IMAGES = {
   heroSecondary: '/landing page images/HERO_2.avif',
   heroInterior: '/landing page images/HERO_2_NEW.avif',
   homePageRoofImage: 'https://cdn.sthyra.com/AADHYA%20SERENE/images/Aadhya_Serene_Home_Page_6_First_Frame.avif',
-  heroKitchen: '/landing page images/HERO_KITCHEN.avif',
+  heroKitchen: '/landing page images/interiorHall.avif',
   heroentrance: '/landing page images/HERO_1_NEW.avif',
   facade: '/landing%20page%20images/image4.avif',
   lifestyle: '/landing%20page%20images/image5.avif',
@@ -66,7 +66,13 @@ const LANDING_IMAGES = {
   mistywoods: '/landing page images/ABMW.avif',
   deliveredAlt: '/landing%20page%20images/iamge6.avif',
   herobedroom: '/landing page images/HERO_3_NEW.avif',
-  heroRoof: '/landing page images/ROOF.avif'
+  heroRoof: '/landing page images/Rooftop.avif',
+  ballpool : '/landing page images/00 Ball Pool.avif',
+  badminton : '/landing page images/badminton.avif',
+  clubhouse : '/landing page images/Club House 2.avif',
+  kidsplayarea : '/landing page images/Kids Play Aera.avif',
+  swimmingPool : '/landing page images/Swimming Pool.avif',
+  heroHall : '/landing page images/interiorHall.avif'
 };
 
 const HERO_SLIDES = [
@@ -92,7 +98,7 @@ const HERO_SLIDES = [
     caption: 'BBMP + K-RERA Approved',
   },
   {
-    src: LANDING_IMAGES.heroKitchen,
+    src: LANDING_IMAGES.heroHall,
     alt: 'Aadhya Serene building facade',
     eyebrow: 'Boutique Community',
     location: '1.25 Acres · 136 Homes',
@@ -100,6 +106,36 @@ const HERO_SLIDES = [
   },
   {
     src: LANDING_IMAGES.heroRoof,
+    alt: 'Aadhya Serene building facade',
+    eyebrow: 'Boutique Community',
+    location: '1.25 Acres · 136 Homes',
+    caption: 'BBMP + K-RERA Approved',
+  },  {
+    src: LANDING_IMAGES.ballpool,
+    alt: 'Aadhya Serene building facade',
+    eyebrow: 'Boutique Community',
+    location: '1.25 Acres · 136 Homes',
+    caption: 'BBMP + K-RERA Approved',
+  },  {
+    src: LANDING_IMAGES.badminton,
+    alt: 'Aadhya Serene building facade',
+    eyebrow: 'Boutique Community',
+    location: '1.25 Acres · 136 Homes',
+    caption: 'BBMP + K-RERA Approved',
+  },  {
+    src: LANDING_IMAGES.clubhouse,
+    alt: 'Aadhya Serene building facade',
+    eyebrow: 'Boutique Community',
+    location: '1.25 Acres · 136 Homes',
+    caption: 'BBMP + K-RERA Approved',
+  },{
+    src: LANDING_IMAGES.kidsplayarea,
+    alt: 'Aadhya Serene building facade',
+    eyebrow: 'Boutique Community',
+    location: '1.25 Acres · 136 Homes',
+    caption: 'BBMP + K-RERA Approved',
+  },{
+    src: LANDING_IMAGES.swimmingPool,
     alt: 'Aadhya Serene building facade',
     eyebrow: 'Boutique Community',
     location: '1.25 Acres · 136 Homes',
@@ -182,7 +218,7 @@ const LOCATION_POINTS = [
   { label: 'Manyata Tech Park', eta: 'Tech park · 5 mins' },
   { label: 'Chirayu Hospital', eta: 'Healthcare · 3 mins' },
   { label: 'Phoenix Mall of Asia', eta: 'Shopping · 15 mins' },
-  { label: 'Rashtrotthana Vidya Kendra', eta: 'Education · 2 mins' },
+  { label: 'International Airport', eta: 'Travel · 30 mins' },
 ];
 
 const SPEC_CHECKLIST = [
@@ -390,6 +426,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   const [activeConfig, setActiveConfig] = useState('2bhk');
   const [floorplanFilters, setFloorplanFilters] = useState({
     balconies: 'all',
+    facing: 'all',
     area: 'all',
   });
   const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
@@ -401,7 +438,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
     name: '',
     phone: '',
     config: '2 BHK',
-    budget: '99L - 1.2 Cr',
+    budget: '99L - 1.4 Cr',
     message: '',
   });
 
@@ -412,6 +449,8 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   const floorplanTrackRef = useRef(null);
   const floorplanScrollRafRef = useRef(null);
   const isTransitioningRef = useRef(false);
+  const heroSlideTimelineRef = useRef(null);
+  const activeSlideRef = useRef(0);
   const heroSlidesRef = useRef([]);
   const heroCurtainLeftRef = useRef(null);
   const heroCurtainRightRef = useRef(null);
@@ -471,58 +510,52 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   }, []);
 
   useEffect(() => {
+    activeSlideRef.current = activeSlide;
+  }, [activeSlide]);
+
+  useEffect(() => {
     slideTimerRef.current = window.setInterval(() => {
-      goToSlide((activeSlide + 1) % HERO_SLIDES.length);
+      const nextIndex = (activeSlideRef.current + 1) % HERO_SLIDES.length;
+      goToSlide(nextIndex);
     }, 6000);
 
     return () => window.clearInterval(slideTimerRef.current);
-  }, [activeSlide]);
+  }, []);
 
   const updateField = (key, value) =>
     setFormData((current) => ({ ...current, [key]: value }));
 
   const goToSlide = (nextIndex) => {
-    if (nextIndex === activeSlide || isTransitioningRef.current) return;
+    if (nextIndex === activeSlideRef.current) return;
 
-    const currentSlide = heroSlidesRef.current[activeSlide];
+    const currentSlide = heroSlidesRef.current[activeSlideRef.current];
     const nextSlide = heroSlidesRef.current[nextIndex];
-    const leftCurtain = heroCurtainLeftRef.current;
-    const rightCurtain = heroCurtainRightRef.current;
 
-    if (!currentSlide || !nextSlide || !leftCurtain || !rightCurtain) return;
+    if (!currentSlide || !nextSlide) return;
 
+    heroSlideTimelineRef.current?.kill();
     isTransitioningRef.current = true;
 
     const tl = gsap.timeline({
-      defaults: { ease: 'power4.inOut' },
+      defaults: { ease: 'power2.out' },
       onComplete: () => {
         isTransitioningRef.current = false;
+        heroSlideTimelineRef.current = null;
       },
     });
 
-    tl.set([leftCurtain, rightCurtain], { autoAlpha: 1 })
-      .fromTo(
-        leftCurtain,
-        { xPercent: -72, yPercent: -118 },
-        { xPercent: 0, yPercent: 0, duration: 0.9 }
-      )
-      .fromTo(
-        rightCurtain,
-        { xPercent: 72, yPercent: 118 },
-        { xPercent: 0, yPercent: 0, duration: 0.9 },
-        '<'
-      )
+    heroSlideTimelineRef.current = tl;
+
+    tl.set(nextSlide, { zIndex: 3, opacity: 0 })
+      .set(currentSlide, { zIndex: 2 })
+      .to(nextSlide, { opacity: 1, duration: 0.28 }, 0)
+      .to(currentSlide, { opacity: 0, duration: 0.28 }, 0)
       .add(() => {
-        currentSlide.style.opacity = '0';
         currentSlide.style.zIndex = '1';
-        nextSlide.style.opacity = '1';
         nextSlide.style.zIndex = '2';
+        activeSlideRef.current = nextIndex;
         setActiveSlide(nextIndex);
-      })
-      .to({}, { duration: 0.24 })
-      .to(leftCurtain, { xPercent: -72, yPercent: -118, duration: 0.9 })
-      .to(rightCurtain, { xPercent: 72, yPercent: 118, duration: 0.9 }, '<')
-      .set([leftCurtain, rightCurtain], { autoAlpha: 0 });
+      });
   };
 
   const submitForm = async (event) => {
@@ -658,11 +691,24 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
     ).sort((a, b) => a - b);
   }, [currentConfigFloorplans]);
 
+  const facingFilterOptions = useMemo(() => {
+    return Array.from(
+      new Set(currentConfigFloorplans.map((floorplan) => String(floorplan.facing).toLowerCase()))
+    ).sort((a, b) => a.localeCompare(b));
+  }, [currentConfigFloorplans]);
+
   const filteredFloorplans = useMemo(() => {
     return currentConfigFloorplans.filter((floorplan) => {
       if (
         floorplanFilters.balconies !== 'all' &&
         String(floorplan.balconies) !== floorplanFilters.balconies
+      ) {
+        return false;
+      }
+
+      if (
+        floorplanFilters.facing !== 'all' &&
+        String(floorplan.facing).toLowerCase() !== floorplanFilters.facing
       ) {
         return false;
       }
@@ -684,7 +730,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   useEffect(() => {
     setActiveFloorplanIndex(0);
     floorplanTrackRef.current?.scrollTo({ left: 0, behavior: 'auto' });
-  }, [activeConfig, floorplanFilters.area, floorplanFilters.balconies]);
+  }, [activeConfig, floorplanFilters.area, floorplanFilters.balconies, floorplanFilters.facing]);
 
   useEffect(() => {
     if (activeFloorplanIndex >= filteredFloorplans.length) {
@@ -746,7 +792,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
     <>
       <ReraBadge className="fixed right-3 top-3 z-[95] max-w-[calc(100vw-1.5rem)] bg-white/90 shadow-[0_14px_34px_rgba(0,0,0,0.12)] sm:right-5 sm:top-5" />
       <main className="min-h-screen bg-[#f3efe6] text-[#111111]">
-        <section className="relative h-[100svh] min-h-[760px] overflow-hidden bg-[#090a0d] text-white">
+        <section className="relative h-[100svh] min-h-[680px] overflow-hidden bg-[#090a0d] text-white max-[900px]:min-h-[620px] max-[820px]:min-h-[580px]">
           <div className="absolute inset-0">
             {HERO_SLIDES.map((slide, index) => (
               <div
@@ -780,7 +826,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                 className="absolute inset-0"
                 style={{ willChange: 'transform, opacity' }}
               >
-                <div
+                {/* <div
                   className="absolute"
                   style={{
                     top: '-38%',
@@ -791,7 +837,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     transform: 'rotate(-34deg)',
                     boxShadow: '28px 0 72px rgba(0,0,0,0.45)',
                   }}
-                />
+                /> */}
               </div>
               <div
                 ref={heroCurtainRightRef}
@@ -799,7 +845,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                 className="absolute inset-0"
                 style={{ willChange: 'transform, opacity' }}
               >
-                <div
+                {/* <div
                   className="absolute"
                   style={{
                     bottom: '-38%',
@@ -810,67 +856,67 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     transform: 'rotate(-34deg)',
                     boxShadow: '-28px 0 72px rgba(0,0,0,0.45)',
                   }}
-                />
+                /> */}
               </div>
             </div>
           </div>
 
-          <div className="relative z-10 flex h-[100svh] min-h-[760px] flex-col px-3 py-4 sm:px-4 sm:py-6 lg:px-5">
-            <div className="gsap-entry flex w-full items-center justify-between gap-4 px-0.5 py-2 sm:px-1">
-              <div className="flex min-w-0 items-center gap-5">
+          <div className="relative z-10 flex h-[100svh] min-h-[680px] flex-col px-3 py-4 sm:px-4 sm:py-6 lg:px-5 max-[900px]:min-h-[620px] max-[900px]:py-3 max-[820px]:min-h-[580px] max-[820px]:py-2">
+            <div className="gsap-entry flex w-full items-center justify-between gap-3 px-0.5 py-2 sm:px-1 max-[900px]:py-1">
+              <div className="flex min-w-0 items-center gap-4 max-[900px]:gap-3">
                 <a
                   href="#"
                   aria-label="Aadhya Serene"
-                  className="inline-flex shrink-0 items-center rounded-[2rem]  px-5 py-3"
+                  className="inline-flex shrink-0 items-center rounded-[2rem] px-4 py-2.5 max-[900px]:px-3 max-[900px]:py-2"
                 >
-                  <AadhyaLogo className="h-10 w-auto md:h-11" />
+                  <AadhyaLogo className="h-9 w-auto md:h-10 max-[900px]:h-8 max-[820px]:h-7" />
                 </a>
-                <nav className="hidden items-center gap-1 rounded-full border border-white/18 bg-black/24 px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/88 shadow-[0_14px_42px_rgba(0,0,0,0.16)] backdrop-blur-xl lg:flex xl:gap-2">
-                  <a href="#why-us" className="rounded-full px-4 py-2.5 transition hover:bg-white/12 hover:text-white">
+                <nav className="hidden items-center gap-1 rounded-full border border-white/18 bg-black/24 px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/88 shadow-[0_14px_42px_rgba(0,0,0,0.16)] backdrop-blur-xl lg:flex xl:gap-2 max-[1100px]:text-[10px] max-[1100px]:tracking-[0.14em] max-[1100px]:px-1.5 max-[1100px]:py-1.5 max-[900px]:gap-0.5">
+                  <a href="#why-us" className="rounded-full px-4 py-2.5 transition hover:bg-white/12 hover:text-white max-[1100px]:px-3 max-[1100px]:py-2 max-[900px]:px-2.5 max-[900px]:py-1.5">
                     Advantages
                   </a>
-                  <a href="#walkthrough" className="rounded-full px-4 py-2.5 transition hover:bg-white/12 hover:text-white">
+                  <a href="#walkthrough" className="rounded-full px-4 py-2.5 transition hover:bg-white/12 hover:text-white max-[1100px]:px-3 max-[1100px]:py-2 max-[900px]:px-2.5 max-[900px]:py-1.5">
                     Walkthrough
                   </a>
-                  <a href="#amenities" className="rounded-full px-4 py-2.5 transition hover:bg-white/12 hover:text-white">
+                  <a href="#amenities" className="rounded-full px-4 py-2.5 transition hover:bg-white/12 hover:text-white max-[1100px]:px-3 max-[1100px]:py-2 max-[900px]:px-2.5 max-[900px]:py-1.5">
                     Amenities
                   </a>
-                  <a href="#faq" className="rounded-full px-4 py-2.5 transition hover:bg-white/12 hover:text-white">
+                  <a href="#faq" className="rounded-full px-4 py-2.5 transition hover:bg-white/12 hover:text-white max-[1100px]:px-3 max-[1100px]:py-2 max-[900px]:px-2.5 max-[900px]:py-1.5">
                     FAQ
                   </a>
                 </nav>
               </div>
             </div>
 
-            <div className="flex w-full flex-1 items-end py-8 sm:py-10 lg:py-12">
-              <div className="grid w-full items-end gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-10">
+            <div className="flex w-full flex-1 items-end py-6 sm:py-8 lg:py-10 max-[900px]:py-5 max-[820px]:py-4">
+              <div className="grid w-full items-end gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-8 max-[900px]:gap-5">
                 <div className="gsap-entry self-end">
                   <div className="max-w-none">
-                    <p className="mb-4 text-[10px] uppercase tracking-[0.34em] text-white/58 sm:text-[11px]">
+                    <p className="mb-3 text-[10px] uppercase tracking-[0.3em] text-white/58 sm:text-[11px] max-[900px]:mb-2 max-[900px]:text-[9px] max-[900px]:tracking-[0.24em]">
                       Ready-to-move homes beside the tech corridor
                     </p>
-                    <h1 className="font-[var(--font-hero)] text-[clamp(3.2rem,5.8vw,6rem)] font-medium leading-[0.9] tracking-[-0.065em] text-white">
+                    <h1 className="font-[var(--font-hero)] text-[clamp(2.8rem,5.2vw,5.6rem)] font-medium leading-[0.9] tracking-[-0.055em] text-white max-[1100px]:text-[clamp(2.6rem,4.8vw,4.8rem)] max-[900px]:text-[clamp(2.1rem,4.2vw,4rem)] max-[820px]:text-[clamp(1.9rem,4vw,3.4rem)]">
                       <span className="block whitespace-nowrap">Live Beside</span>
                       <span className="block whitespace-nowrap">Manyata Tech Park.</span>
                     </h1>
-                    <div className="mt-6 flex max-w-[46rem] flex-wrap gap-3">
-                      <span className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl">
+                    <div className="mt-5 flex max-w-[44rem] flex-wrap gap-2.5 max-[900px]:mt-4 max-[900px]:gap-2">
+                      <span className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl max-[1100px]:min-h-[38px] max-[1100px]:px-3.5 max-[1100px]:text-[10px] max-[900px]:min-h-[34px] max-[900px]:px-3 max-[900px]:text-[9px] max-[900px]:tracking-[0.12em]">
                         <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
                         Site visits open today
                       </span>
 
-                      <span className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl">
+                      <span className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl max-[1100px]:min-h-[38px] max-[1100px]:px-3.5 max-[1100px]:text-[10px] max-[900px]:min-h-[34px] max-[900px]:px-3 max-[900px]:text-[9px] max-[900px]:tracking-[0.12em]">
                         <ShieldCheck className="h-3.5 w-3.5 text-[#e8d0a8]" />
                         Vastu compliant
                       </span>
-                      <span className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl">
+                      <span className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl max-[1100px]:min-h-[38px] max-[1100px]:px-3.5 max-[1100px]:text-[10px] max-[900px]:min-h-[34px] max-[900px]:px-3 max-[900px]:text-[9px] max-[900px]:tracking-[0.12em]">
                         <BadgeCheck className="h-3.5 w-3.5 text-[#e8d0a8]" />
                         BBMP approved
                       </span>
                       <a
                         href={PHONE_LINK}
                         onClick={heroCallClick}
-                        className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl transition hover:bg-white hover:text-black"
+                        className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl transition hover:bg-white hover:text-black max-[1100px]:min-h-[38px] max-[1100px]:px-3.5 max-[1100px]:text-[10px] max-[900px]:min-h-[34px] max-[900px]:px-3 max-[900px]:text-[9px] max-[900px]:tracking-[0.12em]"
                       >
                         <Phone className="h-3.5 w-3.5" />
                         {PHONE_DISPLAY}
@@ -880,7 +926,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                 </div>
 
                 <div className="gsap-entry flex items-end justify-start lg:justify-end lg:pr-1">
-                  <div className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-black/18 p-2.5 shadow-[0_18px_48px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+                  <div className="inline-flex items-center gap-2.5 rounded-full max-[900px]:gap-2">
                     <button
                       type="button"
                       aria-label="Previous slide"
@@ -889,17 +935,17 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                           (activeSlide - 1 + HERO_SLIDES.length) % HERO_SLIDES.length
                         )
                       }
-                      className="flex h-14 w-14 items-center justify-center rounded-full border border-white/12 bg-white/[0.08] text-white transition duration-300 hover:-translate-y-0.5 hover:bg-white hover:text-black"
+                      className="flex h-[52px] w-[52px] items-center justify-center rounded-full border border-white/12 bg-white/[0.08] text-white transition duration-150 hover:-translate-y-0.5 hover:bg-white hover:text-black max-[900px]:h-11 max-[900px]:w-11"
                     >
-                      <ArrowRight className="h-5 w-5 rotate-180" />
+                      <ArrowRight className="h-4 w-4 rotate-180" />
                     </button>
                     <button
                       type="button"
                       aria-label="Next slide"
                       onClick={() => goToSlide((activeSlide + 1) % HERO_SLIDES.length)}
-                      className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-[0_12px_24px_rgba(255,255,255,0.18)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_30px_rgba(255,255,255,0.24)]"
+                      className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-white text-black shadow-[0_12px_24px_rgba(255,255,255,0.18)] transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_18px_30px_rgba(255,255,255,0.24)] max-[900px]:h-11 max-[900px]:w-11"
                     >
-                      <ArrowRight className="h-5 w-5" />
+                      <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -950,7 +996,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     label="Budget"
                     value={formData.budget}
                     onChange={(value) => updateField('budget', value)}
-                    options={['99L - 1.2 Cr', '1.2 Cr +']}
+                    options={['99L - 1.4 Cr', '1.4 Cr +']}
                   />
                 </div>
 
@@ -1199,7 +1245,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   className="mt-10 grid items-stretch gap-8 lg:grid-cols-[1.06fr_0.94fr]"
                 >
                   <div className="gsap-scale min-w-0">
-                    <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                    <div className="mb-4 grid gap-3 md:grid-cols-3">
                       <label className="block">
                         <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8e8576]">
                           Balconies
@@ -1216,6 +1262,29 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                             {balconyFilterOptions.map((balconies) => (
                               <option key={balconies} value={String(balconies)}>
                                 {balconies} {balconies === 1 ? 'balcony' : 'balconies'}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/64" />
+                        </div>
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8e8576]">
+                          Facing
+                        </span>
+                        <div className="relative">
+                          <select
+                            value={floorplanFilters.facing}
+                            onChange={(event) =>
+                              updateFloorplanFilter('facing', event.target.value)
+                            }
+                            className="h-14 w-full appearance-none rounded-full border border-black/10 bg-white/82 px-5 pr-14 text-sm font-semibold text-black shadow-[0_12px_28px_rgba(0,0,0,0.04)] outline-none transition focus:border-black/30 focus:bg-white focus:ring-4 focus:ring-black/5"
+                          >
+                            <option value="all">All facings</option>
+                            {facingFilterOptions.map((facing) => (
+                              <option key={facing} value={facing}>
+                                {facing.charAt(0).toUpperCase() + facing.slice(1)}
                               </option>
                             ))}
                           </select>
@@ -1793,7 +1862,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     label="Budget (optional)"
                     value={formData.budget}
                     onChange={(value) => updateField('budget', value)}
-                    options={['99L - 1.2 Cr', '1.2 Cr +']}
+                    options={['99L - 1.4 Cr', '1.4 Cr +']}
                   />
                 </div>
 
@@ -2215,7 +2284,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                       label="Budget (optional)"
                       value={formData.budget}
                       onChange={(value) => updateField('budget', value)}
-                      options={['99L - 1.2 Cr', '1.2 Cr +']}
+                      options={['99L - 1.4 Cr', '1.4 Cr +']}
                     />
                   </div>
 
