@@ -9,6 +9,13 @@ import WhatsAppLeadForm from '@/components/WhatsAppLeadForm';
 import { spreadFloorplanHotspots } from '@/components/ProjectOverviewBook/floorplan-hotspots';
 import { useApartmentsData } from '@/hooks/useApartmentsData';
 import {
+  landingLeadFormSchema,
+  sanitizeMessageInput,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+} from '@/lib/validation/enquiry';
+import { useValidatedForm } from '@/lib/validation/useValidatedForm';
+import {
   ArrowRight,
   BadgeCheck,
   Building2,
@@ -434,12 +441,28 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitState, setSubmitState] = useState({ type: '', message: '' });
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    config: '2 BHK',
-    budget: '99L - 1.4 Cr',
-    message: '',
+  const {
+    values: formData,
+    visibleErrors,
+    applyServerErrors,
+    resetForm,
+    setFieldTouched,
+    setFieldValue,
+    validateForm,
+  } = useValidatedForm({
+    initialValues: {
+      name: '',
+      phone: '',
+      config: '2 BHK',
+      budget: '99L - 1.4 Cr',
+      message: '',
+    },
+    schema: landingLeadFormSchema,
+    sanitizers: {
+      name: sanitizeNameInput,
+      phone: sanitizePhoneInput,
+      message: sanitizeMessageInput,
+    },
   });
 
   const timerRef = useRef(null);
@@ -522,8 +545,8 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
     return () => window.clearInterval(slideTimerRef.current);
   }, []);
 
-  const updateField = (key, value) =>
-    setFormData((current) => ({ ...current, [key]: value }));
+  const updateField = (key, value) => setFieldValue(key, value);
+  const handleFieldBlur = (key) => setFieldTouched(key);
 
   const goToSlide = (nextIndex) => {
     if (nextIndex === activeSlideRef.current) return;
@@ -561,10 +584,12 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   const submitForm = async (event) => {
     event.preventDefault();
 
-    if (!formData.name.trim() || !formData.phone.trim()) {
+    const parseResult = validateForm();
+
+    if (!parseResult.success) {
       setSubmitState({
         type: 'error',
-        message: 'Please share your name and phone number.',
+        message: 'Please correct the highlighted fields.',
       });
       return;
     }
@@ -577,19 +602,21 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.name,
-          phone: formData.phone,
+          ...parseResult.data,
           requestType: 'site_visit',
           source: 'ready_to_move_landing',
-          preferredTime: `Config: ${formData.config} | Budget: ${formData.budget}`,
-          message: formData.message
-            ? `Notes: ${formData.message}`
+          preferredTime: `Config: ${parseResult.data.config} | Budget: ${parseResult.data.budget}`,
+          message: parseResult.data.message
+            ? `Notes: ${parseResult.data.message}`
             : 'Pricing & floor plan enquiry from landing page.',
         }),
       });
 
       const payload = await response.json();
       if (!response.ok) {
+        if (payload?.fieldErrors) {
+          applyServerErrors(payload.fieldErrors);
+        }
         throw new Error(payload?.error || 'Something went wrong.');
       }
 
@@ -602,6 +629,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
         type: 'success',
         message: 'Thanks! Your enquiry has been sent to our team.',
       });
+      resetForm();
 
       window.setTimeout(() => {
         window.location.href = '/thank-you';
@@ -979,23 +1007,37 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     placeholder="Your name"
                     value={formData.name}
                     onChange={(value) => updateField('name', value)}
+                    onBlur={() => handleFieldBlur('name')}
+                    error={visibleErrors.name}
+                    errorId="landing-hero-name-error"
                   />
                   <Field
                     label="Phone number"
                     placeholder="Phone number"
                     value={formData.phone}
                     onChange={(value) => updateField('phone', value)}
+                    onBlur={() => handleFieldBlur('phone')}
+                    error={visibleErrors.phone}
+                    errorId="landing-hero-phone-error"
+                    type="tel"
+                    inputMode="numeric"
                   />
                   <SelectField
                     label="Configuration"
                     value={formData.config}
                     onChange={(value) => updateField('config', value)}
+                    onBlur={() => handleFieldBlur('config')}
+                    error={visibleErrors.config}
+                    errorId="landing-hero-config-error"
                     options={['2 BHK', '3 BHK']}
                   />
                   <SelectField
                     label="Budget"
                     value={formData.budget}
                     onChange={(value) => updateField('budget', value)}
+                    onBlur={() => handleFieldBlur('budget')}
+                    error={visibleErrors.budget}
+                    errorId="landing-hero-budget-error"
                     options={['99L - 1.4 Cr', '1.4 Cr +']}
                   />
                 </div>
@@ -1845,23 +1887,37 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                     placeholder="Your full name"
                     value={formData.name}
                     onChange={(value) => updateField('name', value)}
+                    onBlur={() => handleFieldBlur('name')}
+                    error={visibleErrors.name}
+                    errorId="landing-mid-name-error"
                   />
                   <Field
                     label="Phone"
                     placeholder="+91"
                     value={formData.phone}
                     onChange={(value) => updateField('phone', value)}
+                    onBlur={() => handleFieldBlur('phone')}
+                    error={visibleErrors.phone}
+                    errorId="landing-mid-phone-error"
+                    type="tel"
+                    inputMode="numeric"
                   />
                   <SelectField
                     label="Configuration"
                     value={formData.config}
                     onChange={(value) => updateField('config', value)}
+                    onBlur={() => handleFieldBlur('config')}
+                    error={visibleErrors.config}
+                    errorId="landing-mid-config-error"
                     options={['2 BHK', '3 BHK']}
                   />
                   <SelectField
                     label="Budget (optional)"
                     value={formData.budget}
                     onChange={(value) => updateField('budget', value)}
+                    onBlur={() => handleFieldBlur('budget')}
+                    error={visibleErrors.budget}
+                    errorId="landing-mid-budget-error"
                     options={['99L - 1.4 Cr', '1.4 Cr +']}
                   />
                 </div>
@@ -2267,23 +2323,37 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                       placeholder="Enter your full name"
                       value={formData.name}
                       onChange={(value) => updateField('name', value)}
+                      onBlur={() => handleFieldBlur('name')}
+                      error={visibleErrors.name}
+                      errorId="landing-popup-name-error"
                     />
                     <Field
                       label="Phone Number"
                       placeholder="+91"
                       value={formData.phone}
                       onChange={(value) => updateField('phone', value)}
+                      onBlur={() => handleFieldBlur('phone')}
+                      error={visibleErrors.phone}
+                      errorId="landing-popup-phone-error"
+                      type="tel"
+                      inputMode="numeric"
                     />
                     <SelectField
                       label="Configuration"
                       value={formData.config}
                       onChange={(value) => updateField('config', value)}
+                      onBlur={() => handleFieldBlur('config')}
+                      error={visibleErrors.config}
+                      errorId="landing-popup-config-error"
                       options={['2 BHK', '3 BHK']}
                     />
                     <SelectField
                       label="Budget (optional)"
                       value={formData.budget}
                       onChange={(value) => updateField('budget', value)}
+                      onBlur={() => handleFieldBlur('budget')}
+                      error={visibleErrors.budget}
+                      errorId="landing-popup-budget-error"
                       options={['99L - 1.4 Cr', '1.4 Cr +']}
                     />
                   </div>
@@ -2296,9 +2366,26 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                       rows={3}
                       value={formData.message}
                       onChange={(event) => updateField('message', event.target.value)}
-                      className="w-full rounded-[1.2rem] border border-black/8 bg-white px-4 py-3 text-sm text-black shadow-[0_14px_32px_rgba(0,0,0,0.04)] outline-none transition focus:border-black focus:ring-4 focus:ring-black/8"
+                      onBlur={() => handleFieldBlur('message')}
+                      className={`w-full rounded-[1.2rem] border px-4 py-3 text-sm text-black shadow-[0_14px_32px_rgba(0,0,0,0.04)] outline-none transition focus:ring-4 ${
+                        visibleErrors.message
+                          ? 'border-red-300 bg-red-50/70 focus:border-red-400 focus:ring-red-100'
+                          : 'border-black/8 bg-white focus:border-black focus:ring-black/8'
+                      }`}
                       placeholder="Preferred facing, family needs, loan help..."
+                      aria-invalid={Boolean(visibleErrors.message)}
+                      aria-describedby={
+                        visibleErrors.message ? 'landing-popup-message-error' : undefined
+                      }
                     />
+                    {visibleErrors.message ? (
+                      <p
+                        id="landing-popup-message-error"
+                        className="mt-2 text-xs font-medium text-red-600"
+                      >
+                        {visibleErrors.message}
+                      </p>
+                    ) : null}
                   </div>
 
                   {submitState.message ? (
@@ -2416,24 +2503,47 @@ function ReraBadge({ className = '', theme = 'light' }) {
   );
 }
 
-function Field({ label, placeholder, value, onChange }) {
+function Field({
+  label,
+  placeholder,
+  value,
+  onChange,
+  onBlur,
+  error,
+  errorId,
+  type = 'text',
+  inputMode,
+}) {
   return (
     <div>
       <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6d6d68]">
         {label}
       </label>
       <input
-        type="text"
+        type={type}
         placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-14 w-full rounded-[1.3rem] border border-black/8 bg-[#f7f6f1] px-4 text-sm text-black outline-none transition focus:border-black focus:ring-4 focus:ring-black/8"
+        onBlur={onBlur}
+        inputMode={inputMode}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? errorId : undefined}
+        className={`h-14 w-full rounded-[1.3rem] border px-4 text-sm text-black outline-none transition focus:ring-4 ${
+          error
+            ? 'border-red-300 bg-red-50/70 focus:border-red-400 focus:ring-red-100'
+            : 'border-black/8 bg-[#f7f6f1] focus:border-black focus:ring-black/8'
+        }`}
       />
+      {error ? (
+        <p id={errorId} className="mt-2 text-xs font-medium text-red-600">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-function SelectField({ label, value, onChange, options }) {
+function SelectField({ label, value, onChange, onBlur, options, error, errorId }) {
   return (
     <div>
       <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6d6d68]">
@@ -2442,7 +2552,14 @@ function SelectField({ label, value, onChange, options }) {
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-14 w-full rounded-[1.3rem] border border-black/8 bg-[#f7f6f1] px-4 text-sm text-black outline-none transition focus:border-black focus:ring-4 focus:ring-black/8"
+        onBlur={onBlur}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? errorId : undefined}
+        className={`h-14 w-full rounded-[1.3rem] border px-4 text-sm text-black outline-none transition focus:ring-4 ${
+          error
+            ? 'border-red-300 bg-red-50/70 focus:border-red-400 focus:ring-red-100'
+            : 'border-black/8 bg-[#f7f6f1] focus:border-black focus:ring-black/8'
+        }`}
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -2450,6 +2567,11 @@ function SelectField({ label, value, onChange, options }) {
           </option>
         ))}
       </select>
+      {error ? (
+        <p id={errorId} className="mt-2 text-xs font-medium text-red-600">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

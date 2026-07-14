@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { normalizeIndianWhatsAppNumber } from "@/lib/phone";
 import { sendTemplateMessage, WhatsAppRequestError } from "@/lib/whatsapp";
 import { upsertLeadState } from "@/lib/lead-store";
 import {
@@ -8,6 +7,10 @@ import {
   sendEnquiryNotificationEmail,
   updateEnquiryRecord,
 } from "@/lib/enquiry-service";
+import {
+  createValidationErrorResponse,
+  whatsAppApiSchema,
+} from "@/lib/validation/enquiry";
 
 export const runtime = "nodejs";
 
@@ -16,15 +19,26 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
+    const parseResult = whatsAppApiSchema.safeParse(body);
 
-    const name = String(body.name || "there").trim();
+    if (!parseResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          ...createValidationErrorResponse(parseResult.error),
+        },
+        { status: 400 }
+      );
+    }
+
+    const payload = parseResult.data;
+    const name = payload.name;
     const projectName = String(
-      body.projectName || process.env.PROJECT_NAME || "Abhigna Constructions"
+      payload.projectName || process.env.PROJECT_NAME || "Abhigna Constructions"
     ).trim();
-    const source = String(body.source || "ready_to_move_whatsapp_form").trim();
+    const source = String(payload.source || "ready_to_move_whatsapp_form").trim();
     const requestMetadata = getRequestMetadataFromHeaders(req.headers);
-
-    const phone = normalizeIndianWhatsAppNumber(String(body.phone || ""));
+    const phone = payload.phone;
 
     upsertLeadState(phone, {
       name,

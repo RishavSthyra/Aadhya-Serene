@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import {
-  cleanValue,
   createEnquiryRecord,
   getMissingMailConfigFields,
   getRequestMetadataFromHeaders,
@@ -8,6 +7,10 @@ import {
   sendEnquiryNotificationEmail,
   updateEnquiryRecord,
 } from '@/lib/enquiry-service';
+import {
+  contactApiSchema,
+  createValidationErrorResponse,
+} from '@/lib/validation/enquiry';
 
 export async function POST(request) {
   const missingConfigFields = getMissingMailConfigFields();
@@ -28,30 +31,18 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Invalid request payload.' }, { status: 400 });
   }
 
-  const submission = {
-    name: cleanValue(payload?.name),
-    phone: cleanValue(payload?.phone),
-    email: cleanValue(payload?.email).toLowerCase(),
-    requestType: cleanValue(payload?.requestType),
-    preferredTime: cleanValue(payload?.preferredTime),
-    message: cleanValue(payload?.message),
-    source: cleanValue(payload?.source),
-  };
+  const parseResult = contactApiSchema.safeParse({
+    ...payload,
+    source: payload?.source || 'website',
+  });
 
-  if (!submission.name || !submission.phone || !submission.requestType) {
-    return NextResponse.json(
-      { error: 'Please complete the required contact details.' },
-      { status: 400 }
-    );
+  if (!parseResult.success) {
+    return NextResponse.json(createValidationErrorResponse(parseResult.error), {
+      status: 400,
+    });
   }
 
-  const isValidEmail =
-    !submission.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(submission.email);
-
-  if (!isValidEmail) {
-    return NextResponse.json({ error: 'Please provide a valid email address.' }, { status: 400 });
-  }
-
+  const submission = parseResult.data;
   const requestLabel = getRequestLabel(submission.requestType);
   const requestMetadata = getRequestMetadataFromHeaders(request.headers);
   let record = null;

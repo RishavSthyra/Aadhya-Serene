@@ -4,6 +4,15 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Mail, MapPin, Phone, Send, ShieldCheck } from 'lucide-react';
 import styles from './enquiry-contact-page.module.css';
+import {
+  readyToMoveContactFormSchema,
+  sanitizeEmailInput,
+  sanitizeMessageInput,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  sanitizeSingleLineText,
+} from '@/lib/validation/enquiry';
+import { useValidatedForm } from '@/lib/validation/useValidatedForm';
 
 const RERA_NUMBER = 'PRM/KA/RERA/1251/446/PR/190614/002604';
 const CONTACT_PHONE = '+91 96209 93333';
@@ -68,7 +77,25 @@ const timeOptions = [
 ];
 
 export default function EnquiryContactPage() {
-  const [formData, setFormData] = useState(initialFormState);
+  const {
+    values: formData,
+    visibleErrors,
+    applyServerErrors,
+    resetForm,
+    setFieldTouched,
+    setFieldValue,
+    validateForm,
+  } = useValidatedForm({
+    initialValues: initialFormState,
+    schema: readyToMoveContactFormSchema,
+    sanitizers: {
+      name: sanitizeNameInput,
+      email: sanitizeEmailInput,
+      phone: sanitizePhoneInput,
+      preferredTime: sanitizeSingleLineText,
+      message: sanitizeMessageInput,
+    },
+  });
   const [submitState, setSubmitState] = useState('idle');
   const [statusMessage, setStatusMessage] = useState(
     'Share your details and our team will reach out with pricing, plans, or a visit slot.'
@@ -76,11 +103,11 @@ export default function EnquiryContactPage() {
 
   function updateField(event) {
     const { name, value } = event.target;
+    setFieldValue(name, value);
+  }
 
-    setFormData((current) => ({
-      ...current,
-      [name]: value,
-    }));
+  function handleBlur(event) {
+    setFieldTouched(event.target.name);
   }
 
   async function handleSubmit(event) {
@@ -90,9 +117,11 @@ export default function EnquiryContactPage() {
       return;
     }
 
-    if (!formData.name.trim() || !formData.phone.trim() || !formData.email.trim()) {
+    const parseResult = validateForm();
+
+    if (!parseResult.success) {
       setSubmitState('error');
-      setStatusMessage('Please complete your name, phone number, and email address.');
+      setStatusMessage('Please correct the highlighted fields.');
       return;
     }
 
@@ -106,14 +135,13 @@ export default function EnquiryContactPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formData.name,
-          phone: formData.phone,
-          email: formData.email,
-          requestType: formData.requestType || 'register_interest',
-          preferredTime: [formData.residenceType, formData.preferredTime]
+          ...parseResult.data,
+          requestType: parseResult.data.requestType || 'register_interest',
+          preferredTime: [parseResult.data.residenceType, parseResult.data.preferredTime]
             .filter(Boolean)
             .join(' | '),
-          message: formData.message || 'Lead captured from the near-possession contact page.',
+          message:
+            parseResult.data.message || 'Lead captured from the near-possession contact page.',
           source: 'ready_to_move_contact_page',
         }),
       });
@@ -121,10 +149,13 @@ export default function EnquiryContactPage() {
       const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
+        if (result.fieldErrors) {
+          applyServerErrors(result.fieldErrors);
+        }
         throw new Error(result.error || 'We could not send your enquiry right now.');
       }
 
-      setFormData(initialFormState);
+      resetForm();
       setSubmitState('success');
       setStatusMessage(result.message || 'Your enquiry has been sent successfully.');
 
@@ -209,8 +240,13 @@ export default function EnquiryContactPage() {
                 name="requestType"
                 value={formData.requestType}
                 onChange={updateField}
-                className={styles.select}
+                onBlur={handleBlur}
+                className={`${styles.select} ${visibleErrors.requestType ? styles.inputError : ''}`}
                 required
+                aria-invalid={Boolean(visibleErrors.requestType)}
+                aria-describedby={
+                  visibleErrors.requestType ? 'ready-contact-request-type-error' : undefined
+                }
               >
                 <option value="" disabled>
                   Choose one option
@@ -221,6 +257,11 @@ export default function EnquiryContactPage() {
                   </option>
                 ))}
               </select>
+              {visibleErrors.requestType ? (
+                <p id="ready-contact-request-type-error" className={styles.fieldError}>
+                  {visibleErrors.requestType}
+                </p>
+              ) : null}
             </label>
 
             <label className={styles.field}>
@@ -229,8 +270,15 @@ export default function EnquiryContactPage() {
                 name="residenceType"
                 value={formData.residenceType}
                 onChange={updateField}
-                className={styles.select}
+                onBlur={handleBlur}
+                className={`${styles.select} ${
+                  visibleErrors.residenceType ? styles.inputError : ''
+                }`}
                 required
+                aria-invalid={Boolean(visibleErrors.residenceType)}
+                aria-describedby={
+                  visibleErrors.residenceType ? 'ready-contact-residence-type-error' : undefined
+                }
               >
                 <option value="" disabled>
                   Choose one option
@@ -241,6 +289,11 @@ export default function EnquiryContactPage() {
                   </option>
                 ))}
               </select>
+              {visibleErrors.residenceType ? (
+                <p id="ready-contact-residence-type-error" className={styles.fieldError}>
+                  {visibleErrors.residenceType}
+                </p>
+              ) : null}
             </label>
 
             <label className={styles.field}>
@@ -250,11 +303,19 @@ export default function EnquiryContactPage() {
                 name="name"
                 value={formData.name}
                 onChange={updateField}
-                className={styles.input}
+                onBlur={handleBlur}
+                className={`${styles.input} ${visibleErrors.name ? styles.inputError : ''}`}
                 placeholder="Enter your full name"
                 autoComplete="name"
                 required
+                aria-invalid={Boolean(visibleErrors.name)}
+                aria-describedby={visibleErrors.name ? 'ready-contact-name-error' : undefined}
               />
+              {visibleErrors.name ? (
+                <p id="ready-contact-name-error" className={styles.fieldError}>
+                  {visibleErrors.name}
+                </p>
+              ) : null}
             </label>
 
             <label className={styles.field}>
@@ -264,11 +325,19 @@ export default function EnquiryContactPage() {
                 name="email"
                 value={formData.email}
                 onChange={updateField}
-                className={styles.input}
+                onBlur={handleBlur}
+                className={`${styles.input} ${visibleErrors.email ? styles.inputError : ''}`}
                 placeholder="Enter your email address"
                 autoComplete="email"
                 required
+                aria-invalid={Boolean(visibleErrors.email)}
+                aria-describedby={visibleErrors.email ? 'ready-contact-email-error' : undefined}
               />
+              {visibleErrors.email ? (
+                <p id="ready-contact-email-error" className={styles.fieldError}>
+                  {visibleErrors.email}
+                </p>
+              ) : null}
             </label>
 
             <label className={styles.field}>
@@ -278,12 +347,20 @@ export default function EnquiryContactPage() {
                 name="phone"
                 value={formData.phone}
                 onChange={updateField}
-                className={styles.input}
+                onBlur={handleBlur}
+                className={`${styles.input} ${visibleErrors.phone ? styles.inputError : ''}`}
                 placeholder="+91"
                 autoComplete="tel"
-                inputMode="tel"
+                inputMode="numeric"
                 required
+                aria-invalid={Boolean(visibleErrors.phone)}
+                aria-describedby={visibleErrors.phone ? 'ready-contact-phone-error' : undefined}
               />
+              {visibleErrors.phone ? (
+                <p id="ready-contact-phone-error" className={styles.fieldError}>
+                  {visibleErrors.phone}
+                </p>
+              ) : null}
             </label>
 
             <label className={styles.field}>
@@ -292,7 +369,14 @@ export default function EnquiryContactPage() {
                 name="preferredTime"
                 value={formData.preferredTime}
                 onChange={updateField}
-                className={styles.select}
+                onBlur={handleBlur}
+                className={`${styles.select} ${
+                  visibleErrors.preferredTime ? styles.inputError : ''
+                }`}
+                aria-invalid={Boolean(visibleErrors.preferredTime)}
+                aria-describedby={
+                  visibleErrors.preferredTime ? 'ready-contact-preferred-time-error' : undefined
+                }
               >
                 <option value="">Choose one option</option>
                 {timeOptions.map((option) => (
@@ -301,6 +385,11 @@ export default function EnquiryContactPage() {
                   </option>
                 ))}
               </select>
+              {visibleErrors.preferredTime ? (
+                <p id="ready-contact-preferred-time-error" className={styles.fieldError}>
+                  {visibleErrors.preferredTime}
+                </p>
+              ) : null}
             </label>
 
             <label className={`${styles.field} ${styles.fullWidthField}`}>
@@ -309,10 +398,18 @@ export default function EnquiryContactPage() {
                 name="message"
                 value={formData.message}
                 onChange={updateField}
-                className={styles.textarea}
+                onBlur={handleBlur}
+                className={`${styles.textarea} ${visibleErrors.message ? styles.inputError : ''}`}
                 placeholder="Tell us if you want the price sheet, a call back, a site visit, or help choosing between 2 and 3 BHK options."
                 rows={5}
+                aria-invalid={Boolean(visibleErrors.message)}
+                aria-describedby={visibleErrors.message ? 'ready-contact-message-error' : undefined}
               />
+              {visibleErrors.message ? (
+                <p id="ready-contact-message-error" className={styles.fieldError}>
+                  {visibleErrors.message}
+                </p>
+              ) : null}
             </label>
           </div>
 

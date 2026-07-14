@@ -296,6 +296,19 @@
   transform: translateY(-1px);
 }
 
+.inputError {
+  border-color: rgba(178, 89, 89, 0.34);
+  box-shadow: 0 0 0 4px rgba(178, 89, 89, 0.08);
+  background: rgba(255, 239, 239, 0.86);
+}
+
+.fieldError {
+  margin: 2px 0 0;
+  color: #9a4343;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .select {
   appearance: none;
   cursor: pointer;

@@ -1,6 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import {
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  whatsAppLeadFormSchema,
+} from "@/lib/validation/enquiry";
+import { useValidatedForm } from "@/lib/validation/useValidatedForm";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -71,13 +77,38 @@ function getReadableErrorMessage(data: unknown) {
 }
 
 export default function WhatsAppLeadForm() {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const {
+    values,
+    visibleErrors,
+    applyServerErrors,
+    resetForm,
+    setFieldTouched,
+    setFieldValue,
+    validateForm,
+  } = useValidatedForm({
+    initialValues: {
+      name: "",
+      phone: "",
+    },
+    schema: whatsAppLeadFormSchema,
+    sanitizers: {
+      name: sanitizeNameInput,
+      phone: sanitizePhoneInput,
+    },
+  });
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
 
   async function submitLead(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    const parseResult = validateForm();
+
+    if (!parseResult.success) {
+      setStatus("error");
+      setMessage("Please correct the highlighted fields.");
+      return;
+    }
 
     setStatus("loading");
     setMessage("");
@@ -89,8 +120,7 @@ export default function WhatsAppLeadForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name,
-          phone,
+          ...parseResult.data,
           projectName: "Abhigna Constructions",
           source: "ready_to_move_whatsapp_modal",
         }),
@@ -99,13 +129,15 @@ export default function WhatsAppLeadForm() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
+        if (data?.fieldErrors) {
+          applyServerErrors(data.fieldErrors);
+        }
         throw new Error(getReadableErrorMessage(data));
       }
 
       setStatus("success");
       setMessage("WhatsApp message sent. Please check your phone.");
-      setName("");
-      setPhone("");
+      resetForm();
     } catch (error) {
       setStatus("error");
       setMessage(
@@ -128,13 +160,25 @@ export default function WhatsAppLeadForm() {
         <input
           id="name"
           type="text"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
+          value={String(values.name || "")}
+          onChange={(event) => setFieldValue("name", event.target.value)}
+          onBlur={() => setFieldTouched("name")}
           autoComplete="name"
           required
-          className="w-full border-0 border-b border-[#d9c8aa] bg-transparent px-0 pb-4 pt-0 text-[1rem] font-normal leading-none text-[#17130d] outline-none transition placeholder:text-[1rem] placeholder:text-[#b7a894] focus:border-[#9f7840]"
+          aria-invalid={Boolean(visibleErrors.name)}
+          aria-describedby={visibleErrors.name ? "whatsapp-name-error" : undefined}
+          className={`w-full border-0 border-b bg-transparent px-0 pb-4 pt-0 text-[1rem] font-normal leading-none text-[#17130d] outline-none transition placeholder:text-[1rem] placeholder:text-[#b7a894] ${
+            visibleErrors.name
+              ? "border-red-500 focus:border-red-500"
+              : "border-[#d9c8aa] focus:border-[#9f7840]"
+          }`}
           placeholder="Enter your name"
         />
+        {visibleErrors.name ? (
+          <p id="whatsapp-name-error" className="mt-2 text-sm leading-6 text-red-700">
+            {visibleErrors.name}
+          </p>
+        ) : null}
       </div>
 
       <div>
@@ -147,14 +191,26 @@ export default function WhatsAppLeadForm() {
         <input
           id="phone"
           type="tel"
-          value={phone}
-          onChange={(event) => setPhone(event.target.value)}
+          value={String(values.phone || "")}
+          onChange={(event) => setFieldValue("phone", event.target.value)}
+          onBlur={() => setFieldTouched("phone")}
           autoComplete="tel"
           inputMode="numeric"
           required
-          className="w-full border-0 border-b border-[#d9c8aa] bg-transparent px-0 pb-4 pt-0 text-[1rem] font-normal leading-none text-[#17130d] outline-none transition placeholder:text-[1rem] placeholder:text-[#b7a894] focus:border-[#9f7840]"
+          aria-invalid={Boolean(visibleErrors.phone)}
+          aria-describedby={visibleErrors.phone ? "whatsapp-phone-error" : undefined}
+          className={`w-full border-0 border-b bg-transparent px-0 pb-4 pt-0 text-[1rem] font-normal leading-none text-[#17130d] outline-none transition placeholder:text-[1rem] placeholder:text-[#b7a894] ${
+            visibleErrors.phone
+              ? "border-red-500 focus:border-red-500"
+              : "border-[#d9c8aa] focus:border-[#9f7840]"
+          }`}
           placeholder="10-digit mobile number"
         />
+        {visibleErrors.phone ? (
+          <p id="whatsapp-phone-error" className="mt-2 text-sm leading-6 text-red-700">
+            {visibleErrors.phone}
+          </p>
+        ) : null}
       </div>
 
       <button

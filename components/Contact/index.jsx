@@ -13,6 +13,15 @@ import {
   Sparkles,
 } from 'lucide-react';
 import styles from '../../app/contact/contact.module.css';
+import {
+  contactPageFormSchema,
+  sanitizeEmailInput,
+  sanitizeMessageInput,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  sanitizeSingleLineText,
+} from '@/lib/validation/enquiry';
+import { useValidatedForm } from '@/lib/validation/useValidatedForm';
 
 const initialFormState = {
   name: '',
@@ -93,7 +102,25 @@ const socialLinks = [
 ];
 
 export default function Contact() {
-  const [formData, setFormData] = useState(initialFormState);
+  const {
+    values: formData,
+    visibleErrors,
+    applyServerErrors,
+    resetForm,
+    setFieldTouched,
+    setFieldValue,
+    validateForm,
+  } = useValidatedForm({
+    initialValues: initialFormState,
+    schema: contactPageFormSchema,
+    sanitizers: {
+      name: sanitizeNameInput,
+      phone: sanitizePhoneInput,
+      email: sanitizeEmailInput,
+      preferredTime: sanitizeSingleLineText,
+      message: sanitizeMessageInput,
+    },
+  });
   const [submitState, setSubmitState] = useState('idle');
   const [statusMessage, setStatusMessage] = useState(
     'Share a few details and our team will respond with availability, pricing guidance, or a visit slot.'
@@ -101,16 +128,25 @@ export default function Contact() {
 
   function handleInputChange(event) {
     const { name, value } = event.target;
-    setFormData((current) => ({
-      ...current,
-      [name]: value,
-    }));
+    setFieldValue(name, value);
+  }
+
+  function handleBlur(event) {
+    setFieldTouched(event.target.name);
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
 
     if (submitState === 'sending') {
+      return;
+    }
+
+    const parseResult = validateForm();
+
+    if (!parseResult.success) {
+      setSubmitState('error');
+      setStatusMessage('Please correct the highlighted fields.');
       return;
     }
 
@@ -124,7 +160,7 @@ export default function Contact() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
+          ...parseResult.data,
           source: 'contact_page',
         }),
       });
@@ -132,10 +168,13 @@ export default function Contact() {
       const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
+        if (result.fieldErrors) {
+          applyServerErrors(result.fieldErrors);
+        }
         throw new Error(result.error || 'We could not send your enquiry right now.');
       }
 
-      setFormData(initialFormState);
+      resetForm();
       setSubmitState('success');
       setStatusMessage(result.message || 'Your enquiry has been sent successfully.');
 
@@ -162,6 +201,18 @@ export default function Contact() {
               </div>
             </div>
 
+            <div
+              className={`${styles.formStatus} ${
+                submitState === 'success'
+                  ? styles.statusSuccess
+                  : submitState === 'error'
+                    ? styles.statusError
+                    : ''
+              }`}
+            >
+              {statusMessage}
+            </div>
+
             <div className={styles.formGrid}>
               <div className={styles.inputGroup}>
                 <label htmlFor="name">Full Name</label>
@@ -170,11 +221,19 @@ export default function Contact() {
                   name="name"
                   placeholder="Your name"
                   required
-                  className={styles.input}
+                  className={`${styles.input} ${visibleErrors.name ? styles.inputError : ''}`}
                   value={formData.name}
                   onChange={handleInputChange}
+                  onBlur={handleBlur}
                   autoComplete="name"
+                  aria-invalid={Boolean(visibleErrors.name)}
+                  aria-describedby={visibleErrors.name ? 'contact-name-error' : undefined}
                 />
+                {visibleErrors.name ? (
+                  <p id="contact-name-error" className={styles.fieldError}>
+                    {visibleErrors.name}
+                  </p>
+                ) : null}
               </div>
 
               <div className={styles.inputGroup}>
@@ -185,12 +244,20 @@ export default function Contact() {
                   placeholder="+91"
                   type="tel"
                   required
-                  className={styles.input}
+                  className={`${styles.input} ${visibleErrors.phone ? styles.inputError : ''}`}
                   value={formData.phone}
                   onChange={handleInputChange}
+                  onBlur={handleBlur}
                   autoComplete="tel"
-                  inputMode="tel"
+                  inputMode="numeric"
+                  aria-invalid={Boolean(visibleErrors.phone)}
+                  aria-describedby={visibleErrors.phone ? 'contact-phone-error' : undefined}
                 />
+                {visibleErrors.phone ? (
+                  <p id="contact-phone-error" className={styles.fieldError}>
+                    {visibleErrors.phone}
+                  </p>
+                ) : null}
               </div>
 
               <div className={styles.inputGroup}>
@@ -201,11 +268,19 @@ export default function Contact() {
                   type="email"
                   placeholder="you@example.com"
                   required
-                  className={styles.input}
+                  className={`${styles.input} ${visibleErrors.email ? styles.inputError : ''}`}
                   value={formData.email}
                   onChange={handleInputChange}
+                  onBlur={handleBlur}
                   autoComplete="email"
+                  aria-invalid={Boolean(visibleErrors.email)}
+                  aria-describedby={visibleErrors.email ? 'contact-email-error' : undefined}
                 />
+                {visibleErrors.email ? (
+                  <p id="contact-email-error" className={styles.fieldError}>
+                    {visibleErrors.email}
+                  </p>
+                ) : null}
               </div>
 
               <div className={styles.inputGroup}>
@@ -214,9 +289,14 @@ export default function Contact() {
                   id="requestType"
                   name="requestType"
                   required
-                  className={styles.select}
+                  className={`${styles.select} ${visibleErrors.requestType ? styles.inputError : ''}`}
                   value={formData.requestType}
                   onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  aria-invalid={Boolean(visibleErrors.requestType)}
+                  aria-describedby={
+                    visibleErrors.requestType ? 'contact-request-type-error' : undefined
+                  }
                 >
                   <option value="" disabled>
                     Select an option
@@ -226,6 +306,11 @@ export default function Contact() {
                   <option value="site_visit">Schedule a Site Visit</option>
                   <option value="brochure">Request Brochure</option>
                 </select>
+                {visibleErrors.requestType ? (
+                  <p id="contact-request-type-error" className={styles.fieldError}>
+                    {visibleErrors.requestType}
+                  </p>
+                ) : null}
               </div>
 
               <div className={`${styles.inputGroup} ${styles.fullWidthField}`}>
@@ -234,10 +319,22 @@ export default function Contact() {
                   id="preferredTime"
                   name="preferredTime"
                   placeholder="Tomorrow after 4 PM, weekend morning, etc."
-                  className={styles.input}
+                  className={`${styles.input} ${
+                    visibleErrors.preferredTime ? styles.inputError : ''
+                  }`}
                   value={formData.preferredTime}
                   onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  aria-invalid={Boolean(visibleErrors.preferredTime)}
+                  aria-describedby={
+                    visibleErrors.preferredTime ? 'contact-preferred-time-error' : undefined
+                  }
                 />
+                {visibleErrors.preferredTime ? (
+                  <p id="contact-preferred-time-error" className={styles.fieldError}>
+                    {visibleErrors.preferredTime}
+                  </p>
+                ) : null}
               </div>
 
               <div className={`${styles.inputGroup} ${styles.fullWidthField}`}>
@@ -246,11 +343,21 @@ export default function Contact() {
                   id="message"
                   name="message"
                   placeholder="Share the apartment type, budget range, visit preference, or anything our team should know."
-                  className={`${styles.input} ${styles.textarea}`}
+                  className={`${styles.input} ${styles.textarea} ${
+                    visibleErrors.message ? styles.inputError : ''
+                  }`}
                   value={formData.message}
                   onChange={handleInputChange}
+                  onBlur={handleBlur}
                   rows={5}
+                  aria-invalid={Boolean(visibleErrors.message)}
+                  aria-describedby={visibleErrors.message ? 'contact-message-error' : undefined}
                 />
+                {visibleErrors.message ? (
+                  <p id="contact-message-error" className={styles.fieldError}>
+                    {visibleErrors.message}
+                  </p>
+                ) : null}
               </div>
             </div>
 

@@ -4,6 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, ShieldCheck, X } from 'lucide-react';
+import {
+  landingLeadFormSchema,
+  sanitizeMessageInput,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+} from '@/lib/validation/enquiry';
+import { useValidatedForm } from '@/lib/validation/useValidatedForm';
 
 const FORM_IMAGE = '/landing%20page%20images/interiorimage7.avif';
 const RERA_NUMBER = 'PRM/KA/RERA/1251/446/PR/180625/006584';
@@ -19,7 +26,23 @@ const initialFormState = {
 export default function PopupLeadRoute() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitState, setSubmitState] = useState({ type: '', message: '' });
-  const [formData, setFormData] = useState(initialFormState);
+  const {
+    values: formData,
+    visibleErrors,
+    applyServerErrors,
+    resetForm,
+    setFieldTouched,
+    setFieldValue,
+    validateForm,
+  } = useValidatedForm({
+    initialValues: initialFormState,
+    schema: landingLeadFormSchema,
+    sanitizers: {
+      name: sanitizeNameInput,
+      phone: sanitizePhoneInput,
+      message: sanitizeMessageInput,
+    },
+  });
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -29,16 +52,18 @@ export default function PopupLeadRoute() {
     };
   }, []);
 
-  const updateField = (key, value) =>
-    setFormData((current) => ({ ...current, [key]: value }));
+  const updateField = (key, value) => setFieldValue(key, value);
+  const handleFieldBlur = (key) => setFieldTouched(key);
 
   const submitForm = async (event) => {
     event.preventDefault();
 
-    if (!formData.name.trim() || !formData.phone.trim()) {
+    const parseResult = validateForm();
+
+    if (!parseResult.success) {
       setSubmitState({
         type: 'error',
-        message: 'Please share your name and phone number.',
+        message: 'Please correct the highlighted fields.',
       });
       return;
     }
@@ -51,19 +76,21 @@ export default function PopupLeadRoute() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.name,
-          phone: formData.phone,
+          ...parseResult.data,
           requestType: 'site_visit',
           source: 'ready_to_move_popup_route',
-          preferredTime: `Config: ${formData.config} | Budget: ${formData.budget}`,
-          message: formData.message
-            ? `Notes: ${formData.message}`
+          preferredTime: `Config: ${parseResult.data.config} | Budget: ${parseResult.data.budget}`,
+          message: parseResult.data.message
+            ? `Notes: ${parseResult.data.message}`
             : 'Pricing & floor plan enquiry from popup route.',
         }),
       });
 
       const payload = await response.json();
       if (!response.ok) {
+        if (payload?.fieldErrors) {
+          applyServerErrors(payload.fieldErrors);
+        }
         throw new Error(payload?.error || 'Something went wrong.');
       }
 
@@ -71,6 +98,7 @@ export default function PopupLeadRoute() {
         type: 'success',
         message: 'Thanks! Your enquiry has been sent to our team.',
       });
+      resetForm();
 
       window.setTimeout(() => {
         window.location.href = '/thank-you';
@@ -148,23 +176,37 @@ export default function PopupLeadRoute() {
                     placeholder="Enter your full name"
                     value={formData.name}
                     onChange={(value) => updateField('name', value)}
+                    onBlur={() => handleFieldBlur('name')}
+                    error={visibleErrors.name}
+                    errorId="popup-route-name-error"
                   />
                   <Field
                     label="Phone Number"
                     placeholder="+91"
                     value={formData.phone}
                     onChange={(value) => updateField('phone', value)}
+                    onBlur={() => handleFieldBlur('phone')}
+                    error={visibleErrors.phone}
+                    errorId="popup-route-phone-error"
+                    type="tel"
+                    inputMode="numeric"
                   />
                   <SelectField
                     label="Configuration"
                     value={formData.config}
                     onChange={(value) => updateField('config', value)}
+                    onBlur={() => handleFieldBlur('config')}
+                    error={visibleErrors.config}
+                    errorId="popup-route-config-error"
                     options={['2 BHK', '3 BHK']}
                   />
                   <SelectField
                     label="Budget (optional)"
                     value={formData.budget}
                     onChange={(value) => updateField('budget', value)}
+                    onBlur={() => handleFieldBlur('budget')}
+                    error={visibleErrors.budget}
+                    errorId="popup-route-budget-error"
                     options={['99L - 1.2 Cr', '1.2 Cr +']}
                   />
                 </div>
@@ -177,9 +219,26 @@ export default function PopupLeadRoute() {
                     rows={3}
                     value={formData.message}
                     onChange={(event) => updateField('message', event.target.value)}
-                    className="w-full rounded-[1.2rem] border border-black/8 bg-white px-4 py-3 text-sm text-black shadow-[0_14px_32px_rgba(0,0,0,0.04)] outline-none transition focus:border-black focus:ring-4 focus:ring-black/8"
+                    onBlur={() => handleFieldBlur('message')}
+                    className={`w-full rounded-[1.2rem] border px-4 py-3 text-sm text-black shadow-[0_14px_32px_rgba(0,0,0,0.04)] outline-none transition focus:ring-4 ${
+                      visibleErrors.message
+                        ? 'border-red-300 bg-red-50/70 focus:border-red-400 focus:ring-red-100'
+                        : 'border-black/8 bg-white focus:border-black focus:ring-black/8'
+                    }`}
                     placeholder="Preferred facing, family needs, loan help..."
+                    aria-invalid={Boolean(visibleErrors.message)}
+                    aria-describedby={
+                      visibleErrors.message ? 'popup-route-message-error' : undefined
+                    }
                   />
+                  {visibleErrors.message ? (
+                    <p
+                      id="popup-route-message-error"
+                      className="mt-2 text-xs font-medium text-red-600"
+                    >
+                      {visibleErrors.message}
+                    </p>
+                  ) : null}
                 </div>
 
                 {submitState.message ? (
@@ -213,24 +272,47 @@ export default function PopupLeadRoute() {
   );
 }
 
-function Field({ label, placeholder, value, onChange }) {
+function Field({
+  label,
+  placeholder,
+  value,
+  onChange,
+  onBlur,
+  error,
+  errorId,
+  type = 'text',
+  inputMode,
+}) {
   return (
     <div>
       <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6d6d68]">
         {label}
       </label>
       <input
-        type="text"
+        type={type}
         placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-14 w-full rounded-[1.3rem] border border-black/8 bg-[#f7f6f1] px-4 text-sm text-black outline-none transition focus:border-black focus:ring-4 focus:ring-black/8"
+        onBlur={onBlur}
+        inputMode={inputMode}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? errorId : undefined}
+        className={`h-14 w-full rounded-[1.3rem] border px-4 text-sm text-black outline-none transition focus:ring-4 ${
+          error
+            ? 'border-red-300 bg-red-50/70 focus:border-red-400 focus:ring-red-100'
+            : 'border-black/8 bg-[#f7f6f1] focus:border-black focus:ring-black/8'
+        }`}
       />
+      {error ? (
+        <p id={errorId} className="mt-2 text-xs font-medium text-red-600">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-function SelectField({ label, value, onChange, options }) {
+function SelectField({ label, value, onChange, onBlur, options, error, errorId }) {
   return (
     <div>
       <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6d6d68]">
@@ -239,7 +321,14 @@ function SelectField({ label, value, onChange, options }) {
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-14 w-full rounded-[1.3rem] border border-black/8 bg-[#f7f6f1] px-4 text-sm text-black outline-none transition focus:border-black focus:ring-4 focus:ring-black/8"
+        onBlur={onBlur}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? errorId : undefined}
+        className={`h-14 w-full rounded-[1.3rem] border px-4 text-sm text-black outline-none transition focus:ring-4 ${
+          error
+            ? 'border-red-300 bg-red-50/70 focus:border-red-400 focus:ring-red-100'
+            : 'border-black/8 bg-[#f7f6f1] focus:border-black focus:ring-black/8'
+        }`}
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -247,6 +336,11 @@ function SelectField({ label, value, onChange, options }) {
           </option>
         ))}
       </select>
+      {error ? (
+        <p id={errorId} className="mt-2 text-xs font-medium text-red-600">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
