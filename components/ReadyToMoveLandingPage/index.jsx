@@ -305,6 +305,49 @@ const FAQS = [
   },
 ];
 
+const LP_HERO_VARIANTS = {
+  '2bhk-thanisandra': {
+    eyebrow: '2 BHK Flats for Sale in Thanisandra, North Bangalore',
+    h1Line1: '2 BHK Flats for Sale in',
+    h1Line2: 'Thanisandra, North Bangalore',
+  },
+  '3bhk-north-blr': {
+    eyebrow: '3 BHK Flats for Sale in North Bangalore',
+    h1Line1: '3 BHK Flats for Sale in',
+    h1Line2: 'North Bangalore',
+  },
+  manyata: {
+    eyebrow: 'Apartments beside Manyata Tech Park',
+    h1Line1: '2 & 3 BHK Apartments near',
+    h1Line2: 'Manyata Tech Park',
+  },
+  gated: {
+    eyebrow: 'Gated-Community Apartments in Thanisandra',
+    h1Line1: 'Gated-Community Apartments',
+    h1Line2: 'in Thanisandra',
+  },
+  'under-1cr': {
+    eyebrow: '2 BHK Flats in North Bangalore — Starting ₹99L',
+    h1Line1: '2 BHK Flats in North Bangalore',
+    h1Line2: 'Starting ₹99L',
+  },
+};
+
+const DEFAULT_HERO_COPY = {
+  eyebrow:
+    'RERA-approved 2 & 3 BHK homes in Thanisandra, 5 mins from Manyata Tech Park. Possession soon.',
+  h1Line1: 'Live Beside',
+  h1Line2: 'Manyata Tech Park.',
+};
+
+const LEAD_CONVERSION_VALUE = 99;
+const CALL_CONVERSION_VALUE = 25;
+const CONVERSION_CURRENCY = 'INR';
+const PRIVACY_URL = '/privacy-policy';
+const TERMS_URL = '/terms';
+const DEVELOPER_LEGAL_NAME = 'Abhigna Constructions';
+const PROJECT_ADDRESS = 'Thanisandra Main Road, beside Manyata Tech Park, North Bangalore - 560077';
+
 function trackEvent(name, params) {
   if (typeof window === 'undefined') return;
   try {
@@ -320,6 +363,44 @@ function trackEvent(name, params) {
     if (typeof window.gtag === 'function') {
       window.gtag('event', name, params || {});
     }
+  } catch (_) { }
+}
+
+function reportLeadConversion(value = LEAD_CONVERSION_VALUE) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'conversion', {
+        send_to: 'AW-{{ADS_ID}}/{{LEAD_LABEL}}',
+        value,
+        currency: CONVERSION_CURRENCY,
+      });
+    }
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'lead_conversion',
+      value,
+      currency: CONVERSION_CURRENCY,
+    });
+  } catch (_) { }
+}
+
+function reportCallConversion(value = CALL_CONVERSION_VALUE) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'conversion', {
+        send_to: 'AW-{{ADS_ID}}/{{CALL_LABEL}}',
+        value,
+        currency: CONVERSION_CURRENCY,
+      });
+    }
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'phone_call_conversion',
+      value,
+      currency: CONVERSION_CURRENCY,
+    });
   } catch (_) { }
 }
 
@@ -430,6 +511,20 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isWhatsAppFormOpen, setIsWhatsAppFormOpen] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
+  const [heroVariant, setHeroVariant] = useState(DEFAULT_HERO_COPY);
+  const [lpParams, setLpParams] = useState({ lp: null });
+  const [formConsent, setFormConsent] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const next = { lp: params.get('lp') };
+    setLpParams(next);
+    if (next.lp && LP_HERO_VARIANTS[next.lp]) {
+      setHeroVariant(LP_HERO_VARIANTS[next.lp]);
+      document.title = `${LP_HERO_VARIANTS[next.lp].h1Line1} ${LP_HERO_VARIANTS[next.lp].h1Line2} | Aadhya Serene`;
+    }
+  }, []);
   const [activeConfig, setActiveConfig] = useState('2bhk');
   const [floorplanFilters, setFloorplanFilters] = useState({
     balconies: 'all',
@@ -625,6 +720,8 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
         config: formData.config,
       });
 
+      reportLeadConversion();
+
       setSubmitState({
         type: 'success',
         message: 'Thanks! Your enquiry has been sent to our team.',
@@ -656,9 +753,15 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   };
 
   const heroWhatsAppClick = () => openWhatsAppForm('hero_whatsapp');
-  const heroCallClick = () => trackEvent('Call', { location: 'hero_call' });
+  const heroCallClick = () => {
+    trackEvent('Call', { location: 'hero_call' });
+    reportCallConversion();
+  };
   const stickyWhatsApp = () => openWhatsAppForm('sticky_whatsapp');
-  const stickyCall = () => trackEvent('Call', { location: 'sticky_call' });
+  const stickyCall = () => {
+    trackEvent('Call', { location: 'sticky_call' });
+    reportCallConversion();
+  };
 
   const currentConfig = useMemo(
     () => CONFIGURATIONS.find((config) => config.id === activeConfig),
@@ -921,25 +1024,24 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                 <div className="gsap-entry self-end">
                   <div className="max-w-none">
                     <p className="mb-3 text-[10px] uppercase tracking-[0.3em] text-white/58 sm:text-[11px] max-[900px]:mb-2 max-[900px]:text-[9px] max-[900px]:tracking-[0.24em]">
-                      Ready-to-move homes beside the tech corridor
+                      {heroVariant.eyebrow}
                     </p>
-                    <h1 className="font-[var(--font-hero)] text-[clamp(2.8rem,5.2vw,5.6rem)] font-medium leading-[0.9] tracking-[-0.055em] text-white max-[1100px]:text-[clamp(2.6rem,4.8vw,4.8rem)] max-[900px]:text-[clamp(2.1rem,4.2vw,4rem)] max-[820px]:text-[clamp(1.9rem,4vw,3.4rem)]">
-                      <span className="block whitespace-nowrap">Live Beside</span>
-                      <span className="block whitespace-nowrap">Manyata Tech Park.</span>
+                    <h1 id="lp-h1" className="font-[var(--font-hero)] text-[clamp(2.8rem,5.2vw,5.6rem)] font-medium leading-[0.9] tracking-[-0.055em] text-white max-[1100px]:text-[clamp(2.6rem,4.8vw,4.8rem)] max-[900px]:text-[clamp(2.1rem,4.2vw,4rem)] max-[820px]:text-[clamp(1.9rem,4vw,3.4rem)]">
+                      <span className="block whitespace-nowrap">{heroVariant.h1Line1}</span>
+                      <span className="block whitespace-nowrap">{heroVariant.h1Line2}</span>
                     </h1>
                     <div className="mt-5 flex max-w-[44rem] flex-wrap gap-2.5 max-[900px]:mt-4 max-[900px]:gap-2">
                       <span className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl max-[1100px]:min-h-[38px] max-[1100px]:px-3.5 max-[1100px]:text-[10px] max-[900px]:min-h-[34px] max-[900px]:px-3 max-[900px]:text-[9px] max-[900px]:tracking-[0.12em]">
-                        <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                        Site visits open today
-                      </span>
-
-                      <span className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl max-[1100px]:min-h-[38px] max-[1100px]:px-3.5 max-[1100px]:text-[10px] max-[900px]:min-h-[34px] max-[900px]:px-3 max-[900px]:text-[9px] max-[900px]:tracking-[0.12em]">
                         <ShieldCheck className="h-3.5 w-3.5 text-[#e8d0a8]" />
-                        Vastu compliant
+                        RERA {RERA_NUMBER}
+                      </span>
+                      <span className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl max-[1100px]:min-h-[38px] max-[1100px]:px-3.5 max-[1100px]:text-[10px] max-[900px]:min-h-[34px] max-[900px]:px-3 max-[900px]:text-[9px] max-[900px]:tracking-[0.12em]">
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                        1.25 acres
                       </span>
                       <span className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl max-[1100px]:min-h-[38px] max-[1100px]:px-3.5 max-[1100px]:text-[10px] max-[900px]:min-h-[34px] max-[900px]:px-3 max-[900px]:text-[9px] max-[900px]:tracking-[0.12em]">
                         <BadgeCheck className="h-3.5 w-3.5 text-[#e8d0a8]" />
-                        BBMP approved
+                        136 units
                       </span>
                       <a
                         href={PHONE_LINK}
@@ -1042,12 +1144,25 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   />
                 </div>
 
+                <label className="mt-4 flex items-start gap-3 rounded-[1rem] border border-black/8 bg-white/70 px-3 py-3 text-[12px] leading-5 text-[#5c5c58]">
+                  <input
+                    type="checkbox"
+                    checked={formConsent}
+                    onChange={(event) => setFormConsent(event.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-black"
+                    aria-describedby="landing-hero-consent-label"
+                  />
+                  <span id="landing-hero-consent-label">
+                    I agree to be contacted about Aadhya Serene. We&apos;ll only contact you about this project — no spam.
+                  </span>
+                </label>
+
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !formConsent}
                   className="mt-4 inline-flex min-h-[56px] w-full items-center justify-center gap-3 rounded-full bg-black px-6 text-sm font-semibold uppercase tracking-[0.22em] text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSubmitting ? 'Sending...' : 'Submit Enquiry'}
+                  {isSubmitting ? 'Sending...' : 'Get Price & Floor Plans'}
                   <ArrowRight className="h-4 w-4" />
                 </button>
 
@@ -1922,12 +2037,25 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   />
                 </div>
 
+                <label className="mt-5 flex items-start gap-3 rounded-[1rem] border border-black/8 bg-white/70 px-3 py-3 text-[12px] leading-5 text-[#5c5c58]">
+                  <input
+                    type="checkbox"
+                    checked={formConsent}
+                    onChange={(event) => setFormConsent(event.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-black"
+                    aria-describedby="landing-mid-consent-label"
+                  />
+                  <span id="landing-mid-consent-label">
+                    I agree to be contacted about Aadhya Serene. We&apos;ll only contact you about this project — no spam.
+                  </span>
+                </label>
+
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !formConsent}
                   className="mt-5 inline-flex w-full min-h-[56px] items-center justify-center gap-2 rounded-full bg-black text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSubmitting ? 'Sending...' : 'Submit Enquiry'}
+                  {isSubmitting ? 'Sending...' : 'Get Price & Floor Plans'}
                   <ArrowRight className="h-4 w-4" />
                 </button>
 
@@ -1942,9 +2070,10 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   </div>
                 ) : null}
 
-                <p className="mt-4 text-sm text-[#6a6a65]">
-                  By submitting, you agree to be contacted by the Aadhya Serene
-                  team regarding your enquiry.
+                <p className="mt-4 text-xs text-[#6a6a65]">
+                  By submitting, you agree to our{' '}
+                  <a href={PRIVACY_URL} className="underline hover:text-black">privacy policy</a> and{' '}
+                  <a href={TERMS_URL} className="underline hover:text-black">terms</a>.
                 </p>
               </form>
             </div>
@@ -2120,10 +2249,57 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
               </div>
             </div>
 
+            <div className="grid gap-4 border-t border-white/10 pt-5 text-[11px] leading-6 text-white/60 lg:grid-cols-[1.4fr_1fr_1fr]">
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.22em] text-[#d7b177]">
+                  Developer
+                </p>
+                <p className="mt-1 font-semibold text-white/84">
+                  {DEVELOPER_LEGAL_NAME}
+                </p>
+                <p className="mt-1 text-white/58">{PROJECT_ADDRESS}</p>
+                <p className="mt-1 text-white/58">K-RERA: {RERA_NUMBER}</p>
+              </div>
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.22em] text-[#d7b177]">
+                  Compliance
+                </p>
+                <p className="mt-1">
+                  BBMP approved. RERA registered. Possession timelines and pricing
+                  are indicative — please verify before booking.
+                </p>
+              </div>
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.22em] text-[#d7b177]">
+                  Policies
+                </p>
+                <div className="mt-1 flex flex-col gap-1">
+                  <a
+                    href={PRIVACY_URL}
+                    className="text-white/72 underline-offset-2 transition hover:text-white hover:underline"
+                  >
+                    Privacy Policy
+                  </a>
+                  <a
+                    href={TERMS_URL}
+                    className="text-white/72 underline-offset-2 transition hover:text-white hover:underline"
+                  >
+                    Terms &amp; Conditions
+                  </a>
+                  <a
+                    href={`mailto:enquiries@aadhyaserene.com`}
+                    className="text-white/72 underline-offset-2 transition hover:text-white hover:underline"
+                  >
+                    Contact Us
+                  </a>
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-col gap-2 pt-4 text-[10px] leading-5 text-white/38 lg:flex-row lg:items-center lg:justify-between">
               <p>
                 Disclaimer: Prices, images, and specifications are indicative and
-                subject to change. *Starting price for limited units. T&amp;C
+                subject to change. *Starting price ₹99L for limited units. T&amp;C
                 apply. This is not a legal offer.
               </p>
               <p className="uppercase tracking-[0.16em] text-white/24">
@@ -2401,12 +2577,26 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                 </div>
 
                 <div className="border-t border-black/8 px-5 py-4 sm:px-6">
+                  <label className="mb-3 flex items-start gap-3 text-[12px] leading-5 text-[#5c5c58]">
+                    <input
+                      type="checkbox"
+                      checked={formConsent}
+                      onChange={(event) => setFormConsent(event.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-black"
+                      aria-describedby="landing-popup-consent-label"
+                    />
+                    <span id="landing-popup-consent-label">
+                      I agree to be contacted about Aadhya Serene. By submitting you accept our{' '}
+                      <a href={PRIVACY_URL} className="underline hover:text-black">privacy policy</a> and{' '}
+                      <a href={TERMS_URL} className="underline hover:text-black">terms</a>.
+                    </span>
+                  </label>
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !formConsent}
                     className="inline-flex w-full min-h-[52px] items-center justify-center gap-2 rounded-full bg-black text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {isSubmitting ? 'Sending...' : 'Submit Enquiry'}
+                    {isSubmitting ? 'Sending...' : 'Get Price & Floor Plans'}
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 </div>
