@@ -1,421 +1,279 @@
 import { NextResponse } from "next/server";
-import { getLeadState, upsertLeadState } from "@/lib/lead-store";
-import { sendTextMessage } from "@/lib/whatsapp";
+import {
+  chatbotFlow,
+  getChatbotButton,
+  getChatbotInteractiveMessage,
+  getChatbotTextMessage,
+  resolveChatbotButtonId,
+  type ChatbotAction,
+  type ChatbotButtonId,
+} from "@/lib/chatbot-flow";
+import {
+  hasProcessedIncomingMessage,
+  linkConversationToEnquiry,
+  recordConversationOutboundMessage,
+  recordConversationSelection,
+} from "@/lib/whatsapp-conversation";
 import {
   findLatestEnquiryRecord,
+  sendEnquiryNotificationEmail,
   updateEnquiryRecord,
 } from "@/lib/enquiry-service";
+import {
+  sendDocumentMessage,
+  sendInteractiveButtonMessage,
+  sendTextMessage,
+} from "@/lib/whatsapp";
 
 export const runtime = "nodejs";
 
-function getIncomingMessageText(message: any): string {
-  if (message?.type === "text") {
-    return message.text?.body || "";
-  }
+type IncomingMessage = {
+  id?: string;
+  from?: string;
+  type?: string;
+  text?: { body?: string };
+  button?: { payload?: string; text?: string };
+  interactive?: {
+    button_reply?: { id?: string; title?: string };
+    list_reply?: { id?: string; title?: string };
+  };
+};
 
-  if (message?.type === "button") {
-    return message.button?.text || message.button?.payload || "";
-  }
+function getIncomingMessageSelection(message: IncomingMessage) {
+  const candidates = [
+    message.interactive?.button_reply?.id,
+    message.interactive?.list_reply?.id,
+    message.button?.payload,
+    message.interactive?.button_reply?.title,
+    message.interactive?.list_reply?.title,
+    message.button?.text,
+    message.text?.body,
+  ];
 
-  if (message?.type === "interactive") {
-    return (
-      message.interactive?.button_reply?.title ||
-      message.interactive?.button_reply?.id ||
-      message.interactive?.list_reply?.title ||
-      message.interactive?.list_reply?.id ||
-      ""
-    );
-  }
-
-  return "";
+  return {
+    buttonId: resolveChatbotButtonId(candidates),
+    text: candidates.find(Boolean)?.trim() || "",
+  };
 }
 
-function cleanText(value: string): string {
-  return value.trim().toLowerCase();
+async function rememberOutboundMessage(phoneNumber: string, type: string, message: string) {
+  await recordConversationOutboundMessage(phoneNumber, type, message).catch((error) => {
+    console.error("Unable to record WhatsApp outbound message:", error);
+  });
 }
 
-function parseMainOption(text: string) {
-  const value = cleanText(text);
-
-  if (value === "1" || value.includes("brochure")) {
-    return "BROCHURE";
-  }
-
-  if (value === "2" || value.includes("pricing") || value.includes("price")) {
-    return "PRICING";
-  }
-
-  if (value === "3" || value.includes("site visit") || value.includes("visit")) {
-    return "SITE_VISIT";
-  }
-
-  if (value === "4" || value.includes("app link") || value === "app") {
-    return "APP_LINK";
-  }
-
-  if (value === "5" || value.includes("sales") || value.includes("call")) {
-    return "SALES";
-  }
-
-  return null;
-}
-
-function parseUnitType(text: string) {
-  const value = cleanText(text);
-
-  if (value === "1" || value.includes("2 bhk")) {
-    return "2 BHK";
-  }
-
-  if (value === "2" || value.includes("3 bhk")) {
-    return "3 BHK";
-  }
-
-  if (value === "3" || value.includes("plot") || value.includes("villa")) {
-    return "Plot / Villa";
-  }
-
-  if (value === "4" || value.includes("not sure")) {
-    return "Not sure yet";
-  }
-
-  return text.trim();
-}
-
-function parseBudget(text: string) {
-  const value = cleanText(text);
-
-  if (value === "1") {
-    return "Below Rs 50L";
-  }
-
-  if (value === "2") {
-    return "Rs 50L - Rs 75L";
-  }
-
-  if (value === "3") {
-    return "Rs 75L - Rs 1Cr";
-  }
-
-  if (value === "4") {
-    return "Above Rs 1Cr";
-  }
-
-  return text.trim();
-}
-
-async function sendMainMenu(to: string) {
-  await sendTextMessage(
-    to,
-    `Please choose one option:
-
-1. Project brochure
-2. Pricing and availability
-3. Book a site visit
-4. App link
-5. Talk to sales team`
-  );
-}
-
-function buildWhatsAppLeadSummary(state: ReturnType<typeof getLeadState>) {
-  if (!state) {
-    return "WhatsApp lead started.";
-  }
-
-  const parts = [
-    state.selectedOption ? `Intent: ${state.selectedOption}` : "",
-    state.unitType ? `Unit Type: ${state.unitType}` : "",
-    state.budget ? `Budget: ${state.budget}` : "",
-    state.visitTime ? `Visit Time: ${state.visitTime}` : "",
-    state.callTime ? `Call Time: ${state.callTime}` : "",
-  ].filter(Boolean);
-
-  return parts.length
-    ? `WhatsApp journey update. ${parts.join(" | ")}`
-    : "WhatsApp lead started.";
-}
-
-async function syncLeadStateToRecord(
-  phone: string,
-  incomingText: string,
-  stateOverride?: ReturnType<typeof getLeadState>
+async function sendConfiguredInteractiveMessage(
+  phoneNumber: string,
+  messageKey: Parameters<typeof getChatbotInteractiveMessage>[0]
 ) {
-  const state = stateOverride || getLeadState(phone);
+  const message = getChatbotInteractiveMessage(messageKey);
 
-  if (!state) {
+  await sendInteractiveButtonMessage({
+    to: phoneNumber,
+    header: message.header,
+    body: message.body,
+    footer: message.footer,
+    buttons: message.buttons.map((buttonId) => {
+      const button = getChatbotButton(buttonId);
+      return { id: button.id, title: button.label };
+    }),
+  });
+
+  await rememberOutboundMessage(phoneNumber, "interactive", message.body);
+}
+
+async function sendConfiguredTextMessage(
+  phoneNumber: string,
+  messageKey: Parameters<typeof getChatbotTextMessage>[0]
+) {
+  const text = getChatbotTextMessage(messageKey);
+  await sendTextMessage(phoneNumber, text);
+  await rememberOutboundMessage(phoneNumber, "text", text);
+}
+
+async function sendConfiguredBrochure(
+  phoneNumber: string,
+  messageKey: "brochure" | "floor_plans"
+) {
+  const caption = getChatbotTextMessage(messageKey);
+  const brochureUrl = process.env.BROCHURE_URL?.trim();
+
+  if (!brochureUrl) {
+    await sendTextMessage(
+      phoneNumber,
+      `${caption}\n\nThe brochure link is not configured yet. Our sales team will share it shortly.`
+    );
+    await rememberOutboundMessage(phoneNumber, "text", caption);
     return;
   }
 
-  let recordId = state.enquiryRecordId;
-
-  if (!recordId) {
-    const latestRecord = await findLatestEnquiryRecord({
-      phone,
-      channel: "whatsapp_form",
+  try {
+    await sendDocumentMessage({
+      to: phoneNumber,
+      link: brochureUrl,
+      filename: "Aadhya-Serene-Brochure.pdf",
+      caption,
     });
+    await rememberOutboundMessage(phoneNumber, "document", caption);
+  } catch (error) {
+    console.error("WhatsApp brochure document delivery failed; sending a link instead:", error);
+    const fallback = `${caption}\n\n${brochureUrl}`;
+    await sendTextMessage(phoneNumber, fallback);
+    await rememberOutboundMessage(phoneNumber, "text", fallback);
+  }
+}
 
-    if (!latestRecord?._id) {
-      return;
-    }
+async function resolveEnquiryRecord(phoneNumber: string, conversation: any) {
+  let recordId = conversation?.enquiryRecordId || "";
+  let record = null;
 
-    recordId = String(latestRecord._id);
-    upsertLeadState(phone, { enquiryRecordId: recordId });
+  if (recordId) {
+    record = await findLatestEnquiryRecord({ _id: recordId });
   }
 
-  await updateEnquiryRecord(recordId, {
+  if (!record) {
+    record = await findLatestEnquiryRecord({ phone: phoneNumber });
+    if (record?._id) {
+      recordId = String(record._id);
+      await linkConversationToEnquiry(phoneNumber, recordId);
+    }
+  }
+
+  return record;
+}
+
+async function syncConversationToEnquiry(
+  phoneNumber: string,
+  conversation: any,
+  incomingText: string
+) {
+  const record = await resolveEnquiryRecord(phoneNumber, conversation);
+
+  if (!record?._id) {
+    return null;
+  }
+
+  await updateEnquiryRecord(String(record._id), {
     $set: {
-      preferredTime: state.visitTime || state.callTime || "",
-      message: buildWhatsAppLeadSummary(state),
-      "metadata.whatsappJourney.step": state.step,
-      "metadata.whatsappJourney.selectedOption": state.selectedOption || "",
-      "metadata.whatsappJourney.unitType": state.unitType || "",
-      "metadata.whatsappJourney.budget": state.budget || "",
-      "metadata.whatsappJourney.visitTime": state.visitTime || "",
-      "metadata.whatsappJourney.callTime": state.callTime || "",
+      "metadata.whatsappJourney.currentState": conversation.currentState,
+      "metadata.whatsappJourney.lastButton": conversation.lastButton,
+      "metadata.whatsappJourney.siteVisitRequested": Boolean(conversation.siteVisitRequested),
+      "metadata.whatsappJourney.callbackRequested": Boolean(conversation.callbackRequested),
       "metadata.whatsappJourney.lastIncomingText": incomingText,
       "metadata.whatsappJourney.updatedAt": new Date(),
     },
   });
+
+  return record;
 }
 
-async function handleIncomingMessage(from: string, incomingText: string) {
-  const text = incomingText.trim();
-
-  if (!text) {
-    console.log("WhatsApp webhook: received empty inbound text", { from });
+async function notifySalesForIntent(
+  intent: "site_visit" | "callback",
+  record: any,
+  conversation: any
+) {
+  if (!record?._id) {
+    console.error("Cannot notify sales: no enquiry record is linked to this WhatsApp conversation.");
     return;
   }
 
-  console.log("WhatsApp webhook: processing inbound message", {
-    from,
-    text,
+  const isSiteVisit = intent === "site_visit";
+  const intentLabel = isSiteVisit ? "Site Visit Requested" : "Callback Requested";
+  const intentMessage = isSiteVisit
+    ? "The customer requested a site visit through WhatsApp."
+    : "The customer requested a callback through WhatsApp.";
+
+  await sendEnquiryNotificationEmail({
+    projectName: record.projectName || "Aadhya Serene",
+    source: record.source || "website",
+    channel: record.channel || "contact_form",
+    name: conversation.name || record.name || "Customer",
+    phone: conversation.phoneNumber || record.phone,
+    email: record.email || "",
+    requestType: isSiteVisit ? "site_visit" : "register_interest",
+    requestLabel: intentLabel,
+    preferredTime: "",
+    message: intentMessage,
   });
 
-  let state = getLeadState(from);
-
-  if (!state) {
-    state = upsertLeadState(from, {
-      step: "STARTED",
-      projectName: process.env.PROJECT_NAME || "Abhigna Constructions",
-    });
-  }
-
-  const brochureUrl =
-    process.env.BROCHURE_URL || "https://cdn.sthyra.com/AADHYA%20SERENE/Aadhya%20Serene%20BROCHURE%20FOR%20PRINTING.pdf";
-
-  const appLink = process.env.APP_LINK || "https://abhignaconstructions.com/";
-
-  const projectName =
-    state.projectName || process.env.PROJECT_NAME || "Abhigna Constructions";
-
-  if (state.step === "ASKED_UNIT_TYPE") {
-    const unitType = parseUnitType(text);
-
-    const updated = upsertLeadState(from, {
-      unitType,
-      step: "ASKED_BUDGET",
-    });
-    await syncLeadStateToRecord(from, text, updated);
-
-    await sendTextMessage(
-      from,
-      `Great. What is your approximate budget?
-
-1. Below Rs 50L
-2. Rs 50L - Rs 75L
-3. Rs 75L - Rs 1Cr
-4. Above Rs 1Cr`
-    );
-
-    return;
-  }
-
-  if (state.step === "ASKED_BUDGET") {
-    const budget = parseBudget(text);
-
-    const updated = upsertLeadState(from, {
-      budget,
-      step: "COMPLETED",
-    });
-    await syncLeadStateToRecord(from, text, updated);
-
-    await sendTextMessage(
-      from,
-      `Thank you. Our team has received your details.
-
-Project: ${projectName}
-Interest: ${updated.unitType || "Not specified"}
-Budget: ${updated.budget || "Not specified"}
-
-Here is the brochure:
-${brochureUrl}
-
-Would you like to book a site visit?
-Reply with: Site Visit`
-    );
-
-    return;
-  }
-
-  if (state.step === "ASKED_VISIT_TIME") {
-    const visitTime = text;
-
-    const updated = upsertLeadState(from, {
-      visitTime,
-      step: "COMPLETED",
-    });
-    await syncLeadStateToRecord(from, text, updated);
-
-    await sendTextMessage(
-      from,
-      `Thank you. We received your preferred site visit time:
-
-${visitTime}
-
-Our team will confirm the visit shortly.`
-    );
-
-    return;
-  }
-
-  if (state.step === "ASKED_CALL_TIME") {
-    const callTime = text;
-
-    const updated = upsertLeadState(from, {
-      callTime,
-      step: "COMPLETED",
-    });
-    await syncLeadStateToRecord(from, text, updated);
-
-    await sendTextMessage(
-      from,
-      `Thank you. Our sales team will contact you around:
-
-${callTime}
-
-You can also view the project here:
-${appLink}`
-    );
-
-    return;
-  }
-
-  const option = parseMainOption(text);
-
-  console.log("WhatsApp webhook: parsed main option", {
-    from,
-    text,
-    option,
-    currentStep: state.step,
+  await updateEnquiryRecord(String(record._id), {
+    $set: {
+      "metadata.whatsappJourney.lastIntent": intent,
+      "metadata.whatsappJourney.intentNotifiedAt": new Date(),
+    },
   });
+}
 
-  if (option === "BROCHURE") {
-    const updated = upsertLeadState(from, {
-      selectedOption: "Project Brochure",
-      step: "STARTED",
-    });
-    await syncLeadStateToRecord(from, text, updated);
+async function runChatbotAction(
+  action: ChatbotAction,
+  context: {
+    phoneNumber: string;
+    record: any;
+    conversation: any;
+    intentWasNew: boolean;
+  }
+) {
+  const actionHandlers: Record<
+    ChatbotAction["type"],
+    (nextAction: any) => Promise<void>
+  > = {
+    interactive: async (nextAction) =>
+      sendConfiguredInteractiveMessage(context.phoneNumber, nextAction.message),
+    text: async (nextAction) =>
+      sendConfiguredTextMessage(context.phoneNumber, nextAction.message),
+    brochure: async (nextAction) =>
+      sendConfiguredBrochure(context.phoneNumber, nextAction.message),
+    intent: async (nextAction) => {
+      if (context.intentWasNew) {
+        await notifySalesForIntent(nextAction.intent, context.record, context.conversation);
+      }
+    },
+  };
 
-    await sendTextMessage(
-      from,
-      `Sure. Here is the ${projectName} brochure:
+  await actionHandlers[action.type](action);
+}
 
-${brochureUrl}
+async function handleIncomingMessage(message: IncomingMessage) {
+  const phoneNumber = message.from;
+  const { buttonId, text } = getIncomingMessageSelection(message);
 
-Would you also like pricing details or a site visit?
-
-Reply with:
-Pricing
-Site Visit`
-    );
-
+  if (!phoneNumber || !text) {
     return;
   }
 
-  if (option === "PRICING") {
-    const updated = upsertLeadState(from, {
-      selectedOption: "Pricing",
-      step: "ASKED_UNIT_TYPE",
-    });
-    await syncLeadStateToRecord(from, text, updated);
-
-    await sendTextMessage(
-      from,
-      `Sure. Which type are you interested in?
-
-1. 2 BHK
-2. 3 BHK
-3. Plot / Villa
-4. Not sure yet`
-    );
-
+  if (await hasProcessedIncomingMessage(phoneNumber, message.id)) {
     return;
   }
 
-  if (option === "SITE_VISIT") {
-    const updated = upsertLeadState(from, {
-      selectedOption: "Book Site Visit",
-      step: "ASKED_VISIT_TIME",
-    });
-    await syncLeadStateToRecord(from, text, updated);
-
-    await sendTextMessage(
-      from,
-      `Great. Please share your preferred date and time for a site visit.
-
-Example:
-Tomorrow 11 AM`
-    );
-
+  if (!buttonId) {
+    await sendConfiguredInteractiveMessage(phoneNumber, "main_menu");
     return;
   }
 
-  if (option === "APP_LINK") {
-    const updated = upsertLeadState(from, {
-      selectedOption: "App Link",
-      step: "STARTED",
+  const transition = chatbotFlow[buttonId as ChatbotButtonId];
+  const intentAction = transition.actions.find((action) => action.type === "intent");
+  const { conversation, intentWasNew } = await recordConversationSelection({
+    phoneNumber,
+    buttonId,
+    nextState: transition.nextState,
+    incomingMessage: text,
+    messageId: message.id,
+    intent: intentAction?.type === "intent" ? intentAction.intent : undefined,
+  });
+  const record = await syncConversationToEnquiry(phoneNumber, conversation, text);
+
+  for (const action of transition.actions) {
+    await runChatbotAction(action, {
+      phoneNumber,
+      record,
+      conversation,
+      intentWasNew,
     });
-    await syncLeadStateToRecord(from, text, updated);
-
-    await sendTextMessage(
-      from,
-      `You can explore ${projectName} here:
-
-${appLink}
-
-Would you like our sales team to call you?
-Reply with: Talk to Sales`
-    );
-
-    return;
   }
-
-  if (option === "SALES") {
-    const updated = upsertLeadState(from, {
-      selectedOption: "Talk to Sales",
-      step: "ASKED_CALL_TIME",
-    });
-    await syncLeadStateToRecord(from, text, updated);
-
-    await sendTextMessage(
-      from,
-      `Sure. Our sales team will contact you.
-
-Please share your preferred call time.
-
-Example:
-Today 5 PM`
-    );
-
-    return;
-  }
-
-  await sendMainMenu(from);
 }
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-
   const mode = searchParams.get("hub.mode");
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
@@ -430,41 +288,12 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
     const entries = body.entry || [];
 
-    console.log("WhatsApp webhook: payload received", {
-      entryCount: entries.length,
-      object: body.object,
-    });
-
     for (const entry of entries) {
-      const changes = entry.changes || [];
-
-      for (const change of changes) {
-        const value = change.value;
-        const messages = value?.messages || [];
-
-        console.log("WhatsApp webhook: change received", {
-          field: change.field,
-          messageCount: messages.length,
-          hasStatuses: Array.isArray(value?.statuses) ? value.statuses.length : 0,
-          metadataPhoneNumberId: value?.metadata?.phone_number_id || null,
-        });
-
-        for (const message of messages) {
-          const from = message.from;
-          const text = getIncomingMessageText(message);
-
-          console.log("WhatsApp webhook: inbound message snapshot", {
-            from: from || null,
-            type: message?.type || null,
-            text: text || null,
-          });
-
-          if (from && text) {
-            await handleIncomingMessage(from, text);
-          }
+      for (const change of entry.changes || []) {
+        for (const message of change.value?.messages || []) {
+          await handleIncomingMessage(message);
         }
       }
     }
@@ -472,7 +301,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("WhatsApp webhook error:", error);
-
     return NextResponse.json(
       {
         received: false,

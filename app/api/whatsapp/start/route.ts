@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
-import { sendTemplateMessage, WhatsAppRequestError } from "@/lib/whatsapp";
-import { upsertLeadState } from "@/lib/lead-store";
+import { sendGlobalTemplateMessage, WhatsAppRequestError } from "@/lib/whatsapp";
+import {
+  recordConversationOutboundMessage,
+  startWhatsAppConversation,
+} from "@/lib/whatsapp-conversation";
 import {
   createEnquiryRecord,
   getRequestMetadataFromHeaders,
@@ -40,12 +43,6 @@ export async function POST(req: Request) {
     const requestMetadata = getRequestMetadataFromHeaders(req.headers);
     const phone = payload.phone;
 
-    upsertLeadState(phone, {
-      name,
-      projectName,
-      step: "STARTED",
-    });
-
     const enquiryRecord = await createEnquiryRecord({
       projectName: "Aadhya Serene",
       source,
@@ -64,9 +61,6 @@ export async function POST(req: Request) {
     });
 
     enquiryRecordId = String(enquiryRecord._id);
-    upsertLeadState(phone, {
-      enquiryRecordId,
-    });
 
     await sendEnquiryNotificationEmail({
       projectName: "Aadhya Serene",
@@ -89,10 +83,25 @@ export async function POST(req: Request) {
       },
     });
 
-    const result = await sendTemplateMessage({
-      to: phone,
+    await startWhatsAppConversation({
+      phoneNumber: phone,
       name,
       projectName,
+      source,
+      enquiryRecordId,
+    });
+
+    const result = await sendGlobalTemplateMessage({
+      to: phone,
+      name,
+    });
+
+    await recordConversationOutboundMessage(
+      phone,
+      "template",
+      "Global WhatsApp template sent."
+    ).catch((historyError) => {
+      console.error("Unable to record ready-to-move WhatsApp template history:", historyError);
     });
 
     await updateEnquiryRecord(enquiryRecordId, {

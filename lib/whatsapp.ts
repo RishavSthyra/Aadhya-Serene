@@ -4,6 +4,19 @@ type TemplateMessageInput = {
   projectName: string;
 };
 
+type InteractiveButton = {
+  id: string;
+  title: string;
+};
+
+type InteractiveMessageInput = {
+  to: string;
+  body: string;
+  buttons: InteractiveButton[];
+  header?: string;
+  footer?: string;
+};
+
 const GRAPH_API_VERSION = "v25.0";
 
 type WhatsAppApiErrorPayload = {
@@ -170,6 +183,37 @@ export async function sendTemplateMessage({
   });
 }
 
+export async function sendGlobalTemplateMessage({
+  to,
+  name,
+}: Omit<TemplateMessageInput, "projectName">) {
+  const templateName = requiredEnv("WHATSAPP_GLOBAL_TEMPLATE_NAME");
+  const languageCode = process.env.WHATSAPP_TEMPLATE_LANG || "en";
+
+  return sendWhatsAppPayload({
+    messaging_product: "whatsapp",
+    to,
+    type: "template",
+    template: {
+      name: templateName,
+      language: {
+        code: languageCode,
+      },
+      components: [
+        {
+          type: "body",
+          parameters: [
+            {
+              type: "text",
+              text: name.trim() || "Customer",
+            },
+          ],
+        },
+      ],
+    },
+  });
+}
+
 export async function sendTextMessage(to: string, body: string) {
   return sendWhatsAppPayload({
     messaging_product: "whatsapp",
@@ -178,6 +222,81 @@ export async function sendTextMessage(to: string, body: string) {
     text: {
       preview_url: true,
       body,
+    },
+  });
+}
+
+export async function sendInteractiveButtonMessage({
+  to,
+  body,
+  buttons,
+  header,
+  footer,
+}: InteractiveMessageInput) {
+  if (!buttons.length || buttons.length > 3) {
+    throw new Error("WhatsApp interactive messages must contain between one and three buttons.");
+  }
+
+  return sendWhatsAppPayload({
+    messaging_product: "whatsapp",
+    to,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      ...(header
+        ? {
+            header: {
+              type: "text",
+              text: header,
+            },
+          }
+        : {}),
+      body: {
+        text: body,
+      },
+      ...(footer
+        ? {
+            footer: {
+              text: footer,
+            },
+          }
+        : {}),
+      action: {
+        buttons: buttons.map((button) => ({
+          type: "reply",
+          reply: {
+            id: button.id,
+            title: button.title,
+          },
+        })),
+      },
+    },
+  });
+}
+
+export async function sendDocumentMessage({
+  to,
+  link,
+  filename,
+  caption,
+}: {
+  to: string;
+  link: string;
+  filename?: string;
+  caption?: string;
+}) {
+  if (!link) {
+    throw new Error("A brochure URL is required to send a document.");
+  }
+
+  return sendWhatsAppPayload({
+    messaging_product: "whatsapp",
+    to,
+    type: "document",
+    document: {
+      link,
+      ...(filename ? { filename } : {}),
+      ...(caption ? { caption } : {}),
     },
   });
 }

@@ -7,6 +7,11 @@ import {
   sendEnquiryNotificationEmail,
   updateEnquiryRecord,
 } from '@/lib/enquiry-service';
+import { sendGlobalTemplateMessage } from '@/lib/whatsapp';
+import {
+  recordConversationOutboundMessage,
+  startWhatsAppConversation,
+} from '@/lib/whatsapp-conversation';
 import {
   contactApiSchema,
   createValidationErrorResponse,
@@ -63,7 +68,7 @@ export async function POST(request) {
         requestContext: requestMetadata,
       },
       emailDelivery: { status: 'pending' },
-      whatsappDelivery: { status: 'not_requested' },
+      whatsappDelivery: { status: 'pending' },
     });
 
     await sendEnquiryNotificationEmail({
@@ -88,6 +93,52 @@ export async function POST(request) {
         },
       },
     });
+
+    try {
+      await startWhatsAppConversation({
+        phoneNumber: submission.phone,
+        name: submission.name || 'Customer',
+        projectName: 'Aadhya Serene',
+        source: submission.source || 'website',
+        enquiryRecordId: String(record?._id || ''),
+      });
+
+      const whatsappResult = await sendGlobalTemplateMessage({
+        to: submission.phone,
+        name: submission.name || 'Customer',
+      });
+
+      await recordConversationOutboundMessage(
+        submission.phone,
+        'template',
+        'Global WhatsApp template sent.'
+      ).catch((historyError) => {
+        console.error('Unable to record global WhatsApp template history:', historyError);
+      });
+
+      await updateEnquiryRecord(record?._id, {
+        $set: {
+          whatsappDelivery: {
+            status: 'sent',
+            sentAt: new Date(),
+            error: '',
+            messageId: whatsappResult?.messages?.[0]?.id || '',
+          },
+        },
+      });
+    } catch (whatsappError) {
+      console.error('Website enquiry WhatsApp delivery failed:', whatsappError);
+
+      await updateEnquiryRecord(record?._id, {
+        $set: {
+          whatsappDelivery: {
+            status: 'failed',
+            error:
+              whatsappError instanceof Error ? whatsappError.message : String(whatsappError),
+          },
+        },
+      });
+    }
 
     return NextResponse.json({
       message: 'Your enquiry has been saved and emailed to our team. We will reach out shortly.',
