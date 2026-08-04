@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     BarChart3,
     Building2,
+    CalendarCheck2,
     CheckCircle2,
     Copy,
     Download,
@@ -13,6 +14,7 @@ import {
     LogOut,
     Menu,
     MessageSquare,
+    PhoneCall,
     RefreshCcw,
     Search,
     ShieldCheck,
@@ -53,6 +55,13 @@ const TYPE_COLORS = ['#111111', '#6b7280', '#a3a3a3', '#d4d4d4'];
 const CHANNEL_LABELS = {
     contact_form: 'Website Form',
     whatsapp_form: 'WhatsApp Form',
+    portal_lead: 'External Lead',
+};
+
+const LEAD_TEMPERATURES = {
+    cold: { label: 'Cold', description: '0–2 responses', className: 'border-slate-200 bg-slate-50 text-slate-700' },
+    warm: { label: 'Warm', description: '3–4 responses', className: 'border-amber-200 bg-amber-50 text-amber-700' },
+    hot: { label: 'Hot', description: '5+ responses', className: 'border-red-200 bg-red-50 text-red-700' },
 };
 
 const ADMIN_NAV_ITEMS = [
@@ -94,6 +103,75 @@ function getLeadJourneySummary(lead) {
     ].filter(Boolean);
 
     return parts.length ? parts.join(' | ') : 'WhatsApp flow started.';
+}
+
+function getLeadTemperature(lead) {
+    return lead?.whatsapp?.temperature || 'cold';
+}
+
+function LeadTemperaturePill({ lead }) {
+    const temperature = getLeadTemperature(lead);
+    const meta = LEAD_TEMPERATURES[temperature];
+    const score = lead?.whatsapp?.score || 0;
+
+    return (
+        <span className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-bold ${meta.className}`}>
+            {meta.label} · {score}
+        </span>
+    );
+}
+
+function WhatsAppRepliesPanel({ lead, onClose }) {
+    if (!lead) return null;
+
+    const whatsapp = lead.whatsapp || {};
+    const responses = Array.isArray(whatsapp.responses) ? whatsapp.responses : [];
+    const temperature = getLeadTemperature(lead);
+    const meta = LEAD_TEMPERATURES[temperature];
+
+    return (
+        <div className="fixed inset-0 z-[1000] flex justify-end bg-black/35 p-0 sm:p-4" role="dialog" aria-modal="true" aria-label="WhatsApp responses">
+            <button type="button" aria-label="Close WhatsApp responses" onClick={onClose} className="absolute inset-0 cursor-default" />
+            <aside className="relative flex h-full w-full max-w-xl flex-col bg-[#fbfbfa] shadow-[-24px_0_70px_rgba(17,17,17,0.22)] sm:rounded-[30px] sm:border sm:border-[#111]/10">
+                <div className="flex items-start justify-between gap-4 border-b border-[#111]/10 px-5 py-5 sm:px-7 sm:py-6">
+                    <div>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">WhatsApp engagement</p>
+                        <h3 className="mt-1 text-2xl font-bold text-[#111]">{lead.name || 'Unknown lead'}</h3>
+                        <p className="mt-1 text-sm text-[#6b7280]">{lead.phone || 'No phone'}</p>
+                    </div>
+                    <button type="button" onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#111]/10 bg-white text-xl font-medium text-[#111]">×</button>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-bold ${meta.className}`}>{meta.label} lead</span>
+                        <span className="rounded-full border border-[#111]/10 bg-white px-3 py-1.5 text-xs font-bold text-[#374151]">{whatsapp.score || 0} meaningful responses</span>
+                        {whatsapp.callbackRequested ? <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700"><PhoneCall className="h-3.5 w-3.5" /> Callback requested</span> : null}
+                        {whatsapp.siteVisitRequested ? <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700"><CalendarCheck2 className="h-3.5 w-3.5" /> Site visit requested</span> : null}
+                    </div>
+
+                    <div className="mt-6">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Customer selections</p>
+                        {responses.length ? (
+                            <ol className="mt-3 space-y-3">
+                                {responses.map((response, index) => (
+                                    <li key={`${response.buttonId}-${response.receivedAt}-${index}`} className="rounded-2xl border border-[#111]/10 bg-white px-4 py-3 shadow-[0_8px_20px_rgba(17,17,17,0.04)]">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <p className="font-bold text-[#111]">{response.label}</p>
+                                            {response.qualifies ? <span className="shrink-0 rounded-full bg-[#111] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white">Scored</span> : null}
+                                        </div>
+                                        <p className="mt-1 text-xs text-[#6b7280]">{formatAdminDate(response.receivedAt)}</p>
+                                    </li>
+                                ))}
+                            </ol>
+                        ) : (
+                            <div className="mt-3 rounded-2xl border border-dashed border-[#111]/15 bg-white px-4 py-5 text-sm text-[#6b7280]">No WhatsApp response yet. This lead remains Cold until the customer interacts with the chatbot.</div>
+                        )}
+                    </div>
+                </div>
+            </aside>
+        </div>
+    );
 }
 
 function AdminSidebar({ user, activeSection, onNavigate, onClose = null, className = '' }) {
@@ -457,6 +535,8 @@ export default function AdminPage() {
     const [notice, setNotice] = useState('');
     const [query, setQuery] = useState('');
     const [leadQuery, setLeadQuery] = useState('');
+    const [leadTemperature, setLeadTemperature] = useState('cold');
+    const [selectedLead, setSelectedLead] = useState(null);
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const contentRef = useRef(null);
@@ -578,6 +658,7 @@ export default function AdminPage() {
             (acc, lead) => {
                 acc.total += 1;
                 acc[lead.channel] = (acc[lead.channel] || 0) + 1;
+                acc[getLeadTemperature(lead)] += 1;
 
                 if (lead.emailDelivery?.status === 'sent') {
                     acc.emailSent += 1;
@@ -593,6 +674,10 @@ export default function AdminPage() {
                 total: 0,
                 contact_form: 0,
                 whatsapp_form: 0,
+                portal_lead: 0,
+                cold: 0,
+                warm: 0,
+                hot: 0,
                 emailSent: 0,
                 whatsappSent: 0,
             },
@@ -601,9 +686,10 @@ export default function AdminPage() {
 
     const visibleLeads = useMemo(() => {
         const normalizedQuery = leadQuery.trim().toLowerCase();
-        if (!normalizedQuery) return leads;
+        const temperatureLeads = leads.filter((lead) => getLeadTemperature(lead) === leadTemperature);
+        if (!normalizedQuery) return temperatureLeads;
 
-        return leads.filter((lead) =>
+        return temperatureLeads.filter((lead) =>
             [
                 lead.name,
                 lead.phone,
@@ -614,12 +700,15 @@ export default function AdminPage() {
                 lead.message,
                 lead.preferredTime,
                 getLeadJourneySummary(lead),
+                ...(lead.whatsapp?.responses || []).map((response) => response.label),
+                lead.whatsapp?.callbackRequested ? 'callback requested' : '',
+                lead.whatsapp?.siteVisitRequested ? 'site visit requested' : '',
             ]
                 .join(' ')
                 .toLowerCase()
                 .includes(normalizedQuery),
         );
-    }, [leadQuery, leads]);
+    }, [leadQuery, leadTemperature, leads]);
 
     const statusEntries = useMemo(
         () =>
@@ -869,33 +958,34 @@ export default function AdminPage() {
                                 </button>
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                                <div className="rounded-[24px] border border-[#111]/10 bg-[#fafafa] px-5 py-4">
-                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">Total Leads</p>
-                                    <p className="mt-3 text-3xl font-bold text-[#111]">{leadStats.total}</p>
+                            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                                <div className="inline-flex w-full rounded-2xl border border-[#111]/10 bg-[#f7f7f7] p-1 sm:w-auto">
+                                    {Object.entries(LEAD_TEMPERATURES).map(([temperature, meta]) => (
+                                        <button
+                                            key={temperature}
+                                            type="button"
+                                            onClick={() => setLeadTemperature(temperature)}
+                                            className={`flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition sm:min-w-[150px] sm:flex-none ${
+                                                leadTemperature === temperature
+                                                    ? 'bg-white text-[#111] shadow-[0_8px_18px_rgba(17,17,17,0.08)]'
+                                                    : 'text-[#6b7280] hover:text-[#111]'
+                                            }`}
+                                        >
+                                            <span>{meta.label}</span>
+                                            <span className="rounded-full border border-[#111]/10 bg-[#fafafa] px-2 py-0.5 text-xs text-[#111]">{leadStats[temperature]}</span>
+                                        </button>
+                                    ))}
                                 </div>
-                                <div className="rounded-[24px] border border-[#111]/10 bg-[#fafafa] px-5 py-4">
-                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">Website Forms</p>
-                                    <p className="mt-3 text-3xl font-bold text-[#111]">{leadStats.contact_form}</p>
-                                </div>
-                                <div className="rounded-[24px] border border-[#111]/10 bg-[#fafafa] px-5 py-4">
-                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">WhatsApp Leads</p>
-                                    <p className="mt-3 text-3xl font-bold text-[#111]">{leadStats.whatsapp_form}</p>
-                                </div>
-                                <div className="rounded-[24px] border border-[#111]/10 bg-[#fafafa] px-5 py-4">
-                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">Messages Sent</p>
-                                    <p className="mt-3 text-3xl font-bold text-[#111]">{leadStats.emailSent + leadStats.whatsappSent}</p>
-                                </div>
-                            </div>
 
-                            <div className="relative w-full xl:w-[460px]">
-                                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98a2b3]" />
-                                <input
-                                    value={leadQuery}
-                                    onChange={(event) => setLeadQuery(event.target.value)}
-                                    placeholder="Search by name, phone, email, source, request..."
-                                    className="h-12 w-full rounded-2xl border border-[#111]/14 bg-white pl-10 pr-4 text-sm font-medium text-[#111] outline-none shadow-[0_7px_0_rgba(17,17,17,0.035),0_16px_32px_rgba(17,17,17,0.05)] transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
-                                />
+                                <div className="relative w-full xl:w-[390px]">
+                                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98a2b3]" />
+                                    <input
+                                        value={leadQuery}
+                                        onChange={(event) => setLeadQuery(event.target.value)}
+                                        placeholder="Search this lead group..."
+                                        className="h-12 w-full rounded-2xl border border-[#111]/14 bg-white pl-10 pr-4 text-sm font-medium text-[#111] outline-none shadow-[0_7px_0_rgba(17,17,17,0.035),0_16px_32px_rgba(17,17,17,0.05)] transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -915,6 +1005,7 @@ export default function AdminPage() {
                                                 <p className="mt-1 break-words text-sm text-[#6b7280]">{lead.email || 'No email captured'}</p>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
+                                                <LeadTemperaturePill lead={lead} />
                                                 <span className="inline-flex items-center gap-2 rounded-2xl border border-[#111]/10 bg-[#fafafa] px-4 py-2 text-xs font-bold text-[#111]">
                                                     <MessageSquare className="h-4 w-4" />
                                                     {CHANNEL_LABELS[lead.channel] || lead.channel}
@@ -938,8 +1029,13 @@ export default function AdminPage() {
                                             </div>
 
                                             <div className="rounded-[22px] border border-[#111]/10 bg-[#fafafa] p-4">
-                                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Journey</p>
+                                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">WhatsApp activity</p>
                                                 <p className="mt-2 text-sm leading-6 text-[#374151]">{getLeadJourneySummary(lead)}</p>
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    {lead.whatsapp?.callbackRequested ? <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-700"><PhoneCall className="h-3 w-3" /> Callback</span> : null}
+                                                    {lead.whatsapp?.siteVisitRequested ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700"><CalendarCheck2 className="h-3 w-3" /> Site visit</span> : null}
+                                                </div>
+                                                <button type="button" onClick={() => setSelectedLead(lead)} className="mt-3 text-sm font-bold text-[#111] underline decoration-[#111]/25 underline-offset-4">View WhatsApp replies ({lead.whatsapp?.responses?.length || 0})</button>
                                                 <p className="mt-3 text-xs font-medium text-[#6b7280]">
                                                     Updated {formatAdminDate(lead.updatedAt)}
                                                 </p>
@@ -954,20 +1050,21 @@ export default function AdminPage() {
                                 ))
                             ) : (
                                 <div className="px-4 py-10 text-center text-sm font-medium text-[#6b7280] sm:px-6">
-                                    No leads match your current search.
+                                    No {LEAD_TEMPERATURES[leadTemperature].label.toLowerCase()} leads match your current search.
                                 </div>
                             )}
                         </div>
 
                         <div className="hidden max-h-[620px] overflow-auto xl:block">
-                            <table className="w-full min-w-[1320px] border-collapse text-left">
+                            <table className="w-full min-w-[1480px] border-collapse text-left">
                                 <thead className="sticky top-0 z-10 bg-[#f7f7f7] text-xs uppercase tracking-[0.1em] text-[#6b7280]">
                                     <tr>
                                         <th className="px-7 py-5 font-bold">Submitted</th>
                                         <th className="px-7 py-5 font-bold">Lead</th>
                                         <th className="px-7 py-5 font-bold">Channel</th>
+                                        <th className="px-7 py-5 font-bold">Temperature</th>
                                         <th className="px-7 py-5 font-bold">Request</th>
-                                        <th className="px-7 py-5 font-bold">Journey</th>
+                                        <th className="px-7 py-5 font-bold">WhatsApp</th>
                                         <th className="px-7 py-5 font-bold">Delivery</th>
                                     </tr>
                                 </thead>
@@ -982,6 +1079,12 @@ export default function AdminPage() {
                                                 <p className="font-bold text-[#111]">{lead.name || 'Unknown lead'}</p>
                                                 <p className="mt-1 text-sm font-medium text-[#374151]">{lead.phone || 'No phone'}</p>
                                                 <p className="mt-1 text-sm text-[#6b7280]">{lead.email || 'No email captured'}</p>
+                                            </td>
+                                            <td className="px-7 py-5">
+                                                <LeadTemperaturePill lead={lead} />
+                                                <p className="mt-3 text-xs font-medium text-[#6b7280]">
+                                                    {lead.whatsapp?.score || 0} meaningful selections
+                                                </p>
                                             </td>
                                             <td className="px-7 py-5">
                                                 <span className="inline-flex items-center gap-2 rounded-2xl border border-[#111]/10 bg-[#fafafa] px-4 py-2 text-xs font-bold text-[#111]">
@@ -1004,9 +1107,13 @@ export default function AdminPage() {
                                                 ) : null}
                                             </td>
                                             <td className="px-7 py-5">
-                                                <p className="text-sm font-medium leading-6 text-[#374151]">
-                                                    {getLeadJourneySummary(lead)}
-                                                </p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {lead.whatsapp?.callbackRequested ? <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-700"><PhoneCall className="h-3 w-3" /> Callback</span> : null}
+                                                    {lead.whatsapp?.siteVisitRequested ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700"><CalendarCheck2 className="h-3 w-3" /> Site visit</span> : null}
+                                                </div>
+                                                <button type="button" onClick={() => setSelectedLead(lead)} className="mt-3 text-sm font-bold text-[#111] underline decoration-[#111]/25 underline-offset-4">
+                                                    View replies ({lead.whatsapp?.responses?.length || 0})
+                                                </button>
                                             </td>
                                             <td className="px-7 py-5">
                                                 <div className="grid gap-2">
@@ -1225,6 +1332,7 @@ export default function AdminPage() {
                     )}
                 </div>
             </section>
+            <WhatsAppRepliesPanel lead={selectedLead} onClose={() => setSelectedLead(null)} />
         </main>
     );
 }
