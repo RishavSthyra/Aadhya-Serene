@@ -1,0 +1,98 @@
+                     Aadhya Serene External Lead API
+
+
+
+     Endpoint
+
+ 1    POST https://www.aadhyaserene.com/api/integrations/leads
+
+
+
+     Headers
+
+ 1    Authorization: Bearer <shared-secret>
+ 2    Content-Type: application/json
+
+
+
+     Request
+
+ 1    {
+ 2        "leadId": "LEAD-12345",
+ 3        "name": "Customer Name",
+ 4        "phone": "9876543210",
+ 5        "email": "customer@example.com",
+ 6        "source": "partner_name",
+ 7        "projectName": "Aadhya Serene",
+ 8        "enquiryType": "register_interest",
+ 9        "message": "Please share brochure and pricing.",
+10        "submittedAt": "2026-08-03T10:30:00.000Z",
+11        "whatsappConsent": true
+12    }
+
+
+
+     Request Fields
+
+          Field             Required    Notes
+          leadId            Yes         Unique and permanent for that lead. Re-send the
+                                        same ID on retry.
+          name              Yes         Customer name.
+          phone             Yes         Indian mobile number. Use 10 digits or country-code
+                                        format.
+          whatsappConsent   Yes         Must be true.
+          source            No          Your platform or campaign name.
+
+
+
+
+                                                1
+         Field            Required      Notes
+         email,           No            Additional lead details. submittedAt must be ISO-
+         projectName,                   8601 UTC.
+         enquiryType,
+         message,
+         submittedAt
+
+
+    Success Responses
+    201 Created (New Lead)
+
+1    {
+2        "accepted": true,
+3        "duplicate": false,
+4        "leadId": "LEAD-12345",
+5        "whatsapp": "sent",
+6        "salesEmail": "sent"
+7    }
+
+
+    200 OK (Duplicate Lead)
+
+1    {
+2        "accepted": true,
+3        "duplicate": true,
+4        "leadId": "LEAD-12345"
+5    }
+
+
+
+    Errors and Retries
+
+     Status        Meaning                       Action
+     400           Invalid JSON or missing/in-   Correct the request.
+                   valid field
+     401           Missing or incorrect secret   Correct the authorization header.
+     503           Temporary processing issue    Retry with the same leadId after 1, 5, 15, then
+                                                 60 minutes.
+
+
+    Notes
+    The system stores accepted leads, notifies the sales team, and sends the approved WhatsApp
+    welcome template when whatsappConsent is true.
+
+
+
+
+                                                 2
+

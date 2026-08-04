@@ -32,6 +32,12 @@ type WhatsAppApiErrorPayload = {
   };
 };
 
+type WhatsAppApiSuccessPayload = {
+  messages?: Array<{
+    id?: string;
+  }>;
+};
+
 export class WhatsAppRequestError extends Error {
   code?: number;
   details?: string;
@@ -114,7 +120,7 @@ async function sendWhatsAppPayload(payload: Record<string, unknown>) {
     body: JSON.stringify(payload),
   });
 
-  const data = (await response.json()) as WhatsAppApiErrorPayload;
+  const data = (await response.json()) as WhatsAppApiErrorPayload & WhatsAppApiSuccessPayload;
 
   if (!response.ok) {
     console.error("WhatsApp API error:", JSON.stringify(data, null, 2));
