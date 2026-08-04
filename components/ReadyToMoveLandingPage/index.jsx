@@ -334,8 +334,8 @@ const LP_HERO_VARIANTS = {
 };
 
 const DEFAULT_HERO_COPY = {
-  eyebrow:
-    'RERA-approved 2 & 3 BHK homes in Thanisandra, 5 mins from Manyata Tech Park. Possession soon.',
+  eyebrow: 'RERA-approved 2 & 3 BHK homes in Thanisandra.',
+  possession: 'Possession soon.',
   h1Line1: 'Live Beside',
   h1Line2: 'Manyata Tech Park.',
 };
@@ -1023,13 +1023,16 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
               <div className="grid w-full items-end gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-8 max-[900px]:gap-5">
                 <div className="gsap-entry self-end">
                   <div className="max-w-none">
-                    <p className="mb-3 text-[10px] uppercase tracking-[0.3em] text-white/58 sm:text-[11px] max-[900px]:mb-2 max-[900px]:text-[9px] max-[900px]:tracking-[0.24em]">
-                      {heroVariant.eyebrow}
-                    </p>
                     <h1 id="lp-h1" className="font-[var(--font-hero)] text-[clamp(2.8rem,5.2vw,5.6rem)] font-medium leading-[0.9] tracking-[-0.055em] text-white max-[1100px]:text-[clamp(2.6rem,4.8vw,4.8rem)] max-[900px]:text-[clamp(2.1rem,4.2vw,4rem)] max-[820px]:text-[clamp(1.9rem,4vw,3.4rem)]">
                       <span className="block whitespace-nowrap">{heroVariant.h1Line1}</span>
                       <span className="block whitespace-nowrap">{heroVariant.h1Line2}</span>
                     </h1>
+                    <p className="mt-4 max-w-[58rem] text-[10px] uppercase tracking-[0.3em] text-white/58 sm:text-[11px] max-[900px]:mt-3 max-[900px]:text-[9px] max-[900px]:tracking-[0.24em]">
+                      {heroVariant.eyebrow}{' '}
+                      {heroVariant.possession ? (
+                        <span className="font-bold text-[#e8d0a8]">{heroVariant.possession}</span>
+                      ) : null}
+                    </p>
                     <div className="mt-5 flex max-w-[44rem] flex-wrap gap-2.5 max-[900px]:mt-4 max-[900px]:gap-2">
                       <span className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-white/18 bg-black/24 px-4 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/88 shadow-[0_14px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl max-[1100px]:min-h-[38px] max-[1100px]:px-3.5 max-[1100px]:text-[10px] max-[900px]:min-h-[34px] max-[900px]:px-3 max-[900px]:text-[9px] max-[900px]:tracking-[0.12em]">
                         <ShieldCheck className="h-3.5 w-3.5 text-[#e8d0a8]" />
