@@ -5,6 +5,9 @@ const CACHEABLE_HOSTS = new Set([
     'aadhya-serene-assets-v2.s3.amazonaws.com',
 ]);
 const CACHEABLE_PATH_PARTS = [
+    '/maniteja/panos/exterior/tiles/',
+    '/panos/exterior/tiles/',
+    '/images/panos/',
     '/AADHYA%20SERENE/images/amenities-first-frames/',
     '/AADHYA%20SERENE/images/rot360_webp/',
     '/AADHYA%20SERENE/images/',
