@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getLeadScopeFilter, requireAdmin } from '../../../../../lib/admin-auth';
 import { connectMongo } from '../../../../../lib/mongodb';
 import { Notification } from '../../../../../lib/models';
+import { getLeadDateRangeFilter } from '../../../../../lib/lead-date-filter';
 
 function escapeCsv(value) {
     const text = String(value ?? '');
@@ -16,7 +17,7 @@ function buildCsvRow(values) {
     return values.map(escapeCsv).join(',');
 }
 
-export async function GET() {
+export async function GET(request) {
     const auth = await requireAdmin();
     if (auth.error) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -28,7 +29,12 @@ export async function GET() {
         return NextResponse.json({ error: 'Lead source access is not configured.' }, { status: 403 });
     }
 
-    const leads = await Notification.find(leadScope)
+    const dateRange = getLeadDateRangeFilter(new URL(request.url).searchParams);
+    if (dateRange.error) {
+        return NextResponse.json({ error: dateRange.error }, { status: 400 });
+    }
+
+    const leads = await Notification.find({ ...leadScope, ...dateRange.filter })
         .sort({ createdAt: -1 })
         .lean();
 

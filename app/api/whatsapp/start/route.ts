@@ -6,6 +6,7 @@ import {
 } from "@/lib/whatsapp-conversation";
 import {
   createEnquiryRecord,
+  findRecentEnquiryRecord,
   getRequestMetadataFromHeaders,
   sendEnquiryNotificationEmail,
   updateEnquiryRecord,
@@ -16,6 +17,16 @@ import {
 } from "@/lib/validation/enquiry";
 
 export const runtime = "nodejs";
+
+const DUPLICATE_WINDOW_MINUTES = 10;
+
+function submissionWindowKey(now = new Date()) {
+  return String(Math.floor(now.getTime() / (DUPLICATE_WINDOW_MINUTES * 60 * 1000)));
+}
+
+function isDuplicateKeyError(error: unknown) {
+  return Boolean(error && typeof error === "object" && "code" in error && (error as { code?: number }).code === 11000);
+}
 
 export async function POST(req: Request) {
   let enquiryRecordId: string | undefined;
@@ -43,22 +54,52 @@ export async function POST(req: Request) {
     const requestMetadata = getRequestMetadataFromHeaders(req.headers);
     const phone = payload.phone;
 
-    const enquiryRecord = await createEnquiryRecord({
-      projectName: "Aadhya Serene",
+    const recentRecord = await findRecentEnquiryRecord({
+      phone,
       source,
       channel: "whatsapp_form",
-      name,
-      phone,
-      requestType: "whatsapp_flow",
-      requestLabel: "WhatsApp Flow Start",
-      message: "Lead started from the WhatsApp enquiry form.",
-      emailDelivery: { status: "pending" },
-      whatsappDelivery: { status: "pending" },
-      metadata: {
-        businessName: projectName,
-        requestContext: requestMetadata,
-      },
+      minutes: DUPLICATE_WINDOW_MINUTES,
     });
+
+    if (recentRecord) {
+      return NextResponse.json({
+        success: true,
+        duplicate: true,
+        message: "A WhatsApp message was already sent to this number recently.",
+        phone,
+      });
+    }
+
+    let enquiryRecord;
+    try {
+      enquiryRecord = await createEnquiryRecord({
+        projectName: "Aadhya Serene",
+        source,
+        submissionWindow: submissionWindowKey(),
+        channel: "whatsapp_form",
+        name,
+        phone,
+        requestType: "whatsapp_flow",
+        requestLabel: "WhatsApp Flow Start",
+        message: "Lead started from the WhatsApp enquiry form.",
+        emailDelivery: { status: "pending" },
+        whatsappDelivery: { status: "pending" },
+        metadata: {
+          businessName: projectName,
+          requestContext: requestMetadata,
+        },
+      });
+    } catch (error) {
+      if (isDuplicateKeyError(error)) {
+        return NextResponse.json({
+          success: true,
+          duplicate: true,
+          message: "A WhatsApp message was already sent to this number recently.",
+          phone,
+        });
+      }
+      throw error;
+    }
 
     enquiryRecordId = String(enquiryRecord._id);
 

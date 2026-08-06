@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     BarChart3,
     Building2,
+    CalendarDays,
     CalendarCheck2,
     CheckCircle2,
     Copy,
@@ -615,6 +616,9 @@ export default function AdminPage() {
     const [query, setQuery] = useState('');
     const [leadQuery, setLeadQuery] = useState('');
     const [leadTemperature, setLeadTemperature] = useState('cold');
+    const [leadDateRange, setLeadDateRange] = useState({ startDate: '', endDate: '' });
+    const [dateFilterOpen, setDateFilterOpen] = useState(false);
+    const [dateFilterDraft, setDateFilterDraft] = useState({ startDate: '', endDate: '' });
     const [selectedLead, setSelectedLead] = useState(null);
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -637,7 +641,11 @@ export default function AdminPage() {
     }
 
     async function loadLeads() {
-        const response = await fetch('/api/admin/leads', { cache: 'no-store' });
+        const params = new URLSearchParams();
+        if (leadDateRange.startDate) params.set('startDate', leadDateRange.startDate);
+        if (leadDateRange.endDate) params.set('endDate', leadDateRange.endDate);
+        const query = params.toString();
+        const response = await fetch(`/api/admin/leads${query ? `?${query}` : ''}`, { cache: 'no-store' });
         if (!response.ok) return;
         const payload = await response.json();
         setLeads(Array.isArray(payload.leads) ? payload.leads : []);
@@ -681,7 +689,7 @@ export default function AdminPage() {
         void refreshAll();
         const intervalId = window.setInterval(refreshAll, 30000);
         return () => window.clearInterval(intervalId);
-    }, [user, isLeadPartner]);
+    }, [user, isLeadPartner, leadDateRange]);
 
     useEffect(() => {
         if (isLeadPartner) {
@@ -962,7 +970,29 @@ export default function AdminPage() {
     }
 
     function downloadLeadCsv() {
-        window.location.assign('/api/admin/leads/export');
+        const params = new URLSearchParams();
+        if (leadDateRange.startDate) params.set('startDate', leadDateRange.startDate);
+        if (leadDateRange.endDate) params.set('endDate', leadDateRange.endDate);
+        window.location.assign(`/api/admin/leads/export${params.toString() ? `?${params}` : ''}`);
+    }
+
+    function openDateFilter() {
+        setDateFilterDraft(leadDateRange);
+        setDateFilterOpen(true);
+    }
+
+    function applyDateFilter() {
+        if (
+            dateFilterDraft.startDate
+            && dateFilterDraft.endDate
+            && dateFilterDraft.startDate > dateFilterDraft.endDate
+        ) {
+            setNotice('End date cannot be before start date.');
+            return;
+        }
+        setLeadDateRange(dateFilterDraft);
+        setDateFilterOpen(false);
+        setNotice('');
     }
 
     if (checking) {
@@ -1064,14 +1094,53 @@ export default function AdminPage() {
                                             : 'A live view of every enquiry, WhatsApp interaction, and sales follow-up.'}
                                     </p>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={downloadLeadCsv}
-                                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#111] px-5 text-sm font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0 sm:w-auto"
-                                >
-                                    <Download className="h-4 w-4" />
-                                    Download CSV
-                                </button>
+                                <div className="relative flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                                    <button
+                                        type="button"
+                                        onClick={openDateFilter}
+                                        className={`inline-flex h-11 items-center justify-center gap-2 border px-4 text-sm font-bold transition ${
+                                            leadDateRange.startDate || leadDateRange.endDate
+                                                ? 'border-[#111] bg-[#111] text-white'
+                                                : 'border-[#111]/15 bg-white text-[#111]'
+                                        }`}
+                                    >
+                                        <CalendarDays className="h-4 w-4" />
+                                        {leadDateRange.startDate || leadDateRange.endDate ? 'Date filter active' : 'Filter by date'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={downloadLeadCsv}
+                                        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#111] px-5 text-sm font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0 sm:w-auto"
+                                    >
+                                        <Download className="h-4 w-4" />
+                                        Download CSV
+                                    </button>
+                                    {dateFilterOpen ? (
+                                        <div className="absolute right-0 top-[calc(100%+10px)] z-30 w-full min-w-[300px] border border-[#111]/15 bg-[#fffefa] p-5 text-left shadow-[0_18px_35px_rgba(17,17,17,0.12)] sm:w-[350px]">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div>
+                                                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Date range</p>
+                                                    <p className="mt-1 text-sm text-[#4b5563]">Filter by submitted date.</p>
+                                                </div>
+                                                <button type="button" onClick={() => setDateFilterOpen(false)} className="text-sm font-bold text-[#6b7280] hover:text-[#111]">Close</button>
+                                            </div>
+                                            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                                                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">
+                                                    Start date
+                                                    <input type="date" value={dateFilterDraft.startDate} onChange={(event) => setDateFilterDraft((current) => ({ ...current, startDate: event.target.value }))} className="mt-2 h-11 w-full border border-[#111]/15 bg-white px-3 text-sm font-bold text-[#111] outline-none focus:border-[#111]" />
+                                                </label>
+                                                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">
+                                                    End date
+                                                    <input type="date" value={dateFilterDraft.endDate} onChange={(event) => setDateFilterDraft((current) => ({ ...current, endDate: event.target.value }))} className="mt-2 h-11 w-full border border-[#111]/15 bg-white px-3 text-sm font-bold text-[#111] outline-none focus:border-[#111]" />
+                                                </label>
+                                            </div>
+                                            <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#111]/10 pt-4">
+                                                <button type="button" onClick={() => { setDateFilterDraft({ startDate: '', endDate: '' }); setLeadDateRange({ startDate: '', endDate: '' }); setDateFilterOpen(false); }} className="text-sm font-bold text-[#6b7280] hover:text-[#111]">Clear filter</button>
+                                                <button type="button" onClick={applyDateFilter} className="h-10 bg-[#111] px-4 text-sm font-bold text-white">Apply dates</button>
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </div>
                             </div>
 
                             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">

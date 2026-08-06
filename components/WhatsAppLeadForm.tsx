@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   sanitizeNameInput,
   sanitizePhoneInput,
@@ -98,9 +98,14 @@ export default function WhatsAppLeadForm() {
   });
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
+  const submissionLocked = useRef(false);
 
   async function submitLead(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (submissionLocked.current || status === "loading" || status === "success") {
+      return;
+    }
 
     const parseResult = validateForm();
 
@@ -112,6 +117,7 @@ export default function WhatsAppLeadForm() {
 
     setStatus("loading");
     setMessage("");
+    submissionLocked.current = true;
 
     try {
       const response = await fetch("/api/whatsapp/start", {
@@ -136,9 +142,10 @@ export default function WhatsAppLeadForm() {
       }
 
       setStatus("success");
-      setMessage("WhatsApp message sent. Please check your phone.");
+      setMessage(data.duplicate ? "A WhatsApp message was already sent to this number recently." : "WhatsApp message sent. Please check your phone.");
       resetForm();
     } catch (error) {
+      submissionLocked.current = false;
       setStatus("error");
       setMessage(
         error instanceof Error
@@ -215,7 +222,7 @@ export default function WhatsAppLeadForm() {
 
       <button
         type="submit"
-        disabled={status === "loading"}
+        disabled={status === "loading" || status === "success"}
         className="inline-flex min-h-[60px] w-full items-center justify-center rounded-full bg-[#17120d] px-7 text-[12px] font-semibold uppercase tracking-[0.24em] text-[#f3e7d1] transition hover:bg-[#241a12] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === "loading" ? "Sending..." : "Get details on WhatsApp"}

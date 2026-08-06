@@ -4,6 +4,7 @@ import { connectMongo } from '../../../../lib/mongodb';
 import { Notification, WhatsAppConversation } from '../../../../lib/models';
 import { summarizeWhatsAppConversation } from '../../../../lib/lead-temperature';
 import { buildLeadActivity } from '../../../../lib/lead-activity';
+import { getLeadDateRangeFilter } from '../../../../lib/lead-date-filter';
 
 function serializeLead(lead, conversation) {
     return {
@@ -36,7 +37,7 @@ function serializeLead(lead, conversation) {
     };
 }
 
-export async function GET() {
+export async function GET(request) {
     const auth = await requireAdmin();
     if (auth.error) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -48,7 +49,14 @@ export async function GET() {
         return NextResponse.json({ error: 'Lead source access is not configured.' }, { status: 403 });
     }
 
-    const leads = await Notification.find(leadScope).sort({ createdAt: -1 }).lean();
+    const dateRange = getLeadDateRangeFilter(new URL(request.url).searchParams);
+    if (dateRange.error) {
+        return NextResponse.json({ error: dateRange.error }, { status: 400 });
+    }
+
+    const leads = await Notification.find({ ...leadScope, ...dateRange.filter })
+        .sort({ createdAt: -1 })
+        .lean();
     const phoneNumbers = [...new Set(leads.map((lead) => lead.phone).filter(Boolean))];
     const conversations = phoneNumbers.length
         ? await WhatsAppConversation.find({ phoneNumber: { $in: phoneNumbers } }).lean()
