@@ -56,7 +56,8 @@ export async function POST(request) {
         }
 
         const passwordHash = await bcrypt.hash(password, 12);
-        const user = await AdminUser.create({ name, email, passwordHash, role });
+        const leadSource = role === 'lead_partner' ? signupKey?.leadSource || '' : '';
+        const user = await AdminUser.create({ name, email, passwordHash, role, leadSource });
 
         if (signupKey) {
             signupKey.usedBy = user._id;

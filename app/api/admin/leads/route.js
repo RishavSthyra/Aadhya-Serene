@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '../../../../lib/admin-auth';
+import { getLeadScopeFilter, requireAdmin } from '../../../../lib/admin-auth';
 import { connectMongo } from '../../../../lib/mongodb';
 import { Notification, WhatsAppConversation } from '../../../../lib/models';
 import { summarizeWhatsAppConversation } from '../../../../lib/lead-temperature';
+import { buildLeadActivity } from '../../../../lib/lead-activity';
 
 function serializeLead(lead, conversation) {
     return {
@@ -21,6 +22,15 @@ function serializeLead(lead, conversation) {
         emailDelivery: lead.emailDelivery || {},
         whatsappDelivery: lead.whatsappDelivery || {},
         whatsapp: summarizeWhatsAppConversation(conversation),
+        activity: buildLeadActivity(lead, conversation),
+        salesRemarks: (lead.salesRemarks || []).map((remark) => ({
+            id: String(remark._id),
+            text: remark.text || '',
+            authorName: remark.authorName || 'Sales Team',
+            authorEmail: remark.authorEmail || '',
+            createdAt: remark.createdAt ? new Date(remark.createdAt).toISOString() : '',
+            updatedAt: remark.updatedAt ? new Date(remark.updatedAt).toISOString() : '',
+        })),
         createdAt: lead.createdAt ? new Date(lead.createdAt).toISOString() : '',
         updatedAt: lead.updatedAt ? new Date(lead.updatedAt).toISOString() : '',
     };
@@ -33,7 +43,12 @@ export async function GET() {
     }
 
     await connectMongo();
-    const leads = await Notification.find({}).sort({ createdAt: -1 }).lean();
+    const leadScope = getLeadScopeFilter(auth.user);
+    if (!leadScope) {
+        return NextResponse.json({ error: 'Lead source access is not configured.' }, { status: 403 });
+    }
+
+    const leads = await Notification.find(leadScope).sort({ createdAt: -1 }).lean();
     const phoneNumbers = [...new Set(leads.map((lead) => lead.phone).filter(Boolean))];
     const conversations = phoneNumbers.length
         ? await WhatsAppConversation.find({ phoneNumber: { $in: phoneNumbers } }).lean()

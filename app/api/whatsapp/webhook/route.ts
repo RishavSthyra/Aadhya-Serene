@@ -201,6 +201,15 @@ async function notifySalesForIntent(
       "metadata.whatsappJourney.lastIntent": intent,
       "metadata.whatsappJourney.intentNotifiedAt": new Date(),
     },
+    $push: {
+      "metadata.activity": {
+        type: "sales_intent_email",
+        title: `${intentLabel} email sent to sales`,
+        detail: intentMessage,
+        occurredAt: new Date(),
+        status: "sent",
+      },
+    },
   });
 }
 

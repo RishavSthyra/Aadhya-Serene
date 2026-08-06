@@ -36,6 +36,22 @@ const ROLE_LABELS = {
     super_admin: 'Super Admin',
     manager: 'Manager',
     channel_partner: 'Channel Partner',
+    lead_partner: 'Lead Partner',
+};
+
+const PARTNER_KEY_OPTIONS = [
+    { value: 'super_admin', label: 'Super Admin', role: 'super_admin' },
+    { value: 'manager', label: 'Manager', role: 'manager' },
+    { value: 'channel_partner', label: 'Channel Partner', role: 'channel_partner' },
+    { value: 'aurum_analytica', label: 'Aurum Analytica Leads', role: 'lead_partner', leadSource: 'aurum_analytica' },
+    { value: '99acres', label: '99acres Leads', role: 'lead_partner', leadSource: '99acres' },
+    { value: 'magicbricks', label: 'MagicBricks Leads', role: 'lead_partner', leadSource: 'magicbricks' },
+];
+
+const LEAD_SOURCE_LABELS = {
+    aurum_analytica: 'Aurum Analytica',
+    '99acres': '99acres',
+    magicbricks: 'MagicBricks',
 };
 
 const STATUS_OPTIONS = ['available', 'reserved', 'blocked', 'sold out'];
@@ -121,23 +137,54 @@ function LeadTemperaturePill({ lead }) {
     );
 }
 
-function WhatsAppRepliesPanel({ lead, onClose }) {
+function LeadActivityPanel({ lead, onClose, canWrite, onRemarkSaved }) {
+    const [remark, setRemark] = useState('');
+    const [savingRemark, setSavingRemark] = useState(false);
+    const [remarkError, setRemarkError] = useState('');
+
     if (!lead) return null;
 
     const whatsapp = lead.whatsapp || {};
-    const responses = Array.isArray(whatsapp.responses) ? whatsapp.responses : [];
+    const activity = Array.isArray(lead.activity) ? lead.activity : [];
+    const remarks = Array.isArray(lead.salesRemarks) ? lead.salesRemarks : [];
     const temperature = getLeadTemperature(lead);
     const meta = LEAD_TEMPERATURES[temperature];
 
+    async function saveRemark(event) {
+        event.preventDefault();
+        const text = remark.trim();
+        if (!text) return;
+
+        setSavingRemark(true);
+        setRemarkError('');
+        try {
+            const response = await fetch(`/api/admin/leads/${lead.id}/remarks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text }),
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || 'Unable to save remark.');
+            }
+            onRemarkSaved(payload.remark);
+            setRemark('');
+        } catch (error) {
+            setRemarkError(error.message);
+        } finally {
+            setSavingRemark(false);
+        }
+    }
+
     return (
-        <div className="fixed inset-0 z-[1000] flex justify-end bg-black/35 p-0 sm:p-4" role="dialog" aria-modal="true" aria-label="WhatsApp responses">
-            <button type="button" aria-label="Close WhatsApp responses" onClick={onClose} className="absolute inset-0 cursor-default" />
-            <aside className="relative flex h-full w-full max-w-xl flex-col bg-[#fbfbfa] shadow-[-24px_0_70px_rgba(17,17,17,0.22)] sm:rounded-[30px] sm:border sm:border-[#111]/10">
+        <div className="fixed inset-0 z-[1000] flex justify-end bg-black/35 p-0 sm:p-4" role="dialog" aria-modal="true" aria-label="Lead activity">
+            <button type="button" aria-label="Close lead activity" onClick={onClose} className="absolute inset-0 cursor-default" />
+            <aside className="editorial-detail relative flex h-full w-full max-w-2xl flex-col bg-[#fbfbfa] shadow-[-24px_0_70px_rgba(17,17,17,0.22)] sm:rounded-[30px] sm:border sm:border-[#111]/10">
                 <div className="flex items-start justify-between gap-4 border-b border-[#111]/10 px-5 py-5 sm:px-7 sm:py-6">
                     <div>
-                        <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">WhatsApp engagement</p>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Lead activity</p>
                         <h3 className="mt-1 text-2xl font-bold text-[#111]">{lead.name || 'Unknown lead'}</h3>
-                        <p className="mt-1 text-sm text-[#6b7280]">{lead.phone || 'No phone'}</p>
+                        <p className="mt-1 text-sm text-[#6b7280]">{lead.phone || 'No phone'} · {lead.source || 'website'}</p>
                     </div>
                     <button type="button" onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#111]/10 bg-white text-xl font-medium text-[#111]">×</button>
                 </div>
@@ -150,22 +197,48 @@ function WhatsAppRepliesPanel({ lead, onClose }) {
                         {whatsapp.siteVisitRequested ? <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700"><CalendarCheck2 className="h-3.5 w-3.5" /> Site visit requested</span> : null}
                     </div>
 
-                    <div className="mt-6">
-                        <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Customer selections</p>
-                        {responses.length ? (
-                            <ol className="mt-3 space-y-3">
-                                {responses.map((response, index) => (
-                                    <li key={`${response.buttonId}-${response.receivedAt}-${index}`} className="rounded-2xl border border-[#111]/10 bg-white px-4 py-3 shadow-[0_8px_20px_rgba(17,17,17,0.04)]">
-                                        <div className="flex items-start justify-between gap-4">
-                                            <p className="font-bold text-[#111]">{response.label}</p>
-                                            {response.qualifies ? <span className="shrink-0 rounded-full bg-[#111] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white">Scored</span> : null}
-                                        </div>
-                                        <p className="mt-1 text-xs text-[#6b7280]">{formatAdminDate(response.receivedAt)}</p>
+                    <section className="mt-6 rounded-[24px] border border-[#111]/10 bg-white p-4 shadow-[0_8px_20px_rgba(17,17,17,0.04)] sm:p-5">
+                        <div className="flex items-center justify-between gap-4">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Sales remarks</p>
+                            <span className="text-xs font-bold text-[#6b7280]">{remarks.length}</span>
+                        </div>
+                        {remarks.length ? (
+                            <div className="mt-4 space-y-4">
+                                {remarks.map((item) => (
+                                    <article key={item.id} className="border-l-2 border-[#111] pl-4">
+                                        <p className="whitespace-pre-wrap text-sm leading-6 text-[#374151]">{item.text}</p>
+                                        <p className="mt-2 text-xs font-bold text-[#6b7280]">{item.authorName} · {formatAdminDate(item.createdAt)}</p>
+                                    </article>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="mt-3 text-sm text-[#6b7280]">No sales remarks added yet.</p>
+                        )}
+                        {canWrite ? (
+                            <form onSubmit={saveRemark} className="mt-5 border-t border-[#111]/10 pt-4">
+                                <label className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#6b7280]" htmlFor={`remark-${lead.id}`}>Add calling remark</label>
+                                <textarea id={`remark-${lead.id}`} value={remark} onChange={(event) => setRemark(event.target.value)} maxLength={5000} rows={4} placeholder="Call outcome, customer requirement, follow-up details..." className="mt-2 w-full resize-y rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 py-3 text-sm leading-6 text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5" />
+                                {remarkError ? <p className="mt-2 text-xs font-bold text-red-600">{remarkError}</p> : null}
+                                <button type="submit" disabled={savingRemark || !remark.trim()} className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-[#111] px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-45">{savingRemark ? 'Saving...' : 'Save remark'}</button>
+                            </form>
+                        ) : null}
+                    </section>
+
+                    <div className="mt-7">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Activity flow</p>
+                        {activity.length ? (
+                            <ol className="mt-4 border-l border-[#111]/15 pl-5">
+                                {activity.map((event, index) => (
+                                    <li key={`${event.type}-${event.occurredAt}-${index}`} className="relative pb-6 last:pb-0">
+                                        <span className={`absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-white ${event.status === 'failed' ? 'bg-red-500' : event.type === 'customer_selection' ? 'bg-violet-500' : 'bg-[#111]'}`} />
+                                        <p className="font-bold text-[#111]">{event.title}</p>
+                                        {event.detail ? <p className="mt-1 text-sm leading-6 text-[#4b5563]">{event.detail}</p> : null}
+                                        <p className="mt-1.5 text-xs font-bold text-[#6b7280]">{formatAdminDate(event.occurredAt)}</p>
                                     </li>
                                 ))}
                             </ol>
                         ) : (
-                            <div className="mt-3 rounded-2xl border border-dashed border-[#111]/15 bg-white px-4 py-5 text-sm text-[#6b7280]">No WhatsApp response yet. This lead remains Cold until the customer interacts with the chatbot.</div>
+                            <div className="mt-3 rounded-2xl border border-dashed border-[#111]/15 bg-white px-4 py-5 text-sm text-[#6b7280]">No activity has been recorded for this lead yet.</div>
                         )}
                     </div>
                 </div>
@@ -175,6 +248,10 @@ function WhatsAppRepliesPanel({ lead, onClose }) {
 }
 
 function AdminSidebar({ user, activeSection, onNavigate, onClose = null, className = '' }) {
+    const navItems = user?.role === 'lead_partner'
+        ? ADMIN_NAV_ITEMS.filter((item) => item.section === 'leads')
+        : ADMIN_NAV_ITEMS;
+
     return (
         <aside className={className}>
             <div className="flex h-20 items-center justify-between gap-3 border-b border-[#111]/10 px-5 sm:h-24 sm:px-7">
@@ -184,7 +261,9 @@ function AdminSidebar({ user, activeSection, onNavigate, onClose = null, classNa
                     </span>
                     <div className="min-w-0">
                         <p className="truncate font-display text-base font-bold text-[#111] sm:text-lg">Aadhya Admin</p>
-                        <p className="text-xs font-bold text-[#6b7280]">Serene inventory</p>
+                        <p className="text-xs font-bold text-[#6b7280]">
+                            {user?.role === 'lead_partner' ? 'Partner leads' : 'Serene inventory'}
+                        </p>
                     </div>
                 </div>
                 {onClose ? (
@@ -200,7 +279,7 @@ function AdminSidebar({ user, activeSection, onNavigate, onClose = null, classNa
             </div>
 
             <nav className="flex-1 space-y-2 px-4 py-5 sm:px-5 sm:py-7">
-                {ADMIN_NAV_ITEMS.map(({ icon: Icon, label, section }) => (
+                {navItems.map(({ icon: Icon, label, section }) => (
                     <button
                         key={label}
                         type="button"
@@ -548,6 +627,7 @@ export default function AdminPage() {
 
     const canWrite = user && ['super_admin', 'manager'].includes(user.role);
     const isSuperAdmin = user?.role === 'super_admin';
+    const isLeadPartner = user?.role === 'lead_partner';
 
     async function loadFlats() {
         const response = await fetch('/api/admin/flats', { cache: 'no-store' });
@@ -564,6 +644,11 @@ export default function AdminPage() {
     }
 
     async function refreshAll() {
+        if (isLeadPartner) {
+            await loadLeads();
+            return;
+        }
+
         await Promise.all([loadFlats(), loadLeads()]);
     }
 
@@ -596,7 +681,13 @@ export default function AdminPage() {
         void refreshAll();
         const intervalId = window.setInterval(refreshAll, 30000);
         return () => window.clearInterval(intervalId);
-    }, [user]);
+    }, [user, isLeadPartner]);
+
+    useEffect(() => {
+        if (isLeadPartner) {
+            setActiveSection('leads');
+        }
+    }, [isLeadPartner]);
 
     useEffect(() => {
         const previousOverflow = document.body.style.overflow;
@@ -737,7 +828,9 @@ export default function AdminPage() {
         },
         leads: {
             eyebrow: 'Lead management',
-            title: 'Website and WhatsApp Leads',
+            title: isLeadPartner
+                ? `${LEAD_SOURCE_LABELS[user?.leadSource] || 'Partner'} Leads`
+                : 'Website and WhatsApp Leads',
         },
         inventory: {
             eyebrow: 'Inventory control',
@@ -761,6 +854,10 @@ export default function AdminPage() {
 
     function goToSection(section) {
         setSidebarOpen(false);
+
+        if (isLeadPartner && section !== 'leads') {
+            return;
+        }
 
         if (section === 'leads') {
             setActiveSection('leads');
@@ -824,10 +921,15 @@ export default function AdminPage() {
     }
 
     async function createSignupKey() {
+        const keyOption = PARTNER_KEY_OPTIONS.find((option) => option.value === keyRole)
+            || PARTNER_KEY_OPTIONS[2];
         const response = await fetch('/api/admin/signup-keys', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ role: keyRole }),
+            body: JSON.stringify({
+                role: keyOption.role,
+                leadSource: keyOption.leadSource || '',
+            }),
         });
         const payload = await response.json();
 
@@ -837,6 +939,18 @@ export default function AdminPage() {
         } else {
             setNotice(payload.error || 'Unable to create signup key.');
         }
+    }
+
+    function handleRemarkSaved(remark) {
+        if (!remark || !selectedLead) return;
+
+        const updateLead = (lead) =>
+            lead.id === selectedLead.id
+                ? { ...lead, salesRemarks: [...(lead.salesRemarks || []), remark] }
+                : lead;
+
+        setSelectedLead((current) => (current ? updateLead(current) : current));
+        setLeads((current) => current.map(updateLead));
     }
 
     async function logout() {
@@ -864,7 +978,7 @@ export default function AdminPage() {
     }
 
     return (
-        <main className="font-display fixed inset-0 z-[999] flex min-h-screen overflow-hidden bg-[#f4f4f2] text-[#111]">
+        <main className="editorial-admin font-display fixed inset-0 z-[999] flex min-h-screen overflow-hidden bg-[#f4f4f2] text-[#111]">
             {sidebarOpen ? (
                 <button
                     type="button"
@@ -878,7 +992,7 @@ export default function AdminPage() {
                 user={user}
                 activeSection={activeSection}
                 onNavigate={goToSection}
-                className="hidden w-[292px] shrink-0 border-r border-[#111]/10 bg-[#fbfbfa] shadow-[18px_0_55px_rgba(17,17,17,0.06)] lg:flex lg:flex-col"
+                className="editorial-sidebar hidden w-[292px] shrink-0 border-r border-[#111]/10 bg-[#fbfbfa] shadow-[18px_0_55px_rgba(17,17,17,0.06)] lg:flex lg:flex-col"
             />
 
             <AdminSidebar
@@ -886,13 +1000,13 @@ export default function AdminPage() {
                 activeSection={activeSection}
                 onNavigate={goToSection}
                 onClose={() => setSidebarOpen(false)}
-                className={`fixed inset-y-0 left-0 z-50 flex w-[min(86vw,292px)] flex-col border-r border-[#111]/10 bg-[#fbfbfa] shadow-[18px_0_55px_rgba(17,17,17,0.14)] transition-transform duration-300 lg:hidden ${
+                className={`editorial-sidebar fixed inset-y-0 left-0 z-50 flex w-[min(86vw,292px)] flex-col border-r border-[#111]/10 bg-[#fbfbfa] shadow-[18px_0_55px_rgba(17,17,17,0.14)] transition-transform duration-300 lg:hidden ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             />
 
             <section className="flex min-w-0 flex-1 flex-col">
-                <header className="flex min-h-[88px] shrink-0 flex-wrap items-start justify-between gap-4 border-b border-[#111]/10 bg-[#fbfbfa] px-4 py-4 shadow-[0_14px_40px_rgba(17,17,17,0.05)] sm:px-6 lg:h-24 lg:flex-nowrap lg:items-center lg:px-9">
+                <header className="editorial-header flex min-h-[88px] shrink-0 flex-wrap items-start justify-between gap-4 border-b border-[#111]/10 bg-[#fbfbfa] px-4 py-4 shadow-[0_14px_40px_rgba(17,17,17,0.05)] sm:px-6 lg:h-24 lg:flex-nowrap lg:items-center lg:px-9">
                     <div className="flex min-w-0 items-start gap-3">
                         <button
                             type="button"
@@ -930,22 +1044,24 @@ export default function AdminPage() {
                     </div>
                 </header>
 
-                <div ref={contentRef} className="min-h-0 flex-1 scroll-smooth overflow-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-9 lg:py-7">
+                <div ref={contentRef} className="editorial-content min-h-0 flex-1 scroll-smooth overflow-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-0 lg:py-0">
                     {notice ? (
                         <p className="mb-5 rounded-2xl border border-[#111]/10 bg-white px-4 py-3 text-sm font-bold text-[#111] shadow-[0_12px_28px_rgba(17,17,17,0.08)] sm:mb-6 sm:px-5">
                             {notice}
                         </p>
                     ) : null}
 
-                    {activeSection === 'leads' ? (
-                    <section ref={leadsRef} className="scroll-mt-8 overflow-hidden rounded-[24px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px]">
+                    {activeSection === 'leads' || isLeadPartner ? (
+                    <section ref={leadsRef} className="editorial-leads flex min-h-full flex-col scroll-mt-8 overflow-hidden rounded-[24px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px]">
                         <div className="flex flex-col gap-5 border-b border-[#111]/10 px-4 py-5 sm:px-7 sm:py-6">
                             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                                 <div>
                                     <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Lead Management</p>
-                                    <h2 className="mt-1 font-display text-2xl font-bold text-[#111]">Website and WhatsApp Leads</h2>
+                                    <h2 className="mt-1 font-display text-2xl font-bold text-[#111]">Lead directory</h2>
                                     <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6b7280]">
-                                        Every new website enquiry and WhatsApp lead now lands in MongoDB and can be exported as CSV.
+                                        {isLeadPartner
+                                            ? 'This account can view and export only leads submitted by your source.'
+                                            : 'A live view of every enquiry, WhatsApp interaction, and sales follow-up.'}
                                     </p>
                                 </div>
                                 <button
@@ -1035,7 +1151,7 @@ export default function AdminPage() {
                                                     {lead.whatsapp?.callbackRequested ? <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-700"><PhoneCall className="h-3 w-3" /> Callback</span> : null}
                                                     {lead.whatsapp?.siteVisitRequested ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700"><CalendarCheck2 className="h-3 w-3" /> Site visit</span> : null}
                                                 </div>
-                                                <button type="button" onClick={() => setSelectedLead(lead)} className="mt-3 text-sm font-bold text-[#111] underline decoration-[#111]/25 underline-offset-4">View WhatsApp replies ({lead.whatsapp?.responses?.length || 0})</button>
+                                                <button type="button" onClick={() => setSelectedLead(lead)} className="mt-3 text-sm font-bold text-[#111] underline decoration-[#111]/25 underline-offset-4">View lead activity</button>
                                                 <p className="mt-3 text-xs font-medium text-[#6b7280]">
                                                     Updated {formatAdminDate(lead.updatedAt)}
                                                 </p>
@@ -1055,14 +1171,14 @@ export default function AdminPage() {
                             )}
                         </div>
 
-                        <div className="hidden max-h-[620px] overflow-auto xl:block">
+                        <div className="hidden min-h-0 flex-1 overflow-auto xl:block">
                             <table className="w-full min-w-[1480px] border-collapse text-left">
                                 <thead className="sticky top-0 z-10 bg-[#f7f7f7] text-xs uppercase tracking-[0.1em] text-[#6b7280]">
                                     <tr>
                                         <th className="px-7 py-5 font-bold">Submitted</th>
                                         <th className="px-7 py-5 font-bold">Lead</th>
-                                        <th className="px-7 py-5 font-bold">Channel</th>
                                         <th className="px-7 py-5 font-bold">Temperature</th>
+                                        <th className="px-7 py-5 font-bold">Channel</th>
                                         <th className="px-7 py-5 font-bold">Request</th>
                                         <th className="px-7 py-5 font-bold">WhatsApp</th>
                                         <th className="px-7 py-5 font-bold">Delivery</th>
@@ -1112,7 +1228,7 @@ export default function AdminPage() {
                                                     {lead.whatsapp?.siteVisitRequested ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700"><CalendarCheck2 className="h-3 w-3" /> Site visit</span> : null}
                                                 </div>
                                                 <button type="button" onClick={() => setSelectedLead(lead)} className="mt-3 text-sm font-bold text-[#111] underline decoration-[#111]/25 underline-offset-4">
-                                                    View replies ({lead.whatsapp?.responses?.length || 0})
+                                                    View lead activity
                                                 </button>
                                             </td>
                                             <td className="px-7 py-5">
@@ -1172,10 +1288,7 @@ export default function AdminPage() {
                                     <SelectControl
                                         value={keyRole}
                                         onChange={setKeyRole}
-                                        options={Object.entries(ROLE_LABELS).map(([role, label]) => ({
-                                            value: role,
-                                            label,
-                                        }))}
+                                        options={PARTNER_KEY_OPTIONS}
                                     />
                                     <button
                                         type="button"
@@ -1332,7 +1445,12 @@ export default function AdminPage() {
                     )}
                 </div>
             </section>
-            <WhatsAppRepliesPanel lead={selectedLead} onClose={() => setSelectedLead(null)} />
+            <LeadActivityPanel
+                lead={selectedLead}
+                canWrite={canWrite}
+                onClose={() => setSelectedLead(null)}
+                onRemarkSaved={handleRemarkSaved}
+            />
         </main>
     );
 }

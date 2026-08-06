@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '../../../../../lib/admin-auth';
+import { getLeadScopeFilter, requireAdmin } from '../../../../../lib/admin-auth';
 import { connectMongo } from '../../../../../lib/mongodb';
 import { Notification } from '../../../../../lib/models';
 
@@ -23,7 +23,12 @@ export async function GET() {
     }
 
     await connectMongo();
-    const leads = await Notification.find({})
+    const leadScope = getLeadScopeFilter(auth.user);
+    if (!leadScope) {
+        return NextResponse.json({ error: 'Lead source access is not configured.' }, { status: 403 });
+    }
+
+    const leads = await Notification.find(leadScope)
         .sort({ createdAt: -1 })
         .lean();
 

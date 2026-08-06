@@ -1,6 +1,10 @@
 import crypto from 'crypto';
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '../../../../lib/admin-auth';
+import {
+    LEAD_PARTNER_ROLE,
+    LEAD_PARTNER_SOURCES,
+    requireAdmin,
+} from '../../../../lib/admin-auth';
 import { connectMongo } from '../../../../lib/mongodb';
 import { SignupKey } from '../../../../lib/models';
 
@@ -28,8 +32,16 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const role = VALID_ROLES.includes(body.role) ? body.role : 'channel_partner';
-    const key = `AS-${role.toUpperCase().replace(/_/g, '-')}-${crypto
+    const leadSource = LEAD_PARTNER_SOURCES.includes(body.leadSource)
+        ? body.leadSource
+        : '';
+    const role = leadSource
+        ? LEAD_PARTNER_ROLE
+        : VALID_ROLES.includes(body.role)
+            ? body.role
+            : 'channel_partner';
+    const keyLabel = leadSource || role;
+    const key = `AS-${keyLabel.toUpperCase().replace(/_/g, '-')}-${crypto
         .randomBytes(12)
         .toString('hex')
         .toUpperCase()}`;
@@ -38,6 +50,7 @@ export async function POST(request) {
     const signupKey = await SignupKey.create({
         key,
         role,
+        leadSource,
         createdBy: auth.user._id,
     });
 

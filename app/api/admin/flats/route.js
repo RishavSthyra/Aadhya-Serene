@@ -4,7 +4,7 @@ import { connectMongo } from '../../../../lib/mongodb';
 import { Flat } from '../../../../lib/models';
 
 export async function GET() {
-    const auth = await requireAdmin();
+    const auth = await requireAdmin(['super_admin', 'manager', 'channel_partner']);
     if (auth.error) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
     }

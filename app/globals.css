@@ -33,6 +33,104 @@ select {
     font-family: var(--font-hero), Georgia, "Times New Roman", serif;
 }
 
+/* Admin: deliberately quiet editorial treatment. The dashboard uses rules and
+   typographic hierarchy, not nested floating cards, to organise dense data. */
+.editorial-admin {
+    background: #f5f4f0 !important;
+    letter-spacing: -0.01em;
+}
+
+.editorial-admin [class*="rounded-"] {
+    border-radius: 2px !important;
+}
+
+.editorial-admin [class*="shadow-"] {
+    box-shadow: none !important;
+}
+
+.editorial-admin .editorial-sidebar {
+    background: #fbfaf7 !important;
+}
+
+.editorial-admin .editorial-sidebar nav {
+    padding-top: 1.5rem;
+}
+
+.editorial-admin .editorial-sidebar nav button {
+    border-left: 2px solid transparent;
+    border-radius: 0 !important;
+}
+
+.editorial-admin .editorial-sidebar nav button.bg-\[\#111\] {
+    border-left-color: #111;
+}
+
+.editorial-admin .editorial-sidebar > div:last-child > div {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0.5rem 0 !important;
+}
+
+.editorial-admin .editorial-header {
+    background: #fbfaf7 !important;
+}
+
+.editorial-admin .editorial-content {
+    background: #f5f4f0;
+}
+
+.editorial-admin .editorial-leads {
+    border-inline: 0 !important;
+    border-top: 1px solid rgba(17, 17, 17, 0.12) !important;
+    border-bottom: 1px solid rgba(17, 17, 17, 0.12) !important;
+    border-radius: 0 !important;
+    background: #fffefa !important;
+}
+
+@media (min-width: 1280px) {
+    .editorial-admin .editorial-leads {
+        height: 100%;
+    }
+
+    .editorial-admin .editorial-leads > .xl\:block {
+        min-height: 0;
+    }
+}
+
+.editorial-admin .editorial-leads > div:first-child {
+    padding-block: 2rem;
+}
+
+.editorial-admin .editorial-leads thead {
+    background: #f7f6f2 !important;
+}
+
+.editorial-admin .editorial-leads tbody tr:hover {
+    background: #f8f7f3 !important;
+}
+
+.editorial-detail {
+    border-radius: 0 !important;
+    background: #fffefa !important;
+}
+
+.editorial-detail section {
+    border-radius: 0 !important;
+    background: transparent !important;
+}
+
+.editorial-detail textarea {
+    background: #fffefa !important;
+}
+
+@media (min-width: 1024px) {
+    .editorial-admin .editorial-content > section,
+    .editorial-admin .editorial-content > div {
+        max-width: none;
+    }
+}
+
 body::before {
     content: "";
     opacity: 0.15;
