@@ -19,21 +19,22 @@ export async function POST(request) {
             || 'AadhyaSerene';
         const user = await AdminUser.findOne({ email });
         const passwordMatches = user ? await bcrypt.compare(password, user.passwordHash) : false;
-
-        console.log('[admin-login-debug]', {
+        const debug = {
             email,
             dbName,
             userFound: Boolean(user),
             userActive: Boolean(user?.active),
             passwordMatches,
-        });
+        };
+
+        console.log('[admin-login-debug]', debug);
 
         if (!user?.active || !passwordMatches) {
-            return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
+            return NextResponse.json({ error: 'Invalid email or password.', debug }, { status: 401 });
         }
 
         const token = signAdminToken(user);
-        const response = NextResponse.json({ user: publicUser(user) });
+        const response = NextResponse.json({ user: publicUser(user), debug });
         response.cookies.set(ADMIN_COOKIE, token, {
             httpOnly: true,
             sameSite: 'lax',

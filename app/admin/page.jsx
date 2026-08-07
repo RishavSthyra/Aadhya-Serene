@@ -15,6 +15,8 @@ import {
     LogOut,
     Menu,
     MessageSquare,
+    Eye,
+    EyeOff,
     PhoneCall,
     RefreshCcw,
     Search,
@@ -318,6 +320,7 @@ function AuthPanel({ onAuthed }) {
     });
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     async function submit(event) {
         event.preventDefault();
@@ -332,6 +335,11 @@ function AuthPanel({ onAuthed }) {
                 body: JSON.stringify(form),
             });
             const payload = await response.json();
+
+            if (mode === 'login' && payload?.debug) {
+                const method = response.ok ? 'info' : 'error';
+                console[method]('[admin-login-debug-browser]', payload.debug);
+            }
 
             if (!response.ok) {
                 throw new Error(payload.error || 'Authentication failed.');
@@ -429,13 +437,23 @@ function AuthPanel({ onAuthed }) {
                             placeholder="Email"
                             className="h-12 w-full rounded-xl border border-[#111]/14 bg-white px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
                         />
-                        <input
-                            type="password"
-                            value={form.password}
-                            onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-                            placeholder="Password"
-                            className="h-12 w-full rounded-xl border border-[#111]/14 bg-white px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
-                        />
+                        <div className="relative">
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                value={form.password}
+                                onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                                placeholder="Password"
+                                className="h-12 w-full rounded-xl border border-[#111]/14 bg-white px-4 pr-12 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((current) => !current)}
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                className="absolute inset-y-0 right-0 inline-flex w-12 items-center justify-center text-[#6b7280] transition hover:text-[#111]"
+                            >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
                         {mode === 'signup' ? (
                             <>
                                 <SelectControl
