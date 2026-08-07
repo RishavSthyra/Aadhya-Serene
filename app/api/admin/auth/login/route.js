@@ -12,10 +12,23 @@ export async function POST(request) {
         const email = String(body.email || '').trim().toLowerCase();
         const password = String(body.password || '');
 
-        await connectMongo();
+        const mongooseConn = await connectMongo();
+        const dbName =
+            mongooseConn?.connection?.db?.databaseName
+            || process.env.MONGODB_DB
+            || 'AadhyaSerene';
         const user = await AdminUser.findOne({ email });
+        const passwordMatches = user ? await bcrypt.compare(password, user.passwordHash) : false;
 
-        if (!user?.active || !(await bcrypt.compare(password, user.passwordHash))) {
+        console.log('[admin-login-debug]', {
+            email,
+            dbName,
+            userFound: Boolean(user),
+            userActive: Boolean(user?.active),
+            passwordMatches,
+        });
+
+        if (!user?.active || !passwordMatches) {
             return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
         }
 
