@@ -2,7 +2,7 @@ export const EXTERIOR_DATA = {
     NAV_URL: '/data/exterior/nav.json',
     SCENES_URL: '/data/exterior/scenes.json',
     TILE_BASE_URL: 'https://cdn.sthyra.com/maniteja/panos/exterior/tiles',
-    MINIMAP_BG_URL: 'https://aadhya-serene-assets-v2.s3.amazonaws.com/images/panos/minimap.avif',
+    MINIMAP_BG_URL: 'https://cdn.sthyra.com/maniteja/images/panos/minimap.avif',
 
 
     // Minimap configuration

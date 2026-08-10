@@ -136,7 +136,7 @@ body::before {
     opacity: 0.15;
     pointer-events: none;
     z-index: -19;
-    background-image: url(https://aadhya-serene-assets-v2.s3.amazonaws.com/noise.png);
+    background-image: url(https://cdn.sthyra.com/maniteja/noise.png);
     background-repeat: repeat;
     position: fixed;
     inset: 0;

@@ -36,7 +36,7 @@ type Runtime = {
 };
 
 const TILE_BASE_URL =
-  "https://aadhya-serene-assets-v2.s3.amazonaws.com/panos/exterior/tiles";
+  "https://cdn.sthyra.com/maniteja/panos/exterior/tiles";
 const HOTSPOT_RADIUS = 1800;
 const MAX_NEIGHBORS = 8;
 const MIN_PITCH = -Math.PI / 2 + 0.14;
