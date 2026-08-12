@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin, WRITE_ROLES } from '../../../../../../lib/admin-auth';
+import {
+    getAdminFeedbackFieldErrors,
+    normalizeAdminFeedbackInput,
+} from '../../../../../../lib/admin-feedback';
 import { connectMongo } from '../../../../../../lib/mongodb';
 import { Notification } from '../../../../../../lib/models';
 
@@ -10,13 +14,14 @@ export async function POST(request, { params }) {
     }
 
     const body = await request.json();
-    const text = String(body.text || '').trim();
-    if (!text || text.length > 5000) {
+    const fieldErrors = getAdminFeedbackFieldErrors(body);
+    if (Object.keys(fieldErrors).length) {
         return NextResponse.json(
-            { error: 'Remark must be between 1 and 5000 characters.' },
+            { error: 'Please correct the highlighted fields.', fieldErrors },
             { status: 400 },
         );
     }
+    const feedback = normalizeAdminFeedbackInput(body);
 
     await connectMongo();
     const { id } = await params;
@@ -25,7 +30,11 @@ export async function POST(request, { params }) {
         {
             $push: {
                 salesRemarks: {
-                    text,
+                    text: feedback.text,
+                    budget: feedback.budget,
+                    configuration: feedback.configuration,
+                    location: feedback.location,
+                    notes: feedback.notes,
                     authorName: auth.user.name || 'Sales Team',
                     authorEmail: auth.user.email || '',
                 },
@@ -44,6 +53,10 @@ export async function POST(request, { params }) {
             ? {
                 id: String(latestRemark._id),
                 text: latestRemark.text,
+                budget: latestRemark.budget || '',
+                configuration: latestRemark.configuration || '',
+                location: latestRemark.location || '',
+                notes: latestRemark.notes || '',
                 authorName: latestRemark.authorName,
                 authorEmail: latestRemark.authorEmail,
                 createdAt: latestRemark.createdAt?.toISOString?.() || '',

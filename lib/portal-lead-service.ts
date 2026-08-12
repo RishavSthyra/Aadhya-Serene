@@ -12,6 +12,10 @@ import {
   recordConversationOutboundMessage,
   startWhatsAppConversation,
 } from "@/lib/whatsapp-conversation";
+import {
+  getWhatsAppTemplateStatusCopy,
+  isWhatsAppDeliverySuccessStatus,
+} from "@/lib/whatsapp-delivery";
 
 export type PortalLead = {
   leadId: string;
@@ -70,7 +74,7 @@ export async function processPortalLead(lead: PortalLead) {
     return {
       record: existing,
       duplicate: true,
-      whatsappSent: existing.whatsappDelivery?.status === "sent",
+      whatsappSent: isWhatsAppDeliverySuccessStatus(existing.whatsappDelivery?.status),
       salesEmailSent: existing.emailDelivery?.status === "sent",
     };
   }
@@ -109,7 +113,7 @@ export async function processPortalLead(lead: PortalLead) {
         return {
           record: duplicate,
           duplicate: true,
-          whatsappSent: duplicate.whatsappDelivery?.status === "sent",
+          whatsappSent: isWhatsAppDeliverySuccessStatus(duplicate.whatsappDelivery?.status),
           salesEmailSent: duplicate.emailDelivery?.status === "sent",
         };
       }
@@ -155,14 +159,20 @@ export async function processPortalLead(lead: PortalLead) {
       enquiryRecordId: recordId,
     });
     const result = await sendGlobalTemplateMessage({ to: lead.phone, name: lead.name || "Customer" });
-    await recordConversationOutboundMessage(lead.phone, "template", "Global WhatsApp template sent from property portal.");
+    const messageId = result?.messages?.[0]?.id || "";
+    const templateStatus = getWhatsAppTemplateStatusCopy("accepted");
+    await recordConversationOutboundMessage(lead.phone, "template", templateStatus.detail);
     await updateEnquiryRecord(recordId, {
       $set: {
         whatsappDelivery: {
-          status: "sent",
+          status: "accepted",
+          metaStatus: "",
+          metaStatusAt: undefined,
+          metaRecipientId: "",
+          metaErrorCode: 0,
           sentAt: new Date(),
           error: "",
-          messageId: result?.messages?.[0]?.id || "",
+          messageId,
         },
       },
     });
@@ -172,6 +182,10 @@ export async function processPortalLead(lead: PortalLead) {
       $set: {
         whatsappDelivery: {
           status: "failed",
+          metaStatus: "",
+          metaStatusAt: undefined,
+          metaRecipientId: "",
+          metaErrorCode: typeof (error as { code?: number })?.code === "number" ? (error as { code?: number }).code || 0 : 0,
           error: error instanceof Error ? error.message : String(error),
         },
       },

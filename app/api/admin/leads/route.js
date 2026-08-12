@@ -27,6 +27,10 @@ function serializeLead(lead, conversation) {
         salesRemarks: (lead.salesRemarks || []).map((remark) => ({
             id: String(remark._id),
             text: remark.text || '',
+            budget: remark.budget || '',
+            configuration: remark.configuration || '',
+            location: remark.location || '',
+            notes: remark.notes || '',
             authorName: remark.authorName || 'Sales Team',
             authorEmail: remark.authorEmail || '',
             createdAt: remark.createdAt ? new Date(remark.createdAt).toISOString() : '',

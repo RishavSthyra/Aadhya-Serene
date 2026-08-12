@@ -39,6 +39,29 @@ type IncomingMessage = {
   };
 };
 
+type StatusUpdate = {
+  id?: string;
+  status?: string;
+  timestamp?: string;
+  recipient_id?: string;
+  errors?: Array<{
+    code?: number;
+    title?: string;
+    message?: string;
+    error_data?: {
+      details?: string;
+    };
+  }>;
+};
+
+const WHATSAPP_STATUS_ORDER: Record<string, number> = {
+  pending: 0,
+  accepted: 1,
+  sent: 2,
+  delivered: 3,
+  read: 4,
+};
+
 function getIncomingMessageSelection(message: IncomingMessage) {
   const candidates = [
     message.interactive?.button_reply?.id,
@@ -54,6 +77,35 @@ function getIncomingMessageSelection(message: IncomingMessage) {
     buttonId: resolveChatbotButtonId(candidates),
     text: candidates.find(Boolean)?.trim() || "",
   };
+}
+
+function normalizeStatusValue(status?: string) {
+  const value = String(status || "").trim().toLowerCase();
+  return ["sent", "delivered", "read", "failed"].includes(value) ? value : "";
+}
+
+function getStatusTimestamp(timestamp?: string) {
+  if (!timestamp) {
+    return new Date();
+  }
+
+  if (/^\d+$/.test(timestamp)) {
+    return new Date(Number(timestamp) * 1000);
+  }
+
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+}
+
+function getStatusError(status: StatusUpdate) {
+  const firstError = status.errors?.[0];
+
+  return (
+    firstError?.error_data?.details ||
+    firstError?.message ||
+    firstError?.title ||
+    (firstError?.code ? `WhatsApp error ${firstError.code}` : "")
+  );
 }
 
 async function rememberOutboundMessage(phoneNumber: string, type: string, message: string) {
@@ -281,6 +333,46 @@ async function handleIncomingMessage(message: IncomingMessage) {
   }
 }
 
+async function handleStatusUpdate(statusUpdate: StatusUpdate) {
+  const messageId = String(statusUpdate.id || "").trim();
+  const nextStatus = normalizeStatusValue(statusUpdate.status);
+
+  if (!messageId || !nextStatus) {
+    return;
+  }
+
+  const record = await findLatestEnquiryRecord({
+    "whatsappDelivery.messageId": messageId,
+  });
+
+  if (!record?._id) {
+    return;
+  }
+
+  const currentStatus = String(record.whatsappDelivery?.status || "").trim().toLowerCase();
+  const currentRank = WHATSAPP_STATUS_ORDER[currentStatus] || 0;
+  const nextRank = WHATSAPP_STATUS_ORDER[nextStatus] || 0;
+
+  if (nextStatus !== "failed" && currentRank >= nextRank) {
+    return;
+  }
+
+  await updateEnquiryRecord(String(record._id), {
+    $set: {
+      whatsappDelivery: {
+        status: nextStatus,
+        metaStatus: nextStatus,
+        metaStatusAt: getStatusTimestamp(statusUpdate.timestamp),
+        metaRecipientId: String(statusUpdate.recipient_id || "").trim(),
+        metaErrorCode: statusUpdate.errors?.[0]?.code || 0,
+        sentAt: getStatusTimestamp(statusUpdate.timestamp),
+        error: nextStatus === "failed" ? getStatusError(statusUpdate) : "",
+        messageId,
+      },
+    },
+  });
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const mode = searchParams.get("hub.mode");
@@ -301,6 +393,10 @@ export async function POST(req: Request) {
 
     for (const entry of entries) {
       for (const change of entry.changes || []) {
+        for (const statusUpdate of change.value?.statuses || []) {
+          await handleStatusUpdate(statusUpdate);
+        }
+
         for (const message of change.value?.messages || []) {
           await handleIncomingMessage(message);
         }

@@ -1,4 +1,5 @@
 import { CHATBOT_BUTTONS } from "@/lib/chatbot-flow";
+import { getWhatsAppTemplateStatusCopy } from "@/lib/whatsapp-delivery";
 
 type ActivityEvent = {
   type: string;
@@ -30,10 +31,23 @@ function deliveryEvent(input: {
   if (!status || status === "pending" || status === "not_requested") return null;
 
   const isSent = status === "sent";
+  const whatsappStatusCopy =
+    input.type === "whatsapp_template"
+      ? getWhatsAppTemplateStatusCopy(status, input.state?.error || "")
+      : null;
+
   return {
     type: input.type,
-    title: isSent ? input.title : `${input.title} failed`,
-    detail: isSent ? input.detail : input.state?.error || "Delivery could not be completed.",
+    title: whatsappStatusCopy
+      ? whatsappStatusCopy.title
+      : isSent
+        ? input.title
+        : `${input.title} failed`,
+    detail: whatsappStatusCopy
+      ? whatsappStatusCopy.detail
+      : isSent
+        ? input.detail
+        : input.state?.error || "Delivery could not be completed.",
     occurredAt: asIso(input.state?.sentAt) || asIso(input.fallbackAt),
     status,
   } satisfies ActivityEvent;
@@ -64,8 +78,8 @@ export function buildLeadActivity(lead: any, conversation?: any) {
 
   const whatsappEvent = deliveryEvent({
     state: lead?.whatsappDelivery,
-    title: "WhatsApp welcome template sent",
-    detail: "Aadhya Serene welcome template delivered to the customer.",
+    title: "WhatsApp template update",
+    detail: "WhatsApp delivery status updated.",
     type: "whatsapp_template",
     fallbackAt: lead?.createdAt,
   });

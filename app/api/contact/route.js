@@ -12,6 +12,7 @@ import {
   recordConversationOutboundMessage,
   startWhatsAppConversation,
 } from '@/lib/whatsapp-conversation';
+import { getWhatsAppTemplateStatusCopy } from '@/lib/whatsapp-delivery';
 import {
   contactApiSchema,
   createValidationErrorResponse,
@@ -107,11 +108,13 @@ export async function POST(request) {
         to: submission.phone,
         name: submission.name || 'Customer',
       });
+      const messageId = whatsappResult?.messages?.[0]?.id || '';
+      const templateStatus = getWhatsAppTemplateStatusCopy('accepted');
 
       await recordConversationOutboundMessage(
         submission.phone,
         'template',
-        'Global WhatsApp template sent.'
+        templateStatus.detail
       ).catch((historyError) => {
         console.error('Unable to record global WhatsApp template history:', historyError);
       });
@@ -119,10 +122,14 @@ export async function POST(request) {
       await updateEnquiryRecord(record?._id, {
         $set: {
           whatsappDelivery: {
-            status: 'sent',
+            status: 'accepted',
+            metaStatus: '',
+            metaStatusAt: undefined,
+            metaRecipientId: '',
+            metaErrorCode: 0,
             sentAt: new Date(),
             error: '',
-            messageId: whatsappResult?.messages?.[0]?.id || '',
+            messageId,
           },
         },
       });
@@ -133,6 +140,10 @@ export async function POST(request) {
         $set: {
           whatsappDelivery: {
             status: 'failed',
+            metaStatus: '',
+            metaStatusAt: undefined,
+            metaRecipientId: '',
+            metaErrorCode: typeof whatsappError?.code === 'number' ? whatsappError.code : 0,
             error:
               whatsappError instanceof Error ? whatsappError.message : String(whatsappError),
           },

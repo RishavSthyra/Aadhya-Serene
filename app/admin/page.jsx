@@ -34,6 +34,15 @@ import {
     ResponsiveContainer,
     Tooltip,
 } from 'recharts';
+import {
+    ADMIN_FEEDBACK_BUDGET_OPTIONS,
+    ADMIN_FEEDBACK_CONFIGURATION_OPTIONS,
+    getAdminFeedbackFieldErrors,
+} from '@/lib/admin-feedback';
+import {
+    getWhatsAppDeliveryStatusLabel,
+    isWhatsAppDeliverySuccessStatus,
+} from '@/lib/whatsapp-delivery';
 
 const ROLE_LABELS = {
     super_admin: 'Super Admin',
@@ -140,10 +149,29 @@ function LeadTemperaturePill({ lead }) {
     );
 }
 
+function createEmptyRemarkForm() {
+    return {
+        budget: '',
+        configuration: '',
+        location: '',
+        notes: '',
+    };
+}
+
+function getRemarkMetaText(remark) {
+    const parts = [
+        remark?.configuration || '',
+        remark?.budget || '',
+        remark?.location || '',
+    ].filter(Boolean);
+
+    return parts.join(' · ');
+}
+
 function LeadActivityPanel({ lead, onClose, canWrite, onRemarkSaved }) {
-    const [remark, setRemark] = useState('');
+    const [remarkForm, setRemarkForm] = useState(createEmptyRemarkForm);
     const [savingRemark, setSavingRemark] = useState(false);
-    const [remarkError, setRemarkError] = useState('');
+    const [remarkErrors, setRemarkErrors] = useState({});
 
     if (!lead) return null;
 
@@ -153,27 +181,50 @@ function LeadActivityPanel({ lead, onClose, canWrite, onRemarkSaved }) {
     const temperature = getLeadTemperature(lead);
     const meta = LEAD_TEMPERATURES[temperature];
 
+    function updateRemarkField(name, value) {
+        setRemarkForm((current) => ({ ...current, [name]: value }));
+        setRemarkErrors((current) => {
+            if (!current[name] && !current.form) {
+                return current;
+            }
+
+            const next = { ...current };
+            delete next[name];
+            delete next.form;
+            return next;
+        });
+    }
+
     async function saveRemark(event) {
         event.preventDefault();
-        const text = remark.trim();
-        if (!text) return;
+        const fieldErrors = getAdminFeedbackFieldErrors(remarkForm);
+        if (Object.keys(fieldErrors).length) {
+            setRemarkErrors(fieldErrors);
+            return;
+        }
 
         setSavingRemark(true);
-        setRemarkError('');
+        setRemarkErrors({});
         try {
             const response = await fetch(`/api/admin/leads/${lead.id}/remarks`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text }),
+                body: JSON.stringify(remarkForm),
             });
             const payload = await response.json();
             if (!response.ok) {
+                if (payload?.fieldErrors) {
+                    setRemarkErrors(payload.fieldErrors);
+                }
                 throw new Error(payload.error || 'Unable to save remark.');
             }
             onRemarkSaved(payload.remark);
-            setRemark('');
+            setRemarkForm(createEmptyRemarkForm());
         } catch (error) {
-            setRemarkError(error.message);
+            setRemarkErrors((current) => ({
+                ...current,
+                form: error.message,
+            }));
         } finally {
             setSavingRemark(false);
         }
@@ -209,7 +260,14 @@ function LeadActivityPanel({ lead, onClose, canWrite, onRemarkSaved }) {
                             <div className="mt-4 space-y-4">
                                 {remarks.map((item) => (
                                     <article key={item.id} className="border-l-2 border-[#111] pl-4">
-                                        <p className="whitespace-pre-wrap text-sm leading-6 text-[#374151]">{item.text}</p>
+                                        {getRemarkMetaText(item) ? (
+                                            <p className="text-sm font-bold text-[#111]">{getRemarkMetaText(item)}</p>
+                                        ) : null}
+                                        {item.notes ? (
+                                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#374151]">{item.notes}</p>
+                                        ) : item.text ? (
+                                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#374151]">{item.text}</p>
+                                        ) : null}
                                         <p className="mt-2 text-xs font-bold text-[#6b7280]">{item.authorName} · {formatAdminDate(item.createdAt)}</p>
                                     </article>
                                 ))}
@@ -219,10 +277,69 @@ function LeadActivityPanel({ lead, onClose, canWrite, onRemarkSaved }) {
                         )}
                         {canWrite ? (
                             <form onSubmit={saveRemark} className="mt-5 border-t border-[#111]/10 pt-4">
-                                <label className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#6b7280]" htmlFor={`remark-${lead.id}`}>Add calling remark</label>
-                                <textarea id={`remark-${lead.id}`} value={remark} onChange={(event) => setRemark(event.target.value)} maxLength={5000} rows={4} placeholder="Call outcome, customer requirement, follow-up details..." className="mt-2 w-full resize-y rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 py-3 text-sm leading-6 text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5" />
-                                {remarkError ? <p className="mt-2 text-xs font-bold text-red-600">{remarkError}</p> : null}
-                                <button type="submit" disabled={savingRemark || !remark.trim()} className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-[#111] px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-45">{savingRemark ? 'Saving...' : 'Save remark'}</button>
+                                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">Add calling feedback</p>
+                                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                    <label className="block">
+                                        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Budget</span>
+                                        <select
+                                            value={remarkForm.budget}
+                                            onChange={(event) => updateRemarkField('budget', event.target.value)}
+                                            className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                                        >
+                                            <option value="">Select budget</option>
+                                            {ADMIN_FEEDBACK_BUDGET_OPTIONS.map((option) => (
+                                                <option key={option} value={option}>{option}</option>
+                                            ))}
+                                        </select>
+                                        {remarkErrors.budget ? <p className="mt-2 text-xs font-bold text-red-600">{remarkErrors.budget}</p> : null}
+                                    </label>
+                                    <label className="block">
+                                        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Configuration</span>
+                                        <select
+                                            value={remarkForm.configuration}
+                                            onChange={(event) => updateRemarkField('configuration', event.target.value)}
+                                            className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                                        >
+                                            <option value="">Select configuration</option>
+                                            {ADMIN_FEEDBACK_CONFIGURATION_OPTIONS.map((option) => (
+                                                <option key={option} value={option}>{option}</option>
+                                            ))}
+                                        </select>
+                                        {remarkErrors.configuration ? <p className="mt-2 text-xs font-bold text-red-600">{remarkErrors.configuration}</p> : null}
+                                    </label>
+                                </div>
+                                <label className="mt-3 block">
+                                    <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Location</span>
+                                    <input
+                                        type="text"
+                                        value={remarkForm.location}
+                                        onChange={(event) => updateRemarkField('location', event.target.value)}
+                                        maxLength={120}
+                                        placeholder="Customer preferred location"
+                                        className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                                    />
+                                    {remarkErrors.location ? <p className="mt-2 text-xs font-bold text-red-600">{remarkErrors.location}</p> : null}
+                                </label>
+                                <label className="mt-3 block">
+                                    <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Notes</span>
+                                    <textarea
+                                        value={remarkForm.notes}
+                                        onChange={(event) => updateRemarkField('notes', event.target.value)}
+                                        maxLength={5000}
+                                        rows={4}
+                                        placeholder="Call outcome, customer requirement, follow-up details..."
+                                        className="mt-2 w-full resize-y rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 py-3 text-sm leading-6 text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                                    />
+                                    {remarkErrors.notes ? <p className="mt-2 text-xs font-bold text-red-600">{remarkErrors.notes}</p> : null}
+                                </label>
+                                {remarkErrors.form ? <p className="mt-3 text-xs font-bold text-red-600">{remarkErrors.form}</p> : null}
+                                <button
+                                    type="submit"
+                                    disabled={savingRemark || !remarkForm.budget || !remarkForm.configuration || !remarkForm.location.trim()}
+                                    className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-[#111] px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
+                                >
+                                    {savingRemark ? 'Saving...' : 'Save remark'}
+                                </button>
                             </form>
                         ) : null}
                     </section>
@@ -606,16 +723,24 @@ function DeliveryPill({ label, state }) {
     const status = state?.status || 'pending';
     const sentAt = state?.sentAt ? formatAdminDate(state.sentAt) : '';
     const error = state?.error || '';
+    const metaStatus = state?.metaStatus || '';
+    const metaStatusAt = state?.metaStatusAt ? formatAdminDate(state.metaStatusAt) : '';
+    const statusLabel =
+        label === 'WhatsApp' ? getWhatsAppDeliveryStatusLabel(status) : status;
     const tone =
-        status === 'sent'
-            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+        ['accepted', 'sent'].includes(status)
+            ? 'border-sky-200 bg-sky-50 text-sky-700'
+            : ['delivered', 'read'].includes(status)
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
             : status === 'failed'
                 ? 'border-red-200 bg-red-50 text-red-700'
                 : 'border-[#111]/10 bg-[#fafafa] text-[#6b7280]';
 
     return (
         <div className={`rounded-2xl border px-3 py-2 text-xs font-bold ${tone}`}>
-            <p>{label}: {status}</p>
+            <p>{label}: {statusLabel}</p>
+            {label === 'WhatsApp' && metaStatus ? <p className="mt-1 font-medium">Meta: {metaStatus}</p> : null}
+            {label === 'WhatsApp' && metaStatusAt ? <p className="mt-1 font-medium">{metaStatusAt}</p> : null}
             {sentAt ? <p className="mt-1 font-medium">{sentAt}</p> : null}
             {error ? <p className="mt-1 break-words font-medium">{error}</p> : null}
         </div>
@@ -781,7 +906,7 @@ export default function AdminPage() {
                     acc.emailSent += 1;
                 }
 
-                if (lead.whatsappDelivery?.status === 'sent') {
+                if (isWhatsAppDeliverySuccessStatus(lead.whatsappDelivery?.status)) {
                     acc.whatsappSent += 1;
                 }
 

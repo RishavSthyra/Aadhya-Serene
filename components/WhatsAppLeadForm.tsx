@@ -142,7 +142,11 @@ export default function WhatsAppLeadForm() {
       }
 
       setStatus("success");
-      setMessage(data.duplicate ? "A WhatsApp message was already sent to this number recently." : "WhatsApp message sent. Please check your phone.");
+      setMessage(
+        data.duplicate
+          ? "A recent WhatsApp request already exists for this number."
+          : "Your WhatsApp request was accepted. Delivery can take a moment."
+      );
       resetForm();
     } catch (error) {
       submissionLocked.current = false;

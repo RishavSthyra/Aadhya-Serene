@@ -12,6 +12,10 @@ import {
   updateEnquiryRecord,
 } from "@/lib/enquiry-service";
 import {
+  getWhatsAppTemplateStatusCopy,
+  shouldBlockWhatsAppRetry,
+} from "@/lib/whatsapp-delivery";
+import {
   createValidationErrorResponse,
   whatsAppApiSchema,
 } from "@/lib/validation/enquiry";
@@ -60,12 +64,15 @@ export async function POST(req: Request) {
       channel: "whatsapp_form",
       minutes: DUPLICATE_WINDOW_MINUTES,
     });
+    const shouldBlockRetry = shouldBlockWhatsAppRetry(
+      recentRecord?.whatsappDelivery?.status
+    );
 
-    if (recentRecord) {
+    if (recentRecord && shouldBlockRetry) {
       return NextResponse.json({
         success: true,
         duplicate: true,
-        message: "A WhatsApp message was already sent to this number recently.",
+        message: "A WhatsApp message was already delivered to this number recently.",
         phone,
       });
     }
@@ -75,7 +82,7 @@ export async function POST(req: Request) {
       enquiryRecord = await createEnquiryRecord({
         projectName: "Aadhya Serene",
         source,
-        submissionWindow: submissionWindowKey(),
+        submissionWindow: shouldBlockRetry ? submissionWindowKey() : "",
         channel: "whatsapp_form",
         name,
         phone,
@@ -91,11 +98,25 @@ export async function POST(req: Request) {
       });
     } catch (error) {
       if (isDuplicateKeyError(error)) {
-        return NextResponse.json({
-          success: true,
-          duplicate: true,
-          message: "A WhatsApp message was already sent to this number recently.",
+        const duplicateRecord = await findRecentEnquiryRecord({
           phone,
+          source,
+          channel: "whatsapp_form",
+          minutes: DUPLICATE_WINDOW_MINUTES,
+        });
+
+        if (shouldBlockWhatsAppRetry(duplicateRecord?.whatsappDelivery?.status)) {
+          return NextResponse.json({
+            success: true,
+            duplicate: true,
+            message: "A WhatsApp message was already delivered to this number recently.",
+            phone,
+          });
+        }
+
+        return NextResponse.json({
+          success: false,
+          error: "We could not retry the WhatsApp flow right now. Please try again once more.",
         });
       }
       throw error;
@@ -136,11 +157,13 @@ export async function POST(req: Request) {
       to: phone,
       name,
     });
+    const messageId = result?.messages?.[0]?.id || "";
+    const templateStatus = getWhatsAppTemplateStatusCopy("accepted");
 
     await recordConversationOutboundMessage(
       phone,
       "template",
-      "Global WhatsApp template sent."
+      templateStatus.detail
     ).catch((historyError) => {
       console.error("Unable to record ready-to-move WhatsApp template history:", historyError);
     });
@@ -148,9 +171,14 @@ export async function POST(req: Request) {
     await updateEnquiryRecord(enquiryRecordId, {
       $set: {
         whatsappDelivery: {
-          status: "sent",
+          status: "accepted",
+          metaStatus: "",
+          metaStatusAt: undefined,
+          metaRecipientId: "",
+          metaErrorCode: 0,
           sentAt: new Date(),
           error: "",
+          messageId,
         },
       },
     });
@@ -172,6 +200,13 @@ export async function POST(req: Request) {
         $set: {
           [failedField]: {
             status: "failed",
+            metaStatus: "",
+            metaStatusAt: undefined,
+            metaRecipientId: "",
+            metaErrorCode:
+              failedField === "whatsappDelivery" && typeof (error as WhatsAppRequestError).code === "number"
+                ? (error as WhatsAppRequestError).code || 0
+                : 0,
             error: error instanceof Error ? error.message : String(error),
           },
         },
