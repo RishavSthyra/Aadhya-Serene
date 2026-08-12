@@ -40,9 +40,20 @@ import {
     getAdminFeedbackFieldErrors,
 } from '@/lib/admin-feedback';
 import {
+    CALL_LOG_REMARK_MAX_LENGTH,
+    CALL_LOG_STATUS_OPTIONS,
+    getCallLogFieldErrors,
+} from '@/lib/admin-call-log';
+import {
     getWhatsAppDeliveryStatusLabel,
     isWhatsAppDeliverySuccessStatus,
 } from '@/lib/whatsapp-delivery';
+import {
+    isDeadLead,
+    LEAD_STATUS_ACTIVE,
+    LEAD_STATUS_DEAD,
+    normalizeLeadStatus,
+} from '@/lib/lead-status';
 
 const ROLE_LABELS = {
     super_admin: 'Super Admin',
@@ -92,9 +103,24 @@ const LEAD_TEMPERATURES = {
     hot: { label: 'Hot', description: '5+ responses', className: 'border-red-200 bg-red-50 text-red-700' },
 };
 
+const LEAD_FILTERS = {
+    ...LEAD_TEMPERATURES,
+    dead: {
+        label: 'Dead',
+        description: 'Dead leads',
+        className: 'border-red-500 bg-red-500 text-white',
+    },
+};
+
+const CALL_STATUS_LABELS = {
+    answered: 'Answered',
+    not_answered: 'Not answered',
+};
+
 const ADMIN_NAV_ITEMS = [
     { icon: LayoutDashboard, label: 'Dashboard', section: 'dashboard' },
     { icon: MessageSquare, label: 'Leads', section: 'leads' },
+    { icon: PhoneCall, label: 'Calls', section: 'calls' },
     { icon: Home, label: 'Inventory', section: 'inventory' },
     { icon: UsersRound, label: 'RBAC Users', section: 'users' },
     { icon: KeyRound, label: 'Signup Keys', section: 'keys' },
@@ -113,6 +139,21 @@ function formatAdminDate(value) {
         timeStyle: 'short',
         timeZone: 'Asia/Kolkata',
     }).format(new Date(value));
+}
+
+function formatAdminDateOnly(value) {
+    if (!value) return 'Not available';
+
+    return new Intl.DateTimeFormat('en-IN', {
+        dateStyle: 'medium',
+        timeZone: 'Asia/Kolkata',
+    }).format(new Date(`${value}T00:00:00`));
+}
+
+function getTodayDateInputValue() {
+    const now = new Date();
+    const timezoneOffset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 10);
 }
 
 function getLeadJourneySummary(lead) {
@@ -137,6 +178,53 @@ function getLeadTemperature(lead) {
     return lead?.whatsapp?.temperature || 'cold';
 }
 
+function getLeadFilterKey(lead) {
+    return isDeadLead(lead) ? LEAD_STATUS_DEAD : getLeadTemperature(lead);
+}
+
+function getVisibleLeadsForFilter(leads, filterKey) {
+    return leads.filter((lead) => getLeadFilterKey(lead) === filterKey);
+}
+
+function getLeadFilterButtonClasses(activeFilter, filterKey) {
+    if (filterKey === LEAD_STATUS_DEAD) {
+        return activeFilter === filterKey
+            ? 'bg-[#b42318] text-white shadow-[0_8px_18px_rgba(180,35,24,0.25)]'
+            : 'bg-[#b42318] text-white/90 hover:text-white';
+    }
+
+    return activeFilter === filterKey
+        ? 'bg-white text-[#111] shadow-[0_8px_18px_rgba(17,17,17,0.08)]'
+        : 'text-[#6b7280] hover:text-[#111]';
+}
+
+function getLeadSources(lead) {
+    return Array.isArray(lead?.sources) && lead.sources.length
+        ? lead.sources
+        : [lead?.source].filter(Boolean);
+}
+
+function getLeadAliases(lead) {
+    const names = Array.isArray(lead?.names) ? lead.names : [];
+    return names.filter((name) => name && name !== lead?.name);
+}
+
+function getLeadSubmissionCount(lead) {
+    return Array.isArray(lead?.submissions) && lead.submissions.length ? lead.submissions.length : 1;
+}
+
+function getLeadSourceSummary(lead) {
+    const sources = getLeadSources(lead);
+    return sources.length ? sources.join(', ') : lead?.source || 'website';
+}
+
+function getLeadChannelSummary(lead) {
+    const channels = Array.isArray(lead?.channels) && lead.channels.length
+        ? lead.channels
+        : [lead?.channel].filter(Boolean);
+    return channels;
+}
+
 function LeadTemperaturePill({ lead }) {
     const temperature = getLeadTemperature(lead);
     const meta = LEAD_TEMPERATURES[temperature];
@@ -158,6 +246,14 @@ function createEmptyRemarkForm() {
     };
 }
 
+function createEmptyCallLogForm() {
+    return {
+        callDate: getTodayDateInputValue(),
+        callStatus: '',
+        remark: '',
+    };
+}
+
 function getRemarkMetaText(remark) {
     const parts = [
         remark?.configuration || '',
@@ -166,6 +262,457 @@ function getRemarkMetaText(remark) {
     ].filter(Boolean);
 
     return parts.join(' · ');
+}
+
+function getSortedCallLogs(callLogs) {
+    return [...(Array.isArray(callLogs) ? callLogs : [])].sort((left, right) => {
+        const dateComparison = (right.callDate || '').localeCompare(left.callDate || '');
+        if (dateComparison !== 0) {
+            return dateComparison;
+        }
+
+        return new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime();
+    });
+}
+
+function CallStatusPill({ status }) {
+    const tone = status === 'answered'
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+        : 'border-amber-200 bg-amber-50 text-amber-700';
+
+    return (
+        <span className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-bold ${tone}`}>
+            {CALL_STATUS_LABELS[status] || 'Unknown'}
+        </span>
+    );
+}
+
+function DeadLeadToggleButton({ lead, canWrite, busyLeadStatusId, onToggleLeadStatus, className = '' }) {
+    if (!canWrite) return null;
+
+    const dead = isDeadLead(lead);
+    const isBusy = busyLeadStatusId === lead.id;
+
+    return (
+        <button
+            type="button"
+            onClick={() => onToggleLeadStatus(lead)}
+            disabled={isBusy}
+            className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                dead
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : 'border-red-200 bg-red-50 text-red-700'
+            } ${className}`}
+        >
+            {isBusy ? 'Saving...' : dead ? 'Restore lead' : 'Mark dead'}
+        </button>
+    );
+}
+
+function AboutLeadPanel({ lead, onClose }) {
+    if (!lead) return null;
+
+    const aliases = getLeadAliases(lead);
+    const sources = getLeadSources(lead);
+    const channels = getLeadChannelSummary(lead);
+    const submissions = Array.isArray(lead.submissions) ? lead.submissions : [];
+
+    return (
+        <div className="fixed inset-0 z-[1000] flex justify-end bg-black/35 p-0 sm:p-4" role="dialog" aria-modal="true" aria-label="About lead">
+            <button type="button" aria-label="Close lead details" onClick={onClose} className="absolute inset-0 cursor-default" />
+            <aside className="editorial-detail relative flex h-full w-full max-w-2xl flex-col bg-[#fbfbfa] shadow-[-24px_0_70px_rgba(17,17,17,0.22)] sm:rounded-[30px] sm:border sm:border-[#111]/10">
+                <div className="flex items-start justify-between gap-4 border-b border-[#111]/10 px-5 py-5 sm:px-7 sm:py-6">
+                    <div>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">About lead</p>
+                        <h3 className="mt-1 text-2xl font-bold text-[#111]">{lead.name || 'Unknown lead'}</h3>
+                        <p className="mt-1 text-sm text-[#6b7280]">{lead.phone || 'No phone'}</p>
+                        <p className="mt-1 break-words text-sm text-[#6b7280]">{lead.email || 'No email captured'}</p>
+                    </div>
+                    <button type="button" onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#111]/10 bg-white text-xl font-medium text-[#111]">×</button>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
+                    <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full border border-[#111]/10 bg-white px-3 py-1.5 text-xs font-bold text-[#374151]">{getLeadSubmissionCount(lead)} submissions</span>
+                        <span className="rounded-full border border-[#111]/10 bg-white px-3 py-1.5 text-xs font-bold text-[#374151]">Latest source: {lead.source || 'website'}</span>
+                        <span className="rounded-full border border-[#111]/10 bg-white px-3 py-1.5 text-xs font-bold text-[#374151]">Latest channel: {CHANNEL_LABELS[lead.channel] || lead.channel}</span>
+                    </div>
+
+                    <section className="mt-6 rounded-[24px] border border-[#111]/10 bg-white p-4 sm:p-5">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Past names</p>
+                        {aliases.length ? (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                {aliases.map((alias) => (
+                                    <span key={alias} className="rounded-full border border-[#111]/10 bg-[#fafafa] px-3 py-1.5 text-xs font-bold text-[#374151]">
+                                        {alias}
+                                    </span>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="mt-3 text-sm text-[#6b7280]">No alternate names recorded.</p>
+                        )}
+                    </section>
+
+                    <section className="mt-6 rounded-[24px] border border-[#111]/10 bg-white p-4 sm:p-5">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Sources</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {sources.map((source) => (
+                                <span key={source} className="rounded-full border border-[#111]/10 bg-[#fafafa] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.08em] text-[#374151]">
+                                    {source}
+                                </span>
+                            ))}
+                        </div>
+                        <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Channels</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {channels.map((channel) => (
+                                <span key={channel} className="rounded-full border border-[#111]/10 bg-[#fafafa] px-3 py-1.5 text-xs font-bold text-[#374151]">
+                                    {CHANNEL_LABELS[channel] || channel}
+                                </span>
+                            ))}
+                        </div>
+                    </section>
+
+                    <section className="mt-6 rounded-[24px] border border-[#111]/10 bg-white p-4 sm:p-5">
+                        <div className="flex items-center justify-between gap-4">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Submission history</p>
+                            <span className="text-xs font-bold text-[#6b7280]">{submissions.length}</span>
+                        </div>
+                        {submissions.length ? (
+                            <div className="mt-4 space-y-4">
+                                {submissions.map((submission) => (
+                                    <article key={submission.id} className="border-l-2 border-[#111]/10 pl-4">
+                                        <p className="text-sm font-bold text-[#111]">{submission.requestLabel || 'General Enquiry'}</p>
+                                        <p className="mt-1 text-xs font-bold uppercase tracking-[0.08em] text-[#6b7280]">
+                                            {(CHANNEL_LABELS[submission.channel] || submission.channel)} · {submission.source || 'website'}
+                                        </p>
+                                        <p className="mt-2 text-sm text-[#374151]">{submission.name || 'Unknown lead'}{submission.email ? ` · ${submission.email}` : ''}</p>
+                                        {submission.message ? <p className="mt-2 text-sm leading-6 text-[#4b5563]">{submission.message}</p> : null}
+                                        {submission.preferredTime ? <p className="mt-2 text-xs font-bold text-[#6b7280]">Preferred time: {submission.preferredTime}</p> : null}
+                                        <p className="mt-2 text-xs font-bold text-[#6b7280]">{formatAdminDate(submission.createdAt)}</p>
+                                    </article>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="mt-3 text-sm text-[#6b7280]">No submission history recorded yet.</p>
+                        )}
+                    </section>
+                </div>
+            </aside>
+        </div>
+    );
+}
+
+function CallsPanel({
+    leads,
+    canWrite,
+    onCallLogSaved,
+    onOpenLeadActivity,
+    onOpenLeadAbout,
+    onToggleLeadStatus,
+    busyLeadStatusId,
+}) {
+    const [query, setQuery] = useState('');
+    const [leadFilter, setLeadFilter] = useState('cold');
+
+    const leadStats = useMemo(
+        () =>
+            leads.reduce(
+                (acc, lead) => {
+                    acc[getLeadFilterKey(lead)] += 1;
+                    return acc;
+                },
+                { cold: 0, warm: 0, hot: 0, dead: 0 },
+            ),
+        [leads],
+    );
+
+    const visibleLeads = useMemo(() => {
+        const normalizedQuery = query.trim().toLowerCase();
+        const filteredLeads = getVisibleLeadsForFilter(leads, leadFilter);
+        if (!normalizedQuery) {
+            return filteredLeads;
+        }
+
+        return filteredLeads.filter((lead) =>
+            [
+                lead.name,
+                ...(lead.names || []),
+                lead.phone,
+                lead.email,
+                lead.source,
+                ...(lead.sources || []),
+                lead.requestLabel,
+                lead.message,
+                lead.preferredTime,
+                ...(lead.submissions || []).flatMap((submission) => [
+                    submission.name,
+                    submission.source,
+                    submission.channel,
+                    submission.requestLabel,
+                    submission.message,
+                ]),
+                ...(lead.callLogs || []).flatMap((callLog) => [
+                    callLog.callDate,
+                    CALL_STATUS_LABELS[callLog.callStatus] || callLog.callStatus,
+                    callLog.remark,
+                ]),
+            ]
+                .join(' ')
+                .toLowerCase()
+                .includes(normalizedQuery),
+        );
+    }, [leadFilter, leads, query]);
+
+    return (
+        <section className="rounded-[24px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px]">
+            <div className="flex flex-col gap-5 border-b border-[#111]/10 px-4 py-5 sm:px-7 sm:py-6 xl:flex-row xl:items-center xl:justify-between">
+                <div>
+                    <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Call tracking</p>
+                    <h2 className="mt-1 font-display text-2xl font-bold text-[#111]">Sales call logs</h2>
+                    <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6b7280]">
+                        Add multiple call updates per lead with date, pickup status, and sales remarks.
+                    </p>
+                </div>
+                <div className="flex w-full flex-col gap-4 xl:w-auto xl:items-end">
+                    <div className="inline-flex w-full rounded-2xl border border-[#111]/10 bg-[#f7f7f7] p-1 sm:w-auto">
+                        {Object.entries(LEAD_FILTERS).map(([filterKey, meta]) => (
+                            <button
+                                key={filterKey}
+                                type="button"
+                                onClick={() => setLeadFilter(filterKey)}
+                                className={`flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition sm:min-w-[138px] sm:flex-none ${getLeadFilterButtonClasses(leadFilter, filterKey)}`}
+                            >
+                                <span>{meta.label}</span>
+                                <span className={`rounded-full px-2 py-0.5 text-xs ${filterKey === LEAD_STATUS_DEAD ? 'bg-white/20 text-white' : 'border border-[#111]/10 bg-[#fafafa] text-[#111]'}`}>{leadStats[filterKey]}</span>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="relative w-full xl:w-[390px]">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98a2b3]" />
+                        <input
+                            value={query}
+                            onChange={(event) => setQuery(event.target.value)}
+                            placeholder="Search leads or call remarks..."
+                            className="h-12 w-full rounded-2xl border border-[#111]/14 bg-white pl-10 pr-4 text-sm font-medium text-[#111] outline-none shadow-[0_7px_0_rgba(17,17,17,0.035),0_16px_32px_rgba(17,17,17,0.05)] transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid gap-5 p-4 sm:p-6">
+                {visibleLeads.length ? (
+                    visibleLeads.map((lead) => (
+                        <LeadCallCard
+                            key={lead.id}
+                            lead={lead}
+                            canWrite={canWrite}
+                            onCallLogSaved={onCallLogSaved}
+                            onOpenLeadActivity={onOpenLeadActivity}
+                            onOpenLeadAbout={onOpenLeadAbout}
+                            onToggleLeadStatus={onToggleLeadStatus}
+                            busyLeadStatusId={busyLeadStatusId}
+                        />
+                    ))
+                ) : (
+                    <div className="rounded-[24px] border border-dashed border-[#111]/15 bg-[#fafafa] px-6 py-12 text-center text-sm font-medium text-[#6b7280]">
+                        No {LEAD_FILTERS[leadFilter].label.toLowerCase()} leads match your current search.
+                    </div>
+                )}
+            </div>
+        </section>
+    );
+}
+
+function LeadCallCard({
+    lead,
+    canWrite,
+    onCallLogSaved,
+    onOpenLeadActivity,
+    onOpenLeadAbout,
+    onToggleLeadStatus,
+    busyLeadStatusId,
+}) {
+    const [callForm, setCallForm] = useState(createEmptyCallLogForm);
+    const [callErrors, setCallErrors] = useState({});
+    const [savingCall, setSavingCall] = useState(false);
+    const callLogs = getSortedCallLogs(lead.callLogs);
+
+    function updateCallField(name, value) {
+        setCallForm((current) => ({ ...current, [name]: value }));
+        setCallErrors((current) => {
+            if (!current[name] && !current.form) {
+                return current;
+            }
+
+            const next = { ...current };
+            delete next[name];
+            delete next.form;
+            return next;
+        });
+    }
+
+    async function saveCall(event) {
+        event.preventDefault();
+        const fieldErrors = getCallLogFieldErrors(callForm);
+        if (Object.keys(fieldErrors).length) {
+            setCallErrors(fieldErrors);
+            return;
+        }
+
+        setSavingCall(true);
+        setCallErrors({});
+        try {
+            const response = await fetch(`/api/admin/leads/${lead.id}/calls`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(callForm),
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                if (payload?.fieldErrors) {
+                    setCallErrors(payload.fieldErrors);
+                }
+                throw new Error(payload.error || 'Unable to save call log.');
+            }
+
+            onCallLogSaved(lead.id, payload.callLog);
+            setCallForm(createEmptyCallLogForm());
+        } catch (error) {
+            setCallErrors((current) => ({
+                ...current,
+                form: error.message,
+            }));
+        } finally {
+            setSavingCall(false);
+        }
+    }
+
+    return (
+        <article className="rounded-[26px] border border-[#111]/10 bg-[#fffefa] p-4 shadow-[0_12px_30px_rgba(17,17,17,0.05)] sm:p-5">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button type="button" onClick={() => onOpenLeadAbout(lead)} className="text-left text-xl font-bold text-[#111] underline decoration-[#111]/20 underline-offset-4 hover:decoration-[#111]/45">
+                            {lead.name || 'Unknown lead'}
+                        </button>
+                        <LeadTemperaturePill lead={lead} />
+                    </div>
+                    <p className="mt-1 text-sm font-medium text-[#374151]">{lead.phone || 'No phone'}</p>
+                    <p className="mt-1 break-words text-sm text-[#6b7280]">{lead.email || 'No email captured'}</p>
+                    <p className="mt-3 text-sm leading-6 text-[#4b5563]">
+                        <span className="font-bold text-[#111]">{lead.requestLabel || 'General Enquiry'}</span>
+                        {lead.message ? ` · ${lead.message}` : ''}
+                    </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                    <DeadLeadToggleButton
+                        lead={lead}
+                        canWrite={canWrite}
+                        busyLeadStatusId={busyLeadStatusId}
+                        onToggleLeadStatus={onToggleLeadStatus}
+                    />
+                    <span className="inline-flex items-center gap-2 rounded-2xl border border-[#111]/10 bg-white px-4 py-2 text-xs font-bold text-[#111]">
+                        <PhoneCall className="h-4 w-4" />
+                        {callLogs.length} call{callLogs.length === 1 ? '' : 's'}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => onOpenLeadActivity(lead)}
+                        className="inline-flex h-11 items-center justify-center rounded-2xl border border-[#111]/10 bg-white px-4 text-sm font-bold text-[#111] shadow-[0_7px_0_rgba(17,17,17,0.04),0_16px_32px_rgba(17,17,17,0.06)] transition hover:-translate-y-0.5"
+                    >
+                        View lead activity
+                    </button>
+                </div>
+            </div>
+
+            {canWrite ? (
+                <form onSubmit={saveCall} className="mt-5 rounded-[22px] border border-[#111]/10 bg-white p-4 sm:p-5">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="block">
+                            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Call date</span>
+                            <input
+                                type="date"
+                                value={callForm.callDate}
+                                onChange={(event) => updateCallField('callDate', event.target.value)}
+                                className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                            />
+                            {callErrors.callDate ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.callDate}</p> : null}
+                        </label>
+                        <label className="block">
+                            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Call status</span>
+                            <select
+                                value={callForm.callStatus}
+                                onChange={(event) => updateCallField('callStatus', event.target.value)}
+                                className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                            >
+                                <option value="">Select status</option>
+                                {CALL_LOG_STATUS_OPTIONS.map((status) => (
+                                    <option key={status} value={status}>
+                                        {CALL_STATUS_LABELS[status]}
+                                    </option>
+                                ))}
+                            </select>
+                            {callErrors.callStatus ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.callStatus}</p> : null}
+                        </label>
+                    </div>
+                    <label className="mt-3 block">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Remark</span>
+                        <textarea
+                            value={callForm.remark}
+                            onChange={(event) => updateCallField('remark', event.target.value)}
+                            maxLength={CALL_LOG_REMARK_MAX_LENGTH}
+                            rows={4}
+                            placeholder="Call outcome and follow-up notes..."
+                            className="mt-2 w-full resize-y rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 py-3 text-sm leading-6 text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                        />
+                        {callErrors.remark ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.remark}</p> : null}
+                    </label>
+                    <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        {callErrors.form ? <p className="text-xs font-bold text-red-600">{callErrors.form}</p> : <span className="text-xs font-medium text-[#6b7280]">Each save creates a separate call entry for this lead.</span>}
+                        <button
+                            type="submit"
+                            disabled={savingCall || !callForm.callDate || !callForm.callStatus || !callForm.remark.trim()}
+                            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#111] px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
+                        >
+                            {savingCall ? 'Saving...' : 'Save call'}
+                        </button>
+                    </div>
+                </form>
+            ) : (
+                <div className="mt-5 rounded-[22px] border border-dashed border-[#111]/15 bg-white px-4 py-4 text-sm text-[#6b7280]">
+                    This account can view call history but cannot add new call updates.
+                </div>
+            )}
+
+            <div className="mt-5">
+                <div className="flex items-center justify-between gap-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Call history</p>
+                    <span className="text-xs font-bold text-[#6b7280]">{callLogs.length}</span>
+                </div>
+                {callLogs.length ? (
+                    <div className="mt-4 space-y-4">
+                        {callLogs.map((callLog) => (
+                            <article key={callLog.id} className="rounded-[20px] border border-[#111]/10 bg-white px-4 py-4">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                    <div>
+                                        <p className="text-sm font-bold text-[#111]">{formatAdminDateOnly(callLog.callDate)}</p>
+                                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#374151]">{callLog.remark}</p>
+                                    </div>
+                                    <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+                                        <CallStatusPill status={callLog.callStatus} />
+                                    </div>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="mt-3 rounded-2xl border border-dashed border-[#111]/15 bg-white px-4 py-5 text-sm text-[#6b7280]">
+                        No calls logged for this lead yet.
+                    </div>
+                )}
+            </div>
+        </article>
+    );
 }
 
 function LeadActivityPanel({ lead, onClose, canWrite, onRemarkSaved }) {
@@ -763,11 +1310,14 @@ export default function AdminPage() {
     const [dateFilterOpen, setDateFilterOpen] = useState(false);
     const [dateFilterDraft, setDateFilterDraft] = useState({ startDate: '', endDate: '' });
     const [selectedLead, setSelectedLead] = useState(null);
+    const [selectedLeadAbout, setSelectedLeadAbout] = useState(null);
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [busyLeadStatusId, setBusyLeadStatusId] = useState('');
     const contentRef = useRef(null);
     const dashboardRef = useRef(null);
     const leadsRef = useRef(null);
+    const callsRef = useRef(null);
     const reportsRef = useRef(null);
     const keysRef = useRef(null);
     const inventoryRef = useRef(null);
@@ -900,7 +1450,7 @@ export default function AdminPage() {
             (acc, lead) => {
                 acc.total += 1;
                 acc[lead.channel] = (acc[lead.channel] || 0) + 1;
-                acc[getLeadTemperature(lead)] += 1;
+                acc[getLeadFilterKey(lead)] += 1;
 
                 if (lead.emailDelivery?.status === 'sent') {
                     acc.emailSent += 1;
@@ -920,6 +1470,7 @@ export default function AdminPage() {
                 cold: 0,
                 warm: 0,
                 hot: 0,
+                dead: 0,
                 emailSent: 0,
                 whatsappSent: 0,
             },
@@ -928,19 +1479,29 @@ export default function AdminPage() {
 
     const visibleLeads = useMemo(() => {
         const normalizedQuery = leadQuery.trim().toLowerCase();
-        const temperatureLeads = leads.filter((lead) => getLeadTemperature(lead) === leadTemperature);
-        if (!normalizedQuery) return temperatureLeads;
+        const filteredLeads = getVisibleLeadsForFilter(leads, leadTemperature);
+        if (!normalizedQuery) return filteredLeads;
 
-        return temperatureLeads.filter((lead) =>
+        return filteredLeads.filter((lead) =>
             [
                 lead.name,
+                ...(lead.names || []),
                 lead.phone,
                 lead.email,
                 lead.source,
+                ...(lead.sources || []),
                 lead.channel,
                 lead.requestLabel,
+                normalizeLeadStatus(lead.leadStatus),
                 lead.message,
                 lead.preferredTime,
+                ...(lead.submissions || []).flatMap((submission) => [
+                    submission.name,
+                    submission.source,
+                    submission.channel,
+                    submission.requestLabel,
+                    submission.message,
+                ]),
                 getLeadJourneySummary(lead),
                 ...(lead.whatsapp?.responses || []).map((response) => response.label),
                 lead.whatsapp?.callbackRequested ? 'callback requested' : '',
@@ -983,6 +1544,10 @@ export default function AdminPage() {
                 ? `${LEAD_SOURCE_LABELS[user?.leadSource] || 'Partner'} Leads`
                 : 'Website and WhatsApp Leads',
         },
+        calls: {
+            eyebrow: 'Sales follow-up',
+            title: 'Call Tracking',
+        },
         inventory: {
             eyebrow: 'Inventory control',
             title: 'Flat Status Management',
@@ -1019,12 +1584,22 @@ export default function AdminPage() {
             return;
         }
 
+        if (section === 'calls') {
+            setActiveSection('calls');
+            contentRef.current?.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+            });
+            return;
+        }
+
         const sectionRefs = {
             dashboard: dashboardRef,
             inventory: inventoryRef,
             users: keysRef,
             keys: keysRef,
             reports: reportsRef,
+            calls: callsRef,
         };
 
         setActiveSection(section);
@@ -1102,6 +1677,52 @@ export default function AdminPage() {
 
         setSelectedLead((current) => (current ? updateLead(current) : current));
         setLeads((current) => current.map(updateLead));
+    }
+
+    function handleCallLogSaved(leadId, callLog) {
+        if (!leadId || !callLog) return;
+
+        const updateLead = (lead) =>
+            lead.id === leadId
+                ? { ...lead, callLogs: [...(lead.callLogs || []), callLog] }
+                : lead;
+
+        setSelectedLead((current) => (current && current.id === leadId ? updateLead(current) : current));
+        setLeads((current) => current.map(updateLead));
+    }
+
+    async function toggleLeadStatus(lead) {
+        if (!lead?.id) return;
+
+        const nextLeadStatus = isDeadLead(lead) ? LEAD_STATUS_ACTIVE : LEAD_STATUS_DEAD;
+        setBusyLeadStatusId(lead.id);
+
+        try {
+            const response = await fetch(`/api/admin/leads/${lead.id}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ leadStatus: nextLeadStatus }),
+            });
+            const payload = await response.json();
+
+            if (!response.ok) {
+                throw new Error(payload.error || 'Unable to update lead status.');
+            }
+
+            const updateLead = (currentLead) =>
+                currentLead.id === lead.id
+                    ? { ...currentLead, leadStatus: payload.lead?.leadStatus || nextLeadStatus }
+                    : currentLead;
+
+            setSelectedLead((current) => (current ? updateLead(current) : current));
+            setSelectedLeadAbout((current) => (current ? updateLead(current) : current));
+            setLeads((current) => current.map(updateLead));
+            setNotice(nextLeadStatus === LEAD_STATUS_DEAD ? 'Lead moved to Dead.' : 'Lead restored to active.');
+        } catch (error) {
+            setNotice(error.message);
+        } finally {
+            setBusyLeadStatusId('');
+        }
     }
 
     async function logout() {
@@ -1288,19 +1909,15 @@ export default function AdminPage() {
 
                             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                                 <div className="inline-flex w-full rounded-2xl border border-[#111]/10 bg-[#f7f7f7] p-1 sm:w-auto">
-                                    {Object.entries(LEAD_TEMPERATURES).map(([temperature, meta]) => (
+                                    {Object.entries(LEAD_FILTERS).map(([temperature, meta]) => (
                                         <button
                                             key={temperature}
                                             type="button"
                                             onClick={() => setLeadTemperature(temperature)}
-                                            className={`flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition sm:min-w-[150px] sm:flex-none ${
-                                                leadTemperature === temperature
-                                                    ? 'bg-white text-[#111] shadow-[0_8px_18px_rgba(17,17,17,0.08)]'
-                                                    : 'text-[#6b7280] hover:text-[#111]'
-                                            }`}
+                                            className={`flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition sm:min-w-[150px] sm:flex-none ${getLeadFilterButtonClasses(leadTemperature, temperature)}`}
                                         >
                                             <span>{meta.label}</span>
-                                            <span className="rounded-full border border-[#111]/10 bg-[#fafafa] px-2 py-0.5 text-xs text-[#111]">{leadStats[temperature]}</span>
+                                            <span className={`rounded-full px-2 py-0.5 text-xs ${temperature === LEAD_STATUS_DEAD ? 'bg-white/20 text-white' : 'border border-[#111]/10 bg-[#fafafa] text-[#111]'}`}>{leadStats[temperature]}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -1326,14 +1943,20 @@ export default function AdminPage() {
                                                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#6b7280]">
                                                     {formatAdminDate(lead.createdAt)}
                                                 </p>
-                                                <h3 className="mt-2 text-lg font-bold text-[#111]">
+                                                <button type="button" onClick={() => setSelectedLeadAbout(lead)} className="mt-2 text-left text-lg font-bold text-[#111] underline decoration-[#111]/20 underline-offset-4 hover:decoration-[#111]/45">
                                                     {lead.name || 'Unknown lead'}
-                                                </h3>
+                                                </button>
                                                 <p className="mt-1 text-sm font-medium text-[#374151]">{lead.phone || 'No phone'}</p>
                                                 <p className="mt-1 break-words text-sm text-[#6b7280]">{lead.email || 'No email captured'}</p>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
                                                 <LeadTemperaturePill lead={lead} />
+                                                <DeadLeadToggleButton
+                                                    lead={lead}
+                                                    canWrite={canWrite}
+                                                    busyLeadStatusId={busyLeadStatusId}
+                                                    onToggleLeadStatus={toggleLeadStatus}
+                                                />
                                                 <span className="inline-flex items-center gap-2 rounded-2xl border border-[#111]/10 bg-[#fafafa] px-4 py-2 text-xs font-bold text-[#111]">
                                                     <MessageSquare className="h-4 w-4" />
                                                     {CHANNEL_LABELS[lead.channel] || lead.channel}
@@ -1378,7 +2001,7 @@ export default function AdminPage() {
                                 ))
                             ) : (
                                 <div className="px-4 py-10 text-center text-sm font-medium text-[#6b7280] sm:px-6">
-                                    No {LEAD_TEMPERATURES[leadTemperature].label.toLowerCase()} leads match your current search.
+                                    No {LEAD_FILTERS[leadTemperature].label.toLowerCase()} leads match your current search.
                                 </div>
                             )}
                         </div>
@@ -1404,9 +2027,18 @@ export default function AdminPage() {
                                                 <p className="mt-2 text-xs">Updated {formatAdminDate(lead.updatedAt)}</p>
                                             </td>
                                             <td className="px-7 py-5">
-                                                <p className="font-bold text-[#111]">{lead.name || 'Unknown lead'}</p>
+                                                <button type="button" onClick={() => setSelectedLeadAbout(lead)} className="text-left font-bold text-[#111] underline decoration-[#111]/20 underline-offset-4 hover:decoration-[#111]/45">
+                                                    {lead.name || 'Unknown lead'}
+                                                </button>
                                                 <p className="mt-1 text-sm font-medium text-[#374151]">{lead.phone || 'No phone'}</p>
                                                 <p className="mt-1 text-sm text-[#6b7280]">{lead.email || 'No email captured'}</p>
+                                                <DeadLeadToggleButton
+                                                    lead={lead}
+                                                    canWrite={canWrite}
+                                                    busyLeadStatusId={busyLeadStatusId}
+                                                    onToggleLeadStatus={toggleLeadStatus}
+                                                    className="mt-3"
+                                                />
                                             </td>
                                             <td className="px-7 py-5">
                                                 <LeadTemperaturePill lead={lead} />
@@ -1454,6 +2086,18 @@ export default function AdminPage() {
                                 </tbody>
                             </table>
                         </div>
+                    </section>
+                    ) : activeSection === 'calls' ? (
+                    <section ref={callsRef} className="scroll-mt-8">
+                        <CallsPanel
+                            leads={leads}
+                            canWrite={canWrite}
+                            onCallLogSaved={handleCallLogSaved}
+                            onOpenLeadActivity={setSelectedLead}
+                            onOpenLeadAbout={setSelectedLeadAbout}
+                            onToggleLeadStatus={toggleLeadStatus}
+                            busyLeadStatusId={busyLeadStatusId}
+                        />
                     </section>
                     ) : (
                     <>
@@ -1662,6 +2306,10 @@ export default function AdminPage() {
                 canWrite={canWrite}
                 onClose={() => setSelectedLead(null)}
                 onRemarkSaved={handleRemarkSaved}
+            />
+            <AboutLeadPanel
+                lead={selectedLeadAbout}
+                onClose={() => setSelectedLeadAbout(null)}
             />
         </main>
     );

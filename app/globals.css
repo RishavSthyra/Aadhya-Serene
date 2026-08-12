@@ -80,6 +80,10 @@ select {
     background: #f5f4f0;
 }
 
+.editorial-admin button:not(:disabled) {
+    cursor: pointer;
+}
+
 .editorial-admin .editorial-leads {
     border-inline: 0 !important;
     border-top: 1px solid rgba(17, 17, 17, 0.12) !important;

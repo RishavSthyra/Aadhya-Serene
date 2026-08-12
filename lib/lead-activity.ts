@@ -54,6 +54,12 @@ function deliveryEvent(input: {
 }
 
 export function buildLeadActivity(lead: any, conversation?: any) {
+  return [...buildLeadRecordActivity(lead), ...buildConversationActivity(conversation)].sort(
+    (a, b) => a.occurredAt.localeCompare(b.occurredAt),
+  );
+}
+
+export function buildLeadRecordActivity(lead: any) {
   const events: ActivityEvent[] = [];
   const receivedAt = asIso(lead?.createdAt);
 
@@ -84,6 +90,12 @@ export function buildLeadActivity(lead: any, conversation?: any) {
     fallbackAt: lead?.createdAt,
   });
   if (whatsappEvent) events.push(whatsappEvent);
+
+  return events;
+}
+
+export function buildConversationActivity(conversation?: any) {
+  const events: ActivityEvent[] = [];
 
   for (const entry of conversation?.history || []) {
     const occurredAt = asIso(entry?.createdAt);
@@ -117,35 +129,5 @@ export function buildLeadActivity(lead: any, conversation?: any) {
     }
   }
 
-  const persistedActivity = lead?.metadata?.activity || [];
-  for (const event of persistedActivity) {
-    const occurredAt = asIso(event?.occurredAt);
-    if (!occurredAt || !event?.title) continue;
-    events.push({
-      type: event.type || "activity",
-      title: event.title,
-      detail: event.detail || "",
-      occurredAt,
-      status: event.status || "sent",
-    });
-  }
-
-  // Older records stored only the latest intent timestamp. Keep those records
-  // useful in the new sidebar while newer records use the precise activity log.
-  const journey = lead?.metadata?.whatsappJourney;
-  const hasPersistedIntentEmail = persistedActivity.some(
-    (event: any) => event?.type === "sales_intent_email",
-  );
-  if (!hasPersistedIntentEmail && journey?.lastIntent && journey?.intentNotifiedAt) {
-    const intentLabel = journey.lastIntent === "site_visit" ? "Site visit" : "Callback";
-    events.push({
-      type: "sales_intent_email",
-      title: `${intentLabel} request email sent to sales`,
-      detail: "Sales team notified after the customer's WhatsApp request.",
-      occurredAt: asIso(journey.intentNotifiedAt),
-      status: "sent",
-    });
-  }
-
-  return events.sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
+  return events;
 }
