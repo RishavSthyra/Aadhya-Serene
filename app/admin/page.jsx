@@ -1062,11 +1062,7 @@ function LeadCallCard({
                         </button>
                     </div>
                 </form>
-            ) : (
-                <div className="mt-5 rounded-[22px] border border-dashed border-[#111]/15 bg-white px-4 py-4 text-sm text-[#6b7280]">
-                    This account can view call history but cannot add new call updates.
-                </div>
-            )}
+            ) : null}
 
             <div className="mt-5">
                 <div className="flex items-center justify-between gap-3">
@@ -1300,7 +1296,7 @@ function LeadActivityPanel({ lead, onClose, canWrite, onRemarkSaved }) {
 
 function AdminSidebar({ user, activeSection, onNavigate, onClose = null, className = '' }) {
     const navItems = user?.role === 'lead_partner'
-        ? ADMIN_NAV_ITEMS.filter((item) => item.section === 'leads')
+        ? ADMIN_NAV_ITEMS.filter((item) => ['leads', 'calls'].includes(item.section))
         : ADMIN_NAV_ITEMS;
 
     return (
@@ -1313,7 +1309,7 @@ function AdminSidebar({ user, activeSection, onNavigate, onClose = null, classNa
                     <div className="min-w-0">
                         <p className="truncate font-display text-base font-bold text-[#111] sm:text-lg">Aadhya Admin</p>
                         <p className="text-xs font-bold text-[#6b7280]">
-                            {user?.role === 'lead_partner' ? 'Partner leads' : 'Serene inventory'}
+                            {user?.role === 'lead_partner' ? 'Partner workspace' : 'Serene inventory'}
                         </p>
                     </div>
                 </div>
@@ -1964,7 +1960,7 @@ export default function AdminPage() {
     function goToSection(section) {
         setSidebarOpen(false);
 
-        if (isLeadPartner && section !== 'leads') {
+        if (isLeadPartner && !['leads', 'calls'].includes(section)) {
             return;
         }
 
@@ -2357,7 +2353,7 @@ export default function AdminPage() {
                         </p>
                     ) : null}
 
-                    {activeSection === 'leads' || isLeadPartner ? (
+                    {activeSection === 'leads' ? (
                     <section ref={leadsRef} className="editorial-leads flex min-h-full flex-col scroll-mt-8 overflow-hidden rounded-[24px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px]">
                         <div className="flex flex-col gap-5 border-b border-[#111]/10 px-4 py-5 sm:px-7 sm:py-6">
                             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
