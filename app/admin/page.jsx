@@ -46,6 +46,7 @@ import {
 } from '@/lib/admin-call-log';
 import {
     getWhatsAppDeliveryStatusLabel,
+    getWhatsAppMetaErrorCopy,
     isWhatsAppDeliverySuccessStatus,
 } from '@/lib/whatsapp-delivery';
 import {
@@ -275,6 +276,230 @@ function getSortedCallLogs(callLogs) {
     });
 }
 
+const CALL_REPORT_COLUMNS = [
+    { header: 'Submitted At', key: 'submittedAt', width: 18 },
+    { header: 'Lead Segment', key: 'leadSegment', width: 14 },
+    { header: 'Lead Name', key: 'leadName', width: 22 },
+    { header: 'Phone', key: 'phone', width: 17 },
+    { header: 'Source', key: 'source', width: 18 },
+    { header: 'Channel', key: 'channel', width: 17 },
+    { header: 'Request', key: 'request', width: 20 },
+    { header: 'Lead Context', key: 'leadContext', width: 34 },
+    { header: 'Call #', key: 'callNumber', width: 8 },
+    { header: 'Call Date', key: 'callDate', width: 14 },
+    { header: 'Call Status', key: 'callStatus', width: 14 },
+    { header: 'Call Remark', key: 'callRemark', width: 38 },
+    { header: 'Calling Feedback', key: 'callingFeedback', width: 42 },
+];
+
+const LEAD_REPORT_COLUMNS = [
+    { header: 'Submitted At', key: 'submittedAt', width: 18 },
+    { header: 'Updated At', key: 'updatedAt', width: 18 },
+    { header: 'Lead Segment', key: 'leadSegment', width: 14 },
+    { header: 'Lead Name', key: 'leadName', width: 22 },
+    { header: 'Aliases', key: 'aliases', width: 22 },
+    { header: 'Phone', key: 'phone', width: 17 },
+    { header: 'Email', key: 'email', width: 28 },
+    { header: 'Source', key: 'source', width: 18 },
+    { header: 'Channel', key: 'channel', width: 17 },
+    { header: 'Request', key: 'request', width: 20 },
+    { header: 'Lead Context', key: 'leadContext', width: 40 },
+    { header: 'WhatsApp Signals', key: 'whatsAppSignals', width: 32 },
+    { header: 'Delivery Status', key: 'deliveryStatus', width: 30 },
+    { header: 'Calling Feedback', key: 'callingFeedback', width: 40 },
+    { header: 'Submissions', key: 'submissionCount', width: 12 },
+];
+
+function formatExportDateTime(value) {
+    if (!value) return '';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return new Intl.DateTimeFormat('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'Asia/Kolkata',
+    }).format(date);
+}
+
+function escapeCsv(value) {
+    const text = String(value ?? '');
+    if (text.includes('"') || text.includes(',') || text.includes('\n') || text.includes('\r')) {
+        return `"${text.replaceAll('"', '""')}"`;
+    }
+
+    return text;
+}
+
+function buildCsvRow(values) {
+    return values.map(escapeCsv).join(',');
+}
+
+function buildLeadContextForExport(lead) {
+    return [
+        lead.preferredTime ? `Preferred time: ${lead.preferredTime}` : '',
+        lead.message ? `Lead message: ${lead.message}` : '',
+        getLeadJourneySummary(lead) ? `Journey: ${getLeadJourneySummary(lead)}` : '',
+    ].filter(Boolean).join('\n');
+}
+
+function buildCallingFeedbackForExport(remarks) {
+    if (!remarks.length) {
+        return 'No calling feedback added yet';
+    }
+
+    const latestRemark = remarks[0];
+    const lines = [
+        latestRemark.configuration ? `Configuration: ${latestRemark.configuration}` : '',
+        latestRemark.budget ? `Budget: ${latestRemark.budget}` : '',
+        latestRemark.location ? `Location: ${latestRemark.location}` : '',
+        latestRemark.notes ? `Notes: ${latestRemark.notes}` : latestRemark.text ? `Notes: ${latestRemark.text}` : '',
+        latestRemark.authorName ? `Saved by: ${latestRemark.authorName}` : '',
+        latestRemark.createdAt ? `Saved at: ${formatExportDateTime(latestRemark.createdAt)}` : '',
+    ].filter(Boolean);
+
+    if (remarks.length > 1) {
+        lines.push(`Additional feedback entries: ${remarks.length - 1}`);
+    }
+
+    return lines.join('\n');
+}
+
+function buildLeadSignalsForExport(lead) {
+    return [
+        `Journey: ${getLeadJourneySummary(lead)}`,
+        `Meaningful responses: ${lead.whatsapp?.score || 0}`,
+        `Callback requested: ${lead.whatsapp?.callbackRequested ? 'Yes' : 'No'}`,
+        `Site visit requested: ${lead.whatsapp?.siteVisitRequested ? 'Yes' : 'No'}`,
+    ].filter(Boolean).join('\n');
+}
+
+function buildDeliveryStatusForExport(lead) {
+    const emailStatus = lead.emailDelivery?.status || 'pending';
+    const whatsappStatus = lead.whatsappDelivery?.status || 'pending';
+
+    return [
+        `Email: ${emailStatus}`,
+        lead.emailDelivery?.sentAt ? `Email sent: ${formatExportDateTime(lead.emailDelivery.sentAt)}` : '',
+        `WhatsApp: ${getWhatsAppDeliveryStatusLabel(whatsappStatus)}`,
+        lead.whatsappDelivery?.sentAt ? `WhatsApp sent: ${formatExportDateTime(lead.whatsappDelivery.sentAt)}` : '',
+    ].filter(Boolean).join('\n');
+}
+
+function buildLeadReportRows(leads, filterKey) {
+    return leads.map((lead) => ({
+        submittedAt: formatExportDateTime(lead.createdAt),
+        updatedAt: formatExportDateTime(lead.updatedAt),
+        leadSegment: LEAD_FILTERS[filterKey]?.label || getLeadFilterKey(lead),
+        leadName: lead.name || 'Unknown lead',
+        aliases: getLeadAliases(lead).join('\n'),
+        phone: lead.phone || '',
+        email: lead.email || '',
+        source: getLeadSourceSummary(lead),
+        channel: CHANNEL_LABELS[lead.channel] || lead.channel || '',
+        request: lead.requestLabel || 'General Enquiry',
+        leadContext: buildLeadContextForExport(lead),
+        whatsAppSignals: buildLeadSignalsForExport(lead),
+        deliveryStatus: buildDeliveryStatusForExport(lead),
+        callingFeedback: buildCallingFeedbackForExport(Array.isArray(lead?.salesRemarks) ? lead.salesRemarks : []),
+        submissionCount: getLeadSubmissionCount(lead),
+    }));
+}
+
+function buildCallReportRows(leads, filterKey) {
+    return leads.flatMap((lead) => {
+        const callLogs = getSortedCallLogs(lead.callLogs);
+        const latestCall = callLogs[0];
+        const remarks = Array.isArray(lead?.salesRemarks) ? lead.salesRemarks : [];
+        const feedbackSummary = buildCallingFeedbackForExport(remarks);
+        const baseRow = {
+            submittedAt: formatExportDateTime(lead.createdAt),
+            leadSegment: LEAD_FILTERS[filterKey]?.label || getLeadFilterKey(lead),
+            leadName: lead.name || 'Unknown lead',
+            phone: lead.phone || '',
+            source: getLeadSourceSummary(lead),
+            channel: CHANNEL_LABELS[lead.channel] || lead.channel || '',
+            request: lead.requestLabel || 'General Enquiry',
+            leadContext: buildLeadContextForExport(lead),
+            callingFeedback: feedbackSummary,
+        };
+
+        if (!callLogs.length) {
+            return [{
+                ...baseRow,
+                callNumber: '',
+                callDate: '',
+                callStatus: 'No calls logged',
+                callRemark: '',
+            }];
+        }
+
+        return callLogs.map((callLog, index) => ({
+            ...baseRow,
+            callNumber: index + 1,
+            callDate: callLog.callDate ? formatAdminDateOnly(callLog.callDate) : '',
+            callStatus: CALL_STATUS_LABELS[callLog.callStatus] || callLog.callStatus || '',
+            callRemark: [
+                callLog.remark || '',
+                callLog.authorName ? `Saved by: ${callLog.authorName}` : '',
+                callLog.createdAt ? `Saved at: ${formatExportDateTime(callLog.createdAt)}` : '',
+                index === 0 && latestCall?.id === callLog.id ? `Total calls for this lead: ${callLogs.length}` : '',
+            ].filter(Boolean).join('\n'),
+        }));
+    });
+}
+
+function buildCallsCsv(reportRows) {
+    const header = CALL_REPORT_COLUMNS.map(({ header: label }) => label);
+    const rows = reportRows.map((row) =>
+        buildCsvRow(CALL_REPORT_COLUMNS.map(({ key }) => row[key] || '')),
+    );
+
+    return [buildCsvRow(header), ...rows].join('\n');
+}
+
+function buildLeadsCsv(reportRows) {
+    const header = LEAD_REPORT_COLUMNS.map(({ header: label }) => label);
+    const rows = reportRows.map((row) =>
+        buildCsvRow(LEAD_REPORT_COLUMNS.map(({ key }) => row[key] || '')),
+    );
+
+    return [buildCsvRow(header), ...rows].join('\n');
+}
+
+function estimateWrappedLines(value, approxWidth) {
+    return String(value || '')
+        .split('\n')
+        .reduce((total, line) => total + Math.max(1, Math.ceil(line.length / approxWidth)), 0);
+}
+
+function getReportRowHeight(row) {
+    const maxLines = Math.max(
+        estimateWrappedLines(row.leadContext, 30),
+        estimateWrappedLines(row.callRemark, 34),
+        estimateWrappedLines(row.callingFeedback, 36),
+    );
+
+    return Math.min(Math.max(24, maxLines * 16), 112);
+}
+
+function getLeadReportRowHeight(row) {
+    const maxLines = Math.max(
+        estimateWrappedLines(row.aliases, 20),
+        estimateWrappedLines(row.leadContext, 34),
+        estimateWrappedLines(row.whatsAppSignals, 28),
+        estimateWrappedLines(row.deliveryStatus, 28),
+        estimateWrappedLines(row.callingFeedback, 34),
+    );
+
+    return Math.min(Math.max(24, maxLines * 16), 120);
+}
+
 function CallStatusPill({ status }) {
     const tone = status === 'answered'
         ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
@@ -463,6 +688,154 @@ function CallsPanel({
         );
     }, [leadFilter, leads, query]);
 
+    async function downloadVisibleCallsReport() {
+        const reportRows = buildCallReportRows(visibleLeads, leadFilter);
+        const filterLabel = LEAD_FILTERS[leadFilter]?.label || leadFilter;
+        const fileDate = new Date().toISOString().slice(0, 10);
+
+        try {
+            const excelModule = await import('exceljs');
+            const ExcelJS = excelModule?.default?.Workbook ? excelModule.default : excelModule;
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Calls Report', {
+                views: [{ state: 'frozen', ySplit: 4 }],
+            });
+            const columnCount = CALL_REPORT_COLUMNS.length;
+            const callStatusColumn = CALL_REPORT_COLUMNS.findIndex(({ key }) => key === 'callStatus') + 1;
+
+            workbook.creator = 'Aadhya Serene Admin';
+            workbook.created = new Date();
+
+            worksheet.columns = CALL_REPORT_COLUMNS.map(({ key, width }) => ({ key, width }));
+            worksheet.pageSetup = {
+                orientation: 'landscape',
+                paperSize: 9,
+                fitToPage: true,
+                fitToWidth: 1,
+                fitToHeight: 0,
+                horizontalCentered: true,
+                margins: {
+                    left: 0.3,
+                    right: 0.3,
+                    top: 0.45,
+                    bottom: 0.45,
+                    header: 0.2,
+                    footer: 0.2,
+                },
+            };
+            worksheet.headerFooter.oddFooter = '&LAadhya Serene&CCalls Report&RPage &P of &N';
+
+            const titleRow = worksheet.addRow(['Aadhya Serene Calls Report']);
+            worksheet.mergeCells(1, 1, 1, columnCount);
+            titleRow.height = 28;
+            titleRow.getCell(1).font = { name: 'Aptos', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+            titleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF111111' } };
+            titleRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
+
+            const metaRow = worksheet.addRow([
+                `Segment: ${filterLabel} | Leads shown: ${visibleLeads.length} | Rows exported: ${reportRows.length} | Exported: ${formatExportDateTime(new Date().toISOString())}`,
+            ]);
+            worksheet.mergeCells(2, 1, 2, columnCount);
+            metaRow.height = 22;
+            metaRow.getCell(1).font = { name: 'Aptos', size: 10, color: { argb: 'FF374151' } };
+            metaRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F4F2' } };
+            metaRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
+
+            worksheet.addRow([]);
+
+            const headerRow = worksheet.addRow(CALL_REPORT_COLUMNS.map(({ header }) => header));
+            headerRow.height = 24;
+            headerRow.eachCell((cell) => {
+                cell.font = { name: 'Aptos', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF374151' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                    left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                    bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                    right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                };
+            });
+
+            worksheet.autoFilter = {
+                from: { row: 4, column: 1 },
+                to: { row: 4, column: columnCount },
+            };
+
+            reportRows.forEach((row, index) => {
+                const excelRow = worksheet.addRow(CALL_REPORT_COLUMNS.map(({ key }) => row[key] || ''));
+                excelRow.height = getReportRowHeight(row);
+
+                excelRow.eachCell((cell) => {
+                    cell.font = { name: 'Aptos', size: 10, color: { argb: 'FF111827' } };
+                    cell.alignment = { vertical: 'top', wrapText: true };
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                        left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                        right: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                    };
+                    cell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: index % 2 === 0 ? 'FFFFFFFF' : 'FFFAFAFA' },
+                    };
+                });
+
+                const callStatusCell = excelRow.getCell(callStatusColumn);
+                if (row.callStatus === 'Answered') {
+                    callStatusCell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFE7F8EE' },
+                    };
+                    callStatusCell.font = { name: 'Aptos', size: 10, bold: true, color: { argb: 'FF166534' } };
+                } else if (row.callStatus === 'Not answered') {
+                    callStatusCell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFFFF4E5' },
+                    };
+                    callStatusCell.font = { name: 'Aptos', size: 10, bold: true, color: { argb: 'FFB45309' } };
+                } else if (row.callStatus === 'No calls logged') {
+                    callStatusCell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFF3F4F6' },
+                    };
+                    callStatusCell.font = { name: 'Aptos', size: 10, italic: true, color: { argb: 'FF6B7280' } };
+                }
+            });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+
+            link.href = url;
+            link.download = `aadhya-serene-calls-${leadFilter}-${fileDate}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            const csv = buildCallsCsv(reportRows);
+            const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+
+            console.error('Styled report export failed. Falling back to CSV.', error);
+            link.href = url;
+            link.download = `aadhya-serene-calls-${leadFilter}-${fileDate}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        }
+    }
+
     return (
         <section className="rounded-[24px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px]">
             <div className="flex flex-col gap-5 border-b border-[#111]/10 px-4 py-5 sm:px-7 sm:py-6 xl:flex-row xl:items-center xl:justify-between">
@@ -496,6 +869,17 @@ function CallsPanel({
                             className="h-12 w-full rounded-2xl border border-[#111]/14 bg-white pl-10 pr-4 text-sm font-medium text-[#111] outline-none shadow-[0_7px_0_rgba(17,17,17,0.035),0_16px_32px_rgba(17,17,17,0.05)] transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
                         />
                     </div>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            void downloadVisibleCallsReport();
+                        }}
+                        disabled={!visibleLeads.length}
+                        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#111] px-5 text-sm font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 xl:w-auto"
+                    >
+                        <Download className="h-4 w-4" />
+                        Download Report
+                    </button>
                 </div>
             </div>
 
@@ -1272,8 +1656,13 @@ function DeliveryPill({ label, state }) {
     const error = state?.error || '';
     const metaStatus = state?.metaStatus || '';
     const metaStatusAt = state?.metaStatusAt ? formatAdminDate(state.metaStatusAt) : '';
+    const metaErrorCode = Number(state?.metaErrorCode || 0);
+    const metaError = label === 'WhatsApp' && metaErrorCode
+        ? getWhatsAppMetaErrorCopy(metaErrorCode, error)
+        : null;
     const statusLabel =
         label === 'WhatsApp' ? getWhatsAppDeliveryStatusLabel(status) : status;
+    const showSentAt = sentAt && sentAt !== metaStatusAt;
     const tone =
         ['accepted', 'sent'].includes(status)
             ? 'border-sky-200 bg-sky-50 text-sky-700'
@@ -1287,9 +1676,13 @@ function DeliveryPill({ label, state }) {
         <div className={`rounded-2xl border px-3 py-2 text-xs font-bold ${tone}`}>
             <p>{label}: {statusLabel}</p>
             {label === 'WhatsApp' && metaStatus ? <p className="mt-1 font-medium">Meta: {metaStatus}</p> : null}
+            {label === 'WhatsApp' && metaError?.code ? (
+                <p className="mt-1 font-medium">Code {metaError.code}: {metaError.label}</p>
+            ) : null}
             {label === 'WhatsApp' && metaStatusAt ? <p className="mt-1 font-medium">{metaStatusAt}</p> : null}
-            {sentAt ? <p className="mt-1 font-medium">{sentAt}</p> : null}
-            {error ? <p className="mt-1 break-words font-medium">{error}</p> : null}
+            {showSentAt ? <p className="mt-1 font-medium">{sentAt}</p> : null}
+            {label === 'WhatsApp' && metaError?.detail ? <p className="mt-1 break-words font-medium">{metaError.detail}</p> : null}
+            {!metaError?.detail && error ? <p className="mt-1 break-words font-medium">{error}</p> : null}
         </div>
     );
 }
@@ -1733,11 +2126,130 @@ export default function AdminPage() {
         setLeads([]);
     }
 
-    function downloadLeadCsv() {
-        const params = new URLSearchParams();
-        if (leadDateRange.startDate) params.set('startDate', leadDateRange.startDate);
-        if (leadDateRange.endDate) params.set('endDate', leadDateRange.endDate);
-        window.location.assign(`/api/admin/leads/export${params.toString() ? `?${params}` : ''}`);
+    async function downloadVisibleLeadsReport() {
+        const reportRows = buildLeadReportRows(visibleLeads, leadTemperature);
+        const filterLabel = LEAD_FILTERS[leadTemperature]?.label || leadTemperature;
+        const fileDate = new Date().toISOString().slice(0, 10);
+        const dateRangeLabel = leadDateRange.startDate || leadDateRange.endDate
+            ? `${leadDateRange.startDate || 'Start'} to ${leadDateRange.endDate || 'Today'}`
+            : 'All dates';
+
+        try {
+            const excelModule = await import('exceljs');
+            const ExcelJS = excelModule?.default?.Workbook ? excelModule.default : excelModule;
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Leads Report', {
+                views: [{ state: 'frozen', ySplit: 4 }],
+            });
+            const columnCount = LEAD_REPORT_COLUMNS.length;
+
+            workbook.creator = 'Aadhya Serene Admin';
+            workbook.created = new Date();
+
+            worksheet.columns = LEAD_REPORT_COLUMNS.map(({ key, width }) => ({ key, width }));
+            worksheet.pageSetup = {
+                orientation: 'landscape',
+                paperSize: 9,
+                fitToPage: true,
+                fitToWidth: 1,
+                fitToHeight: 0,
+                horizontalCentered: true,
+                margins: {
+                    left: 0.3,
+                    right: 0.3,
+                    top: 0.45,
+                    bottom: 0.45,
+                    header: 0.2,
+                    footer: 0.2,
+                },
+            };
+            worksheet.headerFooter.oddFooter = '&LAadhya Serene&CLeads Report&RPage &P of &N';
+
+            const titleRow = worksheet.addRow(['Aadhya Serene Leads Report']);
+            worksheet.mergeCells(1, 1, 1, columnCount);
+            titleRow.height = 28;
+            titleRow.getCell(1).font = { name: 'Aptos', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+            titleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF111111' } };
+            titleRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
+
+            const metaRow = worksheet.addRow([
+                `Segment: ${filterLabel} | Leads shown: ${visibleLeads.length} | Date range: ${dateRangeLabel} | Exported: ${formatExportDateTime(new Date().toISOString())}`,
+            ]);
+            worksheet.mergeCells(2, 1, 2, columnCount);
+            metaRow.height = 22;
+            metaRow.getCell(1).font = { name: 'Aptos', size: 10, color: { argb: 'FF374151' } };
+            metaRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F4F2' } };
+            metaRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
+
+            worksheet.addRow([]);
+
+            const headerRow = worksheet.addRow(LEAD_REPORT_COLUMNS.map(({ header }) => header));
+            headerRow.height = 24;
+            headerRow.eachCell((cell) => {
+                cell.font = { name: 'Aptos', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF374151' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                    left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                    bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                    right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                };
+            });
+
+            worksheet.autoFilter = {
+                from: { row: 4, column: 1 },
+                to: { row: 4, column: columnCount },
+            };
+
+            reportRows.forEach((row, index) => {
+                const excelRow = worksheet.addRow(LEAD_REPORT_COLUMNS.map(({ key }) => row[key] || ''));
+                excelRow.height = getLeadReportRowHeight(row);
+
+                excelRow.eachCell((cell) => {
+                    cell.font = { name: 'Aptos', size: 10, color: { argb: 'FF111827' } };
+                    cell.alignment = { vertical: 'top', wrapText: true };
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                        left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                        right: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                    };
+                    cell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: index % 2 === 0 ? 'FFFFFFFF' : 'FFFAFAFA' },
+                    };
+                });
+            });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+
+            link.href = url;
+            link.download = `aadhya-serene-leads-${leadTemperature}-${fileDate}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            const csv = buildLeadsCsv(reportRows);
+            const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+
+            console.error('Styled leads export failed. Falling back to CSV.', error);
+            link.href = url;
+            link.download = `aadhya-serene-leads-${leadTemperature}-${fileDate}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        }
     }
 
     function openDateFilter() {
@@ -1873,11 +2385,13 @@ export default function AdminPage() {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={downloadLeadCsv}
+                                        onClick={() => {
+                                            void downloadVisibleLeadsReport();
+                                        }}
                                         className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#111] px-5 text-sm font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0 sm:w-auto"
                                     >
                                         <Download className="h-4 w-4" />
-                                        Download CSV
+                                        Download Report
                                     </button>
                                     {dateFilterOpen ? (
                                         <div className="absolute right-0 top-[calc(100%+10px)] z-30 w-full min-w-[300px] border border-[#111]/15 bg-[#fffefa] p-5 text-left shadow-[0_18px_35px_rgba(17,17,17,0.12)] sm:w-[350px]">
