@@ -3,6 +3,7 @@ import { requireAdmin, WRITE_ROLES } from '../../../../../../lib/admin-auth';
 import {
     LEAD_STATUS_OPTIONS,
     normalizeLeadStatus,
+    SALES_LEAD_STATUS_DEAD,
 } from '../../../../../../lib/lead-status';
 import { connectMongo } from '../../../../../../lib/mongodb';
 import { Notification } from '../../../../../../lib/models';
@@ -28,15 +29,27 @@ export async function PATCH(request, { params }) {
         return NextResponse.json({ error: 'Lead not found.' }, { status: 404 });
     }
 
-    await Notification.updateMany(
-        { phone: lead.phone },
-        { $set: { leadStatus: normalizeLeadStatus(leadStatus) } },
-    );
+    const update =
+        leadStatus === 'dead'
+            ? {
+                $set: {
+                    leadStatus: normalizeLeadStatus(leadStatus),
+                    salesLeadStatus: SALES_LEAD_STATUS_DEAD,
+                },
+            }
+            : {
+                $set: {
+                    leadStatus: normalizeLeadStatus(leadStatus),
+                },
+            };
+
+    await Notification.updateMany({ phone: lead.phone }, update);
 
     return NextResponse.json({
         lead: {
             id: String(lead._id),
             leadStatus: normalizeLeadStatus(leadStatus),
+            salesLeadStatus: leadStatus === 'dead' ? SALES_LEAD_STATUS_DEAD : '',
         },
     });
 }

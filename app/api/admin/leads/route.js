@@ -5,7 +5,10 @@ import { Notification, WhatsAppConversation } from '../../../../lib/models';
 import { summarizeWhatsAppConversation } from '../../../../lib/lead-temperature';
 import { buildConversationActivity, buildLeadRecordActivity } from '../../../../lib/lead-activity';
 import { getLeadDateRangeFilter } from '../../../../lib/lead-date-filter';
-import { normalizeLeadStatus } from '../../../../lib/lead-status';
+import {
+    getSalesLeadStatus,
+    normalizeLeadStatus,
+} from '../../../../lib/lead-status';
 
 function asIso(value) {
     if (!value) return '';
@@ -41,7 +44,12 @@ function serializeCallLog(callLog) {
         id: String(callLog._id),
         callDate: callLog.callDate || '',
         callStatus: callLog.callStatus || '',
+        leadStatus: callLog.leadStatus || '',
         remark: callLog.remark || '',
+        sharedRequirements: Boolean(callLog.sharedRequirements),
+        budget: callLog.budget || '',
+        configuration: callLog.configuration || '',
+        location: callLog.location || '',
         authorName: callLog.authorName || 'Sales Team',
         authorEmail: callLog.authorEmail || '',
         createdAt: callLog.createdAt ? new Date(callLog.createdAt).toISOString() : '',
@@ -96,6 +104,7 @@ function serializeLeadGroup(records, conversation) {
             return sortByNewestDate(left, right, 'createdAt');
         });
     const submissions = sortedRecords.map(serializeSubmission);
+    const salesLeadStatus = getSalesLeadStatus(latestRecord);
     const updatedAt = sortedRecords.reduce((latest, record) => {
         const currentValue = new Date(record.updatedAt || record.createdAt || 0).getTime();
         return currentValue > latest ? currentValue : latest;
@@ -118,6 +127,7 @@ function serializeLeadGroup(records, conversation) {
         preferredTime: latestRecord.preferredTime || '',
         message: latestRecord.message || '',
         metadata: latestRecord.metadata || {},
+        salesLeadStatus,
         leadStatus: sortedRecords.some((record) => normalizeLeadStatus(record.leadStatus) === 'dead')
             ? 'dead'
             : 'active',

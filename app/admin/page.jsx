@@ -35,11 +35,11 @@ import {
     Tooltip,
 } from 'recharts';
 import {
-    ADMIN_FEEDBACK_BUDGET_OPTIONS,
-    ADMIN_FEEDBACK_CONFIGURATION_OPTIONS,
-    getAdminFeedbackFieldErrors,
-} from '@/lib/admin-feedback';
-import {
+    CALL_LOG_BUDGET_OPTIONS,
+    CALL_LOG_CONFIGURATION_OPTIONS,
+    CALL_LOG_LOCATION_CHOICE_MENTIONED,
+    CALL_LOG_LOCATION_CHOICE_OPTIONS,
+    CALL_LOG_REQUIREMENT_NOT_MENTIONED,
     CALL_LOG_REMARK_MAX_LENGTH,
     CALL_LOG_STATUS_OPTIONS,
     getCallLogFieldErrors,
@@ -50,10 +50,10 @@ import {
     isWhatsAppDeliverySuccessStatus,
 } from '@/lib/whatsapp-delivery';
 import {
-    isDeadLead,
-    LEAD_STATUS_ACTIVE,
-    LEAD_STATUS_DEAD,
-    normalizeLeadStatus,
+    getSalesLeadStatus,
+    SALES_LEAD_STATUS_COLD,
+    SALES_LEAD_STATUS_DEAD,
+    SALES_LEAD_STATUS_OPTIONS,
 } from '@/lib/lead-status';
 
 const ROLE_LABELS = {
@@ -99,9 +99,9 @@ const CHANNEL_LABELS = {
 };
 
 const LEAD_TEMPERATURES = {
-    cold: { label: 'Cold', description: '0–2 responses', className: 'border-slate-200 bg-slate-50 text-slate-700' },
-    warm: { label: 'Warm', description: '3–4 responses', className: 'border-amber-200 bg-amber-50 text-amber-700' },
-    hot: { label: 'Hot', description: '5+ responses', className: 'border-red-200 bg-red-50 text-red-700' },
+    cold: { label: 'Cold', description: 'Fresh follow-up needed', className: 'border-slate-200 bg-slate-50 text-slate-700' },
+    warm: { label: 'Warm', description: 'Interested lead', className: 'border-amber-200 bg-amber-50 text-amber-700' },
+    hot: { label: 'Hot', description: 'High-priority lead', className: 'border-red-200 bg-red-50 text-red-700' },
 };
 
 const LEAD_FILTERS = {
@@ -176,11 +176,11 @@ function getLeadJourneySummary(lead) {
 }
 
 function getLeadTemperature(lead) {
-    return lead?.whatsapp?.temperature || 'cold';
+    return getSalesLeadStatus(lead);
 }
 
 function getLeadFilterKey(lead) {
-    return isDeadLead(lead) ? LEAD_STATUS_DEAD : getLeadTemperature(lead);
+    return getLeadTemperature(lead);
 }
 
 function getVisibleLeadsForFilter(leads, filterKey) {
@@ -188,7 +188,7 @@ function getVisibleLeadsForFilter(leads, filterKey) {
 }
 
 function getLeadFilterButtonClasses(activeFilter, filterKey) {
-    if (filterKey === LEAD_STATUS_DEAD) {
+    if (filterKey === SALES_LEAD_STATUS_DEAD) {
         return activeFilter === filterKey
             ? 'bg-[#b42318] text-white shadow-[0_8px_18px_rgba(180,35,24,0.25)]'
             : 'bg-[#b42318] text-white/90 hover:text-white';
@@ -228,41 +228,27 @@ function getLeadChannelSummary(lead) {
 
 function LeadTemperaturePill({ lead }) {
     const temperature = getLeadTemperature(lead);
-    const meta = LEAD_TEMPERATURES[temperature];
-    const score = lead?.whatsapp?.score || 0;
+    const meta = LEAD_FILTERS[temperature] || LEAD_TEMPERATURES.cold;
 
     return (
         <span className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-bold ${meta.className}`}>
-            {meta.label} · {score}
+            {meta.label}
         </span>
     );
 }
 
-function createEmptyRemarkForm() {
-    return {
-        budget: '',
-        configuration: '',
-        location: '',
-        notes: '',
-    };
-}
-
-function createEmptyCallLogForm() {
+function createEmptyCallLogForm(currentStatus = SALES_LEAD_STATUS_COLD) {
     return {
         callDate: getTodayDateInputValue(),
         callStatus: '',
+        leadStatus: currentStatus,
         remark: '',
+        sharedRequirements: false,
+        budget: CALL_LOG_REQUIREMENT_NOT_MENTIONED,
+        configuration: CALL_LOG_REQUIREMENT_NOT_MENTIONED,
+        locationChoice: CALL_LOG_REQUIREMENT_NOT_MENTIONED,
+        location: '',
     };
-}
-
-function getRemarkMetaText(remark) {
-    const parts = [
-        remark?.configuration || '',
-        remark?.budget || '',
-        remark?.location || '',
-    ].filter(Boolean);
-
-    return parts.join(' · ');
 }
 
 function getSortedCallLogs(callLogs) {
@@ -348,24 +334,23 @@ function buildLeadContextForExport(lead) {
     ].filter(Boolean).join('\n');
 }
 
-function buildCallingFeedbackForExport(remarks) {
-    if (!remarks.length) {
+function formatSharedRequirementValue(value) {
+    if (!value) return '';
+    return value === CALL_LOG_REQUIREMENT_NOT_MENTIONED ? 'Not mentioned' : value;
+}
+
+function buildCallFeedbackSummary(callLog) {
+    if (!callLog?.sharedRequirements) {
         return 'No calling feedback added yet';
     }
 
-    const latestRemark = remarks[0];
     const lines = [
-        latestRemark.configuration ? `Configuration: ${latestRemark.configuration}` : '',
-        latestRemark.budget ? `Budget: ${latestRemark.budget}` : '',
-        latestRemark.location ? `Location: ${latestRemark.location}` : '',
-        latestRemark.notes ? `Notes: ${latestRemark.notes}` : latestRemark.text ? `Notes: ${latestRemark.text}` : '',
-        latestRemark.authorName ? `Saved by: ${latestRemark.authorName}` : '',
-        latestRemark.createdAt ? `Saved at: ${formatExportDateTime(latestRemark.createdAt)}` : '',
+        callLog.configuration ? `Configuration: ${formatSharedRequirementValue(callLog.configuration)}` : '',
+        callLog.budget ? `Budget: ${formatSharedRequirementValue(callLog.budget)}` : '',
+        callLog.location ? `Location: ${formatSharedRequirementValue(callLog.location)}` : '',
+        callLog.authorName ? `Saved by: ${callLog.authorName}` : '',
+        callLog.createdAt ? `Saved at: ${formatExportDateTime(callLog.createdAt)}` : '',
     ].filter(Boolean);
-
-    if (remarks.length > 1) {
-        lines.push(`Additional feedback entries: ${remarks.length - 1}`);
-    }
 
     return lines.join('\n');
 }
@@ -391,42 +376,46 @@ function buildDeliveryStatusForExport(lead) {
     ].filter(Boolean).join('\n');
 }
 
-function buildLeadReportRows(leads, filterKey) {
-    return leads.map((lead) => ({
-        submittedAt: formatExportDateTime(lead.createdAt),
-        updatedAt: formatExportDateTime(lead.updatedAt),
-        leadSegment: LEAD_FILTERS[filterKey]?.label || getLeadFilterKey(lead),
-        leadName: lead.name || 'Unknown lead',
-        aliases: getLeadAliases(lead).join('\n'),
-        phone: lead.phone || '',
-        email: lead.email || '',
-        source: getLeadSourceSummary(lead),
-        channel: CHANNEL_LABELS[lead.channel] || lead.channel || '',
-        request: lead.requestLabel || 'General Enquiry',
-        leadContext: buildLeadContextForExport(lead),
-        whatsAppSignals: buildLeadSignalsForExport(lead),
-        deliveryStatus: buildDeliveryStatusForExport(lead),
-        callingFeedback: buildCallingFeedbackForExport(Array.isArray(lead?.salesRemarks) ? lead.salesRemarks : []),
-        submissionCount: getLeadSubmissionCount(lead),
-    }));
+function buildLeadReportRows(leads) {
+    return leads.map((lead) => {
+        const callLogs = getSortedCallLogs(lead.callLogs);
+        const latestFeedbackCall = callLogs.find((callLog) => callLog.sharedRequirements);
+        const salesStatus = getLeadFilterKey(lead);
+
+        return {
+            submittedAt: formatExportDateTime(lead.createdAt),
+            updatedAt: formatExportDateTime(lead.updatedAt),
+            leadSegment: LEAD_FILTERS[salesStatus]?.label || salesStatus,
+            leadName: lead.name || 'Unknown lead',
+            aliases: getLeadAliases(lead).join('\n'),
+            phone: lead.phone || '',
+            email: lead.email || '',
+            source: getLeadSourceSummary(lead),
+            channel: CHANNEL_LABELS[lead.channel] || lead.channel || '',
+            request: lead.requestLabel || 'General Enquiry',
+            leadContext: buildLeadContextForExport(lead),
+            whatsAppSignals: buildLeadSignalsForExport(lead),
+            deliveryStatus: buildDeliveryStatusForExport(lead),
+            callingFeedback: buildCallFeedbackSummary(latestFeedbackCall),
+            submissionCount: getLeadSubmissionCount(lead),
+        };
+    });
 }
 
-function buildCallReportRows(leads, filterKey) {
+function buildCallReportRows(leads) {
     return leads.flatMap((lead) => {
         const callLogs = getSortedCallLogs(lead.callLogs);
         const latestCall = callLogs[0];
-        const remarks = Array.isArray(lead?.salesRemarks) ? lead.salesRemarks : [];
-        const feedbackSummary = buildCallingFeedbackForExport(remarks);
+        const salesStatus = getLeadFilterKey(lead);
         const baseRow = {
             submittedAt: formatExportDateTime(lead.createdAt),
-            leadSegment: LEAD_FILTERS[filterKey]?.label || getLeadFilterKey(lead),
+            leadSegment: LEAD_FILTERS[salesStatus]?.label || salesStatus,
             leadName: lead.name || 'Unknown lead',
             phone: lead.phone || '',
             source: getLeadSourceSummary(lead),
             channel: CHANNEL_LABELS[lead.channel] || lead.channel || '',
             request: lead.requestLabel || 'General Enquiry',
             leadContext: buildLeadContextForExport(lead),
-            callingFeedback: feedbackSummary,
         };
 
         if (!callLogs.length) {
@@ -436,6 +425,7 @@ function buildCallReportRows(leads, filterKey) {
                 callDate: '',
                 callStatus: 'No calls logged',
                 callRemark: '',
+                callingFeedback: 'No calling feedback added yet',
             }];
         }
 
@@ -450,6 +440,7 @@ function buildCallReportRows(leads, filterKey) {
                 callLog.createdAt ? `Saved at: ${formatExportDateTime(callLog.createdAt)}` : '',
                 index === 0 && latestCall?.id === callLog.id ? `Total calls for this lead: ${callLogs.length}` : '',
             ].filter(Boolean).join('\n'),
+            callingFeedback: buildCallFeedbackSummary(callLog),
         }));
     });
 }
@@ -509,28 +500,6 @@ function CallStatusPill({ status }) {
         <span className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-bold ${tone}`}>
             {CALL_STATUS_LABELS[status] || 'Unknown'}
         </span>
-    );
-}
-
-function DeadLeadToggleButton({ lead, canWrite, busyLeadStatusId, onToggleLeadStatus, className = '' }) {
-    if (!canWrite) return null;
-
-    const dead = isDeadLead(lead);
-    const isBusy = busyLeadStatusId === lead.id;
-
-    return (
-        <button
-            type="button"
-            onClick={() => onToggleLeadStatus(lead)}
-            disabled={isBusy}
-            className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                dead
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                    : 'border-red-200 bg-red-50 text-red-700'
-            } ${className}`}
-        >
-            {isBusy ? 'Saving...' : dead ? 'Restore lead' : 'Mark dead'}
-        </button>
     );
 }
 
@@ -633,8 +602,6 @@ function CallsPanel({
     onCallLogSaved,
     onOpenLeadActivity,
     onOpenLeadAbout,
-    onToggleLeadStatus,
-    busyLeadStatusId,
 }) {
     const [query, setQuery] = useState('');
     const [leadFilter, setLeadFilter] = useState('cold');
@@ -667,6 +634,7 @@ function CallsPanel({
                 lead.source,
                 ...(lead.sources || []),
                 lead.requestLabel,
+                getLeadTemperature(lead),
                 lead.message,
                 lead.preferredTime,
                 ...(lead.submissions || []).flatMap((submission) => [
@@ -678,8 +646,12 @@ function CallsPanel({
                 ]),
                 ...(lead.callLogs || []).flatMap((callLog) => [
                     callLog.callDate,
+                    callLog.leadStatus,
                     CALL_STATUS_LABELS[callLog.callStatus] || callLog.callStatus,
                     callLog.remark,
+                    callLog.budget,
+                    callLog.configuration,
+                    callLog.location,
                 ]),
             ]
                 .join(' ')
@@ -689,7 +661,7 @@ function CallsPanel({
     }, [leadFilter, leads, query]);
 
     async function downloadVisibleCallsReport() {
-        const reportRows = buildCallReportRows(visibleLeads, leadFilter);
+        const reportRows = buildCallReportRows(visibleLeads);
         const filterLabel = LEAD_FILTERS[leadFilter]?.label || leadFilter;
         const fileDate = new Date().toISOString().slice(0, 10);
 
@@ -843,7 +815,7 @@ function CallsPanel({
                     <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Call tracking</p>
                     <h2 className="mt-1 font-display text-2xl font-bold text-[#111]">Sales call logs</h2>
                     <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6b7280]">
-                        Add multiple call updates per lead with date, pickup status, and sales remarks.
+                        Save each call with its outcome, updated sales lead status, and any shared customer requirements.
                     </p>
                 </div>
                 <div className="flex w-full flex-col gap-4 xl:w-auto xl:items-end">
@@ -856,7 +828,7 @@ function CallsPanel({
                                 className={`flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition sm:min-w-[138px] sm:flex-none ${getLeadFilterButtonClasses(leadFilter, filterKey)}`}
                             >
                                 <span>{meta.label}</span>
-                                <span className={`rounded-full px-2 py-0.5 text-xs ${filterKey === LEAD_STATUS_DEAD ? 'bg-white/20 text-white' : 'border border-[#111]/10 bg-[#fafafa] text-[#111]'}`}>{leadStats[filterKey]}</span>
+                                <span className={`rounded-full px-2 py-0.5 text-xs ${filterKey === SALES_LEAD_STATUS_DEAD ? 'bg-white/20 text-white' : 'border border-[#111]/10 bg-[#fafafa] text-[#111]'}`}>{leadStats[filterKey]}</span>
                             </button>
                         ))}
                     </div>
@@ -893,8 +865,6 @@ function CallsPanel({
                             onCallLogSaved={onCallLogSaved}
                             onOpenLeadActivity={onOpenLeadActivity}
                             onOpenLeadAbout={onOpenLeadAbout}
-                            onToggleLeadStatus={onToggleLeadStatus}
-                            busyLeadStatusId={busyLeadStatusId}
                         />
                     ))
                 ) : (
@@ -913,16 +883,51 @@ function LeadCallCard({
     onCallLogSaved,
     onOpenLeadActivity,
     onOpenLeadAbout,
-    onToggleLeadStatus,
-    busyLeadStatusId,
 }) {
-    const [callForm, setCallForm] = useState(createEmptyCallLogForm);
+    const [callForm, setCallForm] = useState(() => createEmptyCallLogForm(getLeadTemperature(lead)));
     const [callErrors, setCallErrors] = useState({});
     const [savingCall, setSavingCall] = useState(false);
     const callLogs = getSortedCallLogs(lead.callLogs);
 
+    useEffect(() => {
+        setCallForm(createEmptyCallLogForm(getLeadTemperature(lead)));
+        setCallErrors({});
+    }, [lead.id, lead.salesLeadStatus]);
+
     function updateCallField(name, value) {
-        setCallForm((current) => ({ ...current, [name]: value }));
+        setCallForm((current) => {
+            const next = { ...current, [name]: value };
+
+            if (name === 'sharedRequirements' && !value) {
+                next.budget = CALL_LOG_REQUIREMENT_NOT_MENTIONED;
+                next.configuration = CALL_LOG_REQUIREMENT_NOT_MENTIONED;
+                next.locationChoice = CALL_LOG_REQUIREMENT_NOT_MENTIONED;
+                next.location = '';
+            }
+
+            if (name === 'locationChoice' && value !== CALL_LOG_LOCATION_CHOICE_MENTIONED) {
+                next.location = '';
+            }
+
+            const allRequirementsNotMentioned = (
+                next.sharedRequirements
+                && next.budget === CALL_LOG_REQUIREMENT_NOT_MENTIONED
+                && next.configuration === CALL_LOG_REQUIREMENT_NOT_MENTIONED
+                && next.locationChoice === CALL_LOG_REQUIREMENT_NOT_MENTIONED
+            );
+
+            const shouldAutoCollapseRequirements = (
+                allRequirementsNotMentioned
+                && ['budget', 'configuration', 'locationChoice'].includes(name)
+            );
+
+            if (shouldAutoCollapseRequirements) {
+                next.sharedRequirements = false;
+                next.location = '';
+            }
+
+            return next;
+        });
         setCallErrors((current) => {
             if (!current[name] && !current.form) {
                 return current;
@@ -931,6 +936,12 @@ function LeadCallCard({
             const next = { ...current };
             delete next[name];
             delete next.form;
+            if (name === 'sharedRequirements') {
+                delete next.budget;
+                delete next.configuration;
+                delete next.locationChoice;
+                delete next.location;
+            }
             return next;
         });
     }
@@ -960,7 +971,7 @@ function LeadCallCard({
             }
 
             onCallLogSaved(lead.id, payload.callLog);
-            setCallForm(createEmptyCallLogForm());
+            setCallForm(createEmptyCallLogForm(payload.salesLeadStatus || callForm.leadStatus));
         } catch (error) {
             setCallErrors((current) => ({
                 ...current,
@@ -989,16 +1000,12 @@ function LeadCallCard({
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                    <DeadLeadToggleButton
-                        lead={lead}
-                        canWrite={canWrite}
-                        busyLeadStatusId={busyLeadStatusId}
-                        onToggleLeadStatus={onToggleLeadStatus}
-                    />
                     <span className="inline-flex items-center gap-2 rounded-2xl border border-[#111]/10 bg-white px-4 py-2 text-xs font-bold text-[#111]">
                         <PhoneCall className="h-4 w-4" />
                         {callLogs.length} call{callLogs.length === 1 ? '' : 's'}
                     </span>
+                    {lead.whatsapp?.callbackRequested ? <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-700"><PhoneCall className="h-3 w-3" /> Callback</span> : null}
+                    {lead.whatsapp?.siteVisitRequested ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700"><CalendarCheck2 className="h-3 w-3" /> Site visit</span> : null}
                     <button
                         type="button"
                         onClick={() => onOpenLeadActivity(lead)}
@@ -1011,7 +1018,7 @@ function LeadCallCard({
 
             {canWrite ? (
                 <form onSubmit={saveCall} className="mt-5 rounded-[22px] border border-[#111]/10 bg-white p-4 sm:p-5">
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-3 lg:grid-cols-3">
                         <label className="block">
                             <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Call date</span>
                             <input
@@ -1038,6 +1045,94 @@ function LeadCallCard({
                             </select>
                             {callErrors.callStatus ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.callStatus}</p> : null}
                         </label>
+                        <label className="block">
+                            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Lead status</span>
+                            <select
+                                value={callForm.leadStatus}
+                                onChange={(event) => updateCallField('leadStatus', event.target.value)}
+                                className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                            >
+                                {SALES_LEAD_STATUS_OPTIONS.map((status) => (
+                                    <option key={status} value={status}>
+                                        {LEAD_FILTERS[status]?.label || status}
+                                    </option>
+                                ))}
+                            </select>
+                            {callErrors.leadStatus ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.leadStatus}</p> : null}
+                        </label>
+                    </div>
+                    <div className="mt-4 rounded-[20px] border border-[#111]/10 bg-[#fafafa] px-4 py-4">
+                        <label className="flex items-center gap-3 text-sm font-bold text-[#111]">
+                            <input
+                                type="checkbox"
+                                checked={callForm.sharedRequirements}
+                                onChange={(event) => updateCallField('sharedRequirements', event.target.checked)}
+                                className="h-4 w-4 rounded border border-[#111]/20 text-[#111] focus:ring-black/10"
+                            />
+                            Customer shared requirements
+                        </label>
+                        {callForm.sharedRequirements ? (
+                            <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                                <label className="block">
+                                    <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Budget</span>
+                                    <select
+                                        value={callForm.budget}
+                                        onChange={(event) => updateCallField('budget', event.target.value)}
+                                        className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-white px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                                    >
+                                        {CALL_LOG_BUDGET_OPTIONS.map((option) => (
+                                            <option key={option} value={option}>
+                                                {option === CALL_LOG_REQUIREMENT_NOT_MENTIONED ? 'Not mentioned' : option}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {callErrors.budget ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.budget}</p> : null}
+                                </label>
+                                <label className="block">
+                                    <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Configuration</span>
+                                    <select
+                                        value={callForm.configuration}
+                                        onChange={(event) => updateCallField('configuration', event.target.value)}
+                                        className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-white px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                                    >
+                                        {CALL_LOG_CONFIGURATION_OPTIONS.map((option) => (
+                                            <option key={option} value={option}>
+                                                {option === CALL_LOG_REQUIREMENT_NOT_MENTIONED ? 'Not mentioned' : option}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {callErrors.configuration ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.configuration}</p> : null}
+                                </label>
+                                <label className="block">
+                                    <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Location</span>
+                                    <select
+                                        value={callForm.locationChoice}
+                                        onChange={(event) => updateCallField('locationChoice', event.target.value)}
+                                        className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-white px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                                    >
+                                        {CALL_LOG_LOCATION_CHOICE_OPTIONS.map((option) => (
+                                            <option key={option} value={option}>
+                                                {option === CALL_LOG_REQUIREMENT_NOT_MENTIONED ? 'Not mentioned' : 'Mentioned below'}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {callErrors.locationChoice ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.locationChoice}</p> : null}
+                                </label>
+                                {callForm.locationChoice === CALL_LOG_LOCATION_CHOICE_MENTIONED ? (
+                                    <label className="block lg:col-span-3">
+                                        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Customer location</span>
+                                        <input
+                                            type="text"
+                                            value={callForm.location}
+                                            onChange={(event) => updateCallField('location', event.target.value)}
+                                            placeholder="Enter location"
+                                            className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-white px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                                        />
+                                        {callErrors.location ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.location}</p> : null}
+                                    </label>
+                                ) : null}
+                            </div>
+                        ) : null}
                     </div>
                     <label className="mt-3 block">
                         <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Remark</span>
@@ -1052,10 +1147,10 @@ function LeadCallCard({
                         {callErrors.remark ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.remark}</p> : null}
                     </label>
                     <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        {callErrors.form ? <p className="text-xs font-bold text-red-600">{callErrors.form}</p> : <span className="text-xs font-medium text-[#6b7280]">Each save creates a separate call entry for this lead.</span>}
+                        {callErrors.form ? <p className="text-xs font-bold text-red-600">{callErrors.form}</p> : <span className="text-xs font-medium text-[#6b7280]">Each save updates the lead status and adds one call entry.</span>}
                         <button
                             type="submit"
-                            disabled={savingCall || !callForm.callDate || !callForm.callStatus || !callForm.remark.trim()}
+                            disabled={savingCall || !callForm.callDate || !callForm.callStatus || !callForm.leadStatus || !callForm.remark.trim()}
                             className="inline-flex h-10 items-center justify-center rounded-xl bg-[#111] px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
                         >
                             {savingCall ? 'Saving...' : 'Save call'}
@@ -1075,8 +1170,19 @@ function LeadCallCard({
                             <article key={callLog.id} className="rounded-[20px] border border-[#111]/10 bg-white px-4 py-4">
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div>
-                                        <p className="text-sm font-bold text-[#111]">{formatAdminDateOnly(callLog.callDate)}</p>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <p className="text-sm font-bold text-[#111]">{formatAdminDateOnly(callLog.callDate)}</p>
+                                            <LeadTemperaturePill lead={{ salesLeadStatus: callLog.leadStatus || getLeadTemperature(lead) }} />
+                                        </div>
                                         <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#374151]">{callLog.remark}</p>
+                                        {callLog.sharedRequirements ? (
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                {callLog.budget ? <span className="rounded-full border border-[#111]/10 bg-[#fafafa] px-3 py-1 text-[11px] font-bold text-[#374151]">Budget: {formatSharedRequirementValue(callLog.budget)}</span> : null}
+                                                {callLog.configuration ? <span className="rounded-full border border-[#111]/10 bg-[#fafafa] px-3 py-1 text-[11px] font-bold text-[#374151]">Config: {formatSharedRequirementValue(callLog.configuration)}</span> : null}
+                                                {callLog.location ? <span className="rounded-full border border-[#111]/10 bg-[#fafafa] px-3 py-1 text-[11px] font-bold text-[#374151]">Location: {formatSharedRequirementValue(callLog.location)}</span> : null}
+                                            </div>
+                                        ) : null}
+                                        <p className="mt-3 text-xs font-bold text-[#6b7280]">{callLog.authorName} · {formatAdminDate(callLog.createdAt)}</p>
                                     </div>
                                     <div className="flex shrink-0 flex-col gap-2 sm:items-end">
                                         <CallStatusPill status={callLog.callStatus} />
@@ -1095,67 +1201,11 @@ function LeadCallCard({
     );
 }
 
-function LeadActivityPanel({ lead, onClose, canWrite, onRemarkSaved }) {
-    const [remarkForm, setRemarkForm] = useState(createEmptyRemarkForm);
-    const [savingRemark, setSavingRemark] = useState(false);
-    const [remarkErrors, setRemarkErrors] = useState({});
-
+function LeadActivityPanel({ lead, onClose }) {
     if (!lead) return null;
 
     const whatsapp = lead.whatsapp || {};
     const activity = Array.isArray(lead.activity) ? lead.activity : [];
-    const remarks = Array.isArray(lead.salesRemarks) ? lead.salesRemarks : [];
-    const temperature = getLeadTemperature(lead);
-    const meta = LEAD_TEMPERATURES[temperature];
-
-    function updateRemarkField(name, value) {
-        setRemarkForm((current) => ({ ...current, [name]: value }));
-        setRemarkErrors((current) => {
-            if (!current[name] && !current.form) {
-                return current;
-            }
-
-            const next = { ...current };
-            delete next[name];
-            delete next.form;
-            return next;
-        });
-    }
-
-    async function saveRemark(event) {
-        event.preventDefault();
-        const fieldErrors = getAdminFeedbackFieldErrors(remarkForm);
-        if (Object.keys(fieldErrors).length) {
-            setRemarkErrors(fieldErrors);
-            return;
-        }
-
-        setSavingRemark(true);
-        setRemarkErrors({});
-        try {
-            const response = await fetch(`/api/admin/leads/${lead.id}/remarks`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(remarkForm),
-            });
-            const payload = await response.json();
-            if (!response.ok) {
-                if (payload?.fieldErrors) {
-                    setRemarkErrors(payload.fieldErrors);
-                }
-                throw new Error(payload.error || 'Unable to save remark.');
-            }
-            onRemarkSaved(payload.remark);
-            setRemarkForm(createEmptyRemarkForm());
-        } catch (error) {
-            setRemarkErrors((current) => ({
-                ...current,
-                form: error.message,
-            }));
-        } finally {
-            setSavingRemark(false);
-        }
-    }
 
     return (
         <div className="fixed inset-0 z-[1000] flex justify-end bg-black/35 p-0 sm:p-4" role="dialog" aria-modal="true" aria-label="Lead activity">
@@ -1172,104 +1222,10 @@ function LeadActivityPanel({ lead, onClose, canWrite, onRemarkSaved }) {
 
                 <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
                     <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-bold ${meta.className}`}>{meta.label} lead</span>
                         <span className="rounded-full border border-[#111]/10 bg-white px-3 py-1.5 text-xs font-bold text-[#374151]">{whatsapp.score || 0} meaningful responses</span>
                         {whatsapp.callbackRequested ? <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700"><PhoneCall className="h-3.5 w-3.5" /> Callback requested</span> : null}
                         {whatsapp.siteVisitRequested ? <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700"><CalendarCheck2 className="h-3.5 w-3.5" /> Site visit requested</span> : null}
                     </div>
-
-                    <section className="mt-6 rounded-[24px] border border-[#111]/10 bg-white p-4 shadow-[0_8px_20px_rgba(17,17,17,0.04)] sm:p-5">
-                        <div className="flex items-center justify-between gap-4">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Sales remarks</p>
-                            <span className="text-xs font-bold text-[#6b7280]">{remarks.length}</span>
-                        </div>
-                        {remarks.length ? (
-                            <div className="mt-4 space-y-4">
-                                {remarks.map((item) => (
-                                    <article key={item.id} className="border-l-2 border-[#111] pl-4">
-                                        {getRemarkMetaText(item) ? (
-                                            <p className="text-sm font-bold text-[#111]">{getRemarkMetaText(item)}</p>
-                                        ) : null}
-                                        {item.notes ? (
-                                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#374151]">{item.notes}</p>
-                                        ) : item.text ? (
-                                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#374151]">{item.text}</p>
-                                        ) : null}
-                                        <p className="mt-2 text-xs font-bold text-[#6b7280]">{item.authorName} · {formatAdminDate(item.createdAt)}</p>
-                                    </article>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="mt-3 text-sm text-[#6b7280]">No sales remarks added yet.</p>
-                        )}
-                        {canWrite ? (
-                            <form onSubmit={saveRemark} className="mt-5 border-t border-[#111]/10 pt-4">
-                                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">Add calling feedback</p>
-                                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                                    <label className="block">
-                                        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Budget</span>
-                                        <select
-                                            value={remarkForm.budget}
-                                            onChange={(event) => updateRemarkField('budget', event.target.value)}
-                                            className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
-                                        >
-                                            <option value="">Select budget</option>
-                                            {ADMIN_FEEDBACK_BUDGET_OPTIONS.map((option) => (
-                                                <option key={option} value={option}>{option}</option>
-                                            ))}
-                                        </select>
-                                        {remarkErrors.budget ? <p className="mt-2 text-xs font-bold text-red-600">{remarkErrors.budget}</p> : null}
-                                    </label>
-                                    <label className="block">
-                                        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Configuration</span>
-                                        <select
-                                            value={remarkForm.configuration}
-                                            onChange={(event) => updateRemarkField('configuration', event.target.value)}
-                                            className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
-                                        >
-                                            <option value="">Select configuration</option>
-                                            {ADMIN_FEEDBACK_CONFIGURATION_OPTIONS.map((option) => (
-                                                <option key={option} value={option}>{option}</option>
-                                            ))}
-                                        </select>
-                                        {remarkErrors.configuration ? <p className="mt-2 text-xs font-bold text-red-600">{remarkErrors.configuration}</p> : null}
-                                    </label>
-                                </div>
-                                <label className="mt-3 block">
-                                    <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Location</span>
-                                    <input
-                                        type="text"
-                                        value={remarkForm.location}
-                                        onChange={(event) => updateRemarkField('location', event.target.value)}
-                                        maxLength={120}
-                                        placeholder="Customer preferred location"
-                                        className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
-                                    />
-                                    {remarkErrors.location ? <p className="mt-2 text-xs font-bold text-red-600">{remarkErrors.location}</p> : null}
-                                </label>
-                                <label className="mt-3 block">
-                                    <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Notes</span>
-                                    <textarea
-                                        value={remarkForm.notes}
-                                        onChange={(event) => updateRemarkField('notes', event.target.value)}
-                                        maxLength={5000}
-                                        rows={4}
-                                        placeholder="Call outcome, customer requirement, follow-up details..."
-                                        className="mt-2 w-full resize-y rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 py-3 text-sm leading-6 text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
-                                    />
-                                    {remarkErrors.notes ? <p className="mt-2 text-xs font-bold text-red-600">{remarkErrors.notes}</p> : null}
-                                </label>
-                                {remarkErrors.form ? <p className="mt-3 text-xs font-bold text-red-600">{remarkErrors.form}</p> : null}
-                                <button
-                                    type="submit"
-                                    disabled={savingRemark || !remarkForm.budget || !remarkForm.configuration || !remarkForm.location.trim()}
-                                    className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-[#111] px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
-                                >
-                                    {savingRemark ? 'Saving...' : 'Save remark'}
-                                </button>
-                            </form>
-                        ) : null}
-                    </section>
 
                     <div className="mt-7">
                         <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Activity flow</p>
@@ -1694,7 +1650,7 @@ export default function AdminPage() {
     const [notice, setNotice] = useState('');
     const [query, setQuery] = useState('');
     const [leadQuery, setLeadQuery] = useState('');
-    const [leadTemperature, setLeadTemperature] = useState('cold');
+    const [leadTemperature, setLeadTemperature] = useState(SALES_LEAD_STATUS_COLD);
     const [leadDateRange, setLeadDateRange] = useState({ startDate: '', endDate: '' });
     const [dateFilterOpen, setDateFilterOpen] = useState(false);
     const [dateFilterDraft, setDateFilterDraft] = useState({ startDate: '', endDate: '' });
@@ -1702,7 +1658,6 @@ export default function AdminPage() {
     const [selectedLeadAbout, setSelectedLeadAbout] = useState(null);
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [busyLeadStatusId, setBusyLeadStatusId] = useState('');
     const contentRef = useRef(null);
     const dashboardRef = useRef(null);
     const leadsRef = useRef(null);
@@ -1881,7 +1836,7 @@ export default function AdminPage() {
                 ...(lead.sources || []),
                 lead.channel,
                 lead.requestLabel,
-                normalizeLeadStatus(lead.leadStatus),
+                getLeadTemperature(lead),
                 lead.message,
                 lead.preferredTime,
                 ...(lead.submissions || []).flatMap((submission) => [
@@ -2056,62 +2011,23 @@ export default function AdminPage() {
         }
     }
 
-    function handleRemarkSaved(remark) {
-        if (!remark || !selectedLead) return;
-
-        const updateLead = (lead) =>
-            lead.id === selectedLead.id
-                ? { ...lead, salesRemarks: [...(lead.salesRemarks || []), remark] }
-                : lead;
-
-        setSelectedLead((current) => (current ? updateLead(current) : current));
-        setLeads((current) => current.map(updateLead));
-    }
-
     function handleCallLogSaved(leadId, callLog) {
         if (!leadId || !callLog) return;
 
+        const nextSalesLeadStatus = callLog.leadStatus || SALES_LEAD_STATUS_COLD;
         const updateLead = (lead) =>
             lead.id === leadId
-                ? { ...lead, callLogs: [...(lead.callLogs || []), callLog] }
+                ? {
+                    ...lead,
+                    salesLeadStatus: nextSalesLeadStatus,
+                    leadStatus: nextSalesLeadStatus === SALES_LEAD_STATUS_DEAD ? 'dead' : 'active',
+                    callLogs: [...(lead.callLogs || []), callLog],
+                }
                 : lead;
 
         setSelectedLead((current) => (current && current.id === leadId ? updateLead(current) : current));
+        setSelectedLeadAbout((current) => (current && current.id === leadId ? updateLead(current) : current));
         setLeads((current) => current.map(updateLead));
-    }
-
-    async function toggleLeadStatus(lead) {
-        if (!lead?.id) return;
-
-        const nextLeadStatus = isDeadLead(lead) ? LEAD_STATUS_ACTIVE : LEAD_STATUS_DEAD;
-        setBusyLeadStatusId(lead.id);
-
-        try {
-            const response = await fetch(`/api/admin/leads/${lead.id}/status`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ leadStatus: nextLeadStatus }),
-            });
-            const payload = await response.json();
-
-            if (!response.ok) {
-                throw new Error(payload.error || 'Unable to update lead status.');
-            }
-
-            const updateLead = (currentLead) =>
-                currentLead.id === lead.id
-                    ? { ...currentLead, leadStatus: payload.lead?.leadStatus || nextLeadStatus }
-                    : currentLead;
-
-            setSelectedLead((current) => (current ? updateLead(current) : current));
-            setSelectedLeadAbout((current) => (current ? updateLead(current) : current));
-            setLeads((current) => current.map(updateLead));
-            setNotice(nextLeadStatus === LEAD_STATUS_DEAD ? 'Lead moved to Dead.' : 'Lead restored to active.');
-        } catch (error) {
-            setNotice(error.message);
-        } finally {
-            setBusyLeadStatusId('');
-        }
     }
 
     async function logout() {
@@ -2123,7 +2039,7 @@ export default function AdminPage() {
     }
 
     async function downloadVisibleLeadsReport() {
-        const reportRows = buildLeadReportRows(visibleLeads, leadTemperature);
+        const reportRows = buildLeadReportRows(visibleLeads);
         const filterLabel = LEAD_FILTERS[leadTemperature]?.label || leadTemperature;
         const fileDate = new Date().toISOString().slice(0, 10);
         const dateRangeLabel = leadDateRange.startDate || leadDateRange.endDate
@@ -2427,7 +2343,7 @@ export default function AdminPage() {
                                             className={`flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition sm:min-w-[150px] sm:flex-none ${getLeadFilterButtonClasses(leadTemperature, temperature)}`}
                                         >
                                             <span>{meta.label}</span>
-                                            <span className={`rounded-full px-2 py-0.5 text-xs ${temperature === LEAD_STATUS_DEAD ? 'bg-white/20 text-white' : 'border border-[#111]/10 bg-[#fafafa] text-[#111]'}`}>{leadStats[temperature]}</span>
+                                            <span className={`rounded-full px-2 py-0.5 text-xs ${temperature === SALES_LEAD_STATUS_DEAD ? 'bg-white/20 text-white' : 'border border-[#111]/10 bg-[#fafafa] text-[#111]'}`}>{leadStats[temperature]}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -2461,12 +2377,6 @@ export default function AdminPage() {
                                             </div>
                                             <div className="flex flex-wrap gap-2">
                                                 <LeadTemperaturePill lead={lead} />
-                                                <DeadLeadToggleButton
-                                                    lead={lead}
-                                                    canWrite={canWrite}
-                                                    busyLeadStatusId={busyLeadStatusId}
-                                                    onToggleLeadStatus={toggleLeadStatus}
-                                                />
                                                 <span className="inline-flex items-center gap-2 rounded-2xl border border-[#111]/10 bg-[#fafafa] px-4 py-2 text-xs font-bold text-[#111]">
                                                     <MessageSquare className="h-4 w-4" />
                                                     {CHANNEL_LABELS[lead.channel] || lead.channel}
@@ -2522,7 +2432,7 @@ export default function AdminPage() {
                                     <tr>
                                         <th className="px-7 py-5 font-bold">Submitted</th>
                                         <th className="px-7 py-5 font-bold">Lead</th>
-                                        <th className="px-7 py-5 font-bold">Temperature</th>
+                                        <th className="px-7 py-5 font-bold">Lead Status</th>
                                         <th className="px-7 py-5 font-bold">Channel</th>
                                         <th className="px-7 py-5 font-bold">Request</th>
                                         <th className="px-7 py-5 font-bold">WhatsApp</th>
@@ -2542,13 +2452,6 @@ export default function AdminPage() {
                                                 </button>
                                                 <p className="mt-1 text-sm font-medium text-[#374151]">{lead.phone || 'No phone'}</p>
                                                 <p className="mt-1 text-sm text-[#6b7280]">{lead.email || 'No email captured'}</p>
-                                                <DeadLeadToggleButton
-                                                    lead={lead}
-                                                    canWrite={canWrite}
-                                                    busyLeadStatusId={busyLeadStatusId}
-                                                    onToggleLeadStatus={toggleLeadStatus}
-                                                    className="mt-3"
-                                                />
                                             </td>
                                             <td className="px-7 py-5">
                                                 <LeadTemperaturePill lead={lead} />
@@ -2605,8 +2508,6 @@ export default function AdminPage() {
                             onCallLogSaved={handleCallLogSaved}
                             onOpenLeadActivity={setSelectedLead}
                             onOpenLeadAbout={setSelectedLeadAbout}
-                            onToggleLeadStatus={toggleLeadStatus}
-                            busyLeadStatusId={busyLeadStatusId}
                         />
                     </section>
                     ) : (
@@ -2813,9 +2714,7 @@ export default function AdminPage() {
             </section>
             <LeadActivityPanel
                 lead={selectedLead}
-                canWrite={canWrite}
                 onClose={() => setSelectedLead(null)}
-                onRemarkSaved={handleRemarkSaved}
             />
             <AboutLeadPanel
                 lead={selectedLeadAbout}
