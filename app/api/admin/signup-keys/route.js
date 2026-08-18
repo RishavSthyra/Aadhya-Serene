@@ -8,7 +8,7 @@ import {
 import { connectMongo } from '../../../../lib/mongodb';
 import { SignupKey } from '../../../../lib/models';
 
-const VALID_ROLES = ['super_admin', 'manager', 'channel_partner'];
+const VALID_ROLES = ['super_admin', 'manager', 'sales_executive', 'channel_partner'];
 
 export async function GET() {
     const auth = await requireAdmin(['super_admin']);

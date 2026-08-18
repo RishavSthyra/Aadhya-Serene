@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin, WRITE_ROLES } from '../../../../../lib/admin-auth';
+import { INVENTORY_WRITE_ROLES, requireAdmin } from '../../../../../lib/admin-auth';
 import { connectMongo } from '../../../../../lib/mongodb';
 import { Flat } from '../../../../../lib/models';
 
 const VALID_STATUSES = ['available', 'sold out', 'blocked', 'reserved'];
 
 export async function PATCH(request, { params }) {
-    const auth = await requireAdmin(WRITE_ROLES);
+    const auth = await requireAdmin(INVENTORY_WRITE_ROLES);
     if (auth.error) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
     }

@@ -7,7 +7,7 @@ import { AdminUser, SignupKey } from '../../../../../lib/models';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 
 function normalizeRole(role) {
-    return ['super_admin', 'manager', 'channel_partner'].includes(role)
+    return ['super_admin', 'manager', 'sales_executive', 'channel_partner'].includes(role)
         ? role
         : 'channel_partner';
 }

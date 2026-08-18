@@ -9,6 +9,7 @@ import {
     getSalesLeadStatus,
     normalizeLeadStatus,
 } from '../../../../lib/lead-status';
+import { LEAD_ASSIGNMENT_STATUS_UNASSIGNED } from '../../../../lib/lead-assignment';
 
 function asIso(value) {
     if (!value) return '';
@@ -68,6 +69,11 @@ function serializeSubmission(lead) {
         requestLabel: lead.requestLabel || '',
         preferredTime: lead.preferredTime || '',
         message: lead.message || '',
+        assignedSalesExecutiveId: lead.assignedSalesExecutiveId || '',
+        assignedSalesExecutiveName: lead.assignedSalesExecutiveName || '',
+        assignedSalesExecutiveEmail: lead.assignedSalesExecutiveEmail || '',
+        assignmentStatus: lead.assignmentStatus || LEAD_ASSIGNMENT_STATUS_UNASSIGNED,
+        assignedAt: asIso(lead.assignedAt),
         metadata: lead.metadata || {},
         createdAt: asIso(lead.createdAt),
         updatedAt: asIso(lead.updatedAt),
@@ -127,6 +133,11 @@ function serializeLeadGroup(records, conversation) {
         preferredTime: latestRecord.preferredTime || '',
         message: latestRecord.message || '',
         metadata: latestRecord.metadata || {},
+        assignedSalesExecutiveId: latestRecord.assignedSalesExecutiveId || '',
+        assignedSalesExecutiveName: latestRecord.assignedSalesExecutiveName || '',
+        assignedSalesExecutiveEmail: latestRecord.assignedSalesExecutiveEmail || '',
+        assignmentStatus: latestRecord.assignmentStatus || LEAD_ASSIGNMENT_STATUS_UNASSIGNED,
+        assignedAt: asIso(latestRecord.assignedAt),
         salesLeadStatus,
         leadStatus: sortedRecords.some((record) => normalizeLeadStatus(record.leadStatus) === 'dead')
             ? 'dead'

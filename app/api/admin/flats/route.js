@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '../../../../lib/admin-auth';
+import { INVENTORY_VIEW_ROLES, requireAdmin } from '../../../../lib/admin-auth';
 import { connectMongo } from '../../../../lib/mongodb';
 import { Flat } from '../../../../lib/models';
 
 export async function GET() {
-    const auth = await requireAdmin(['super_admin', 'manager', 'channel_partner']);
+    const auth = await requireAdmin(INVENTORY_VIEW_ROLES);
     if (auth.error) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
     }

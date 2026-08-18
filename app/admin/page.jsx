@@ -59,6 +59,7 @@ import {
 const ROLE_LABELS = {
     super_admin: 'Super Admin',
     manager: 'Manager',
+    sales_executive: 'Sales Executive',
     channel_partner: 'Channel Partner',
     lead_partner: 'Lead Partner',
 };
@@ -66,6 +67,7 @@ const ROLE_LABELS = {
 const PARTNER_KEY_OPTIONS = [
     { value: 'super_admin', label: 'Super Admin', role: 'super_admin' },
     { value: 'manager', label: 'Manager', role: 'manager' },
+    { value: 'sales_executive', label: 'Sales Executive', role: 'sales_executive' },
     { value: 'channel_partner', label: 'Channel Partner', role: 'channel_partner' },
     { value: 'aurum_analytica', label: 'Aurum Analytica Leads', role: 'lead_partner', leadSource: 'aurum_analytica' },
     { value: '99acres', label: '99acres Leads', role: 'lead_partner', leadSource: '99acres' },
@@ -266,6 +268,8 @@ const CALL_REPORT_COLUMNS = [
     { header: 'Submitted At', key: 'submittedAt', width: 18 },
     { header: 'Lead Segment', key: 'leadSegment', width: 14 },
     { header: 'Lead Name', key: 'leadName', width: 22 },
+    { header: 'Assigned Sales Executive', key: 'assignedSalesExecutive', width: 24 },
+    { header: 'Assignment Status', key: 'assignmentStatus', width: 16 },
     { header: 'Phone', key: 'phone', width: 17 },
     { header: 'Source', key: 'source', width: 18 },
     { header: 'Channel', key: 'channel', width: 17 },
@@ -283,6 +287,8 @@ const LEAD_REPORT_COLUMNS = [
     { header: 'Updated At', key: 'updatedAt', width: 18 },
     { header: 'Lead Segment', key: 'leadSegment', width: 14 },
     { header: 'Lead Name', key: 'leadName', width: 22 },
+    { header: 'Assigned Sales Executive', key: 'assignedSalesExecutive', width: 24 },
+    { header: 'Assignment Status', key: 'assignmentStatus', width: 16 },
     { header: 'Aliases', key: 'aliases', width: 22 },
     { header: 'Phone', key: 'phone', width: 17 },
     { header: 'Email', key: 'email', width: 28 },
@@ -332,6 +338,14 @@ function buildLeadContextForExport(lead) {
         lead.message ? `Lead message: ${lead.message}` : '',
         getLeadJourneySummary(lead) ? `Journey: ${getLeadJourneySummary(lead)}` : '',
     ].filter(Boolean).join('\n');
+}
+
+function getAssignedSalesExecutiveLabel(lead) {
+    return lead?.assignedSalesExecutiveName || 'Unassigned';
+}
+
+function getAssignmentStatusLabel(lead) {
+    return lead?.assignmentStatus === 'assigned' ? 'Assigned' : 'Unassigned';
 }
 
 function formatSharedRequirementValue(value) {
@@ -387,6 +401,8 @@ function buildLeadReportRows(leads) {
             updatedAt: formatExportDateTime(lead.updatedAt),
             leadSegment: LEAD_FILTERS[salesStatus]?.label || salesStatus,
             leadName: lead.name || 'Unknown lead',
+            assignedSalesExecutive: getAssignedSalesExecutiveLabel(lead),
+            assignmentStatus: getAssignmentStatusLabel(lead),
             aliases: getLeadAliases(lead).join('\n'),
             phone: lead.phone || '',
             email: lead.email || '',
@@ -411,6 +427,8 @@ function buildCallReportRows(leads) {
             submittedAt: formatExportDateTime(lead.createdAt),
             leadSegment: LEAD_FILTERS[salesStatus]?.label || salesStatus,
             leadName: lead.name || 'Unknown lead',
+            assignedSalesExecutive: getAssignedSalesExecutiveLabel(lead),
+            assignmentStatus: getAssignmentStatusLabel(lead),
             phone: lead.phone || '',
             source: getLeadSourceSummary(lead),
             channel: CHANNEL_LABELS[lead.channel] || lead.channel || '',
@@ -531,6 +549,32 @@ function AboutLeadPanel({ lead, onClose }) {
                         <span className="rounded-full border border-[#111]/10 bg-white px-3 py-1.5 text-xs font-bold text-[#374151]">Latest source: {lead.source || 'website'}</span>
                         <span className="rounded-full border border-[#111]/10 bg-white px-3 py-1.5 text-xs font-bold text-[#374151]">Latest channel: {CHANNEL_LABELS[lead.channel] || lead.channel}</span>
                     </div>
+
+                    <section className="mt-6 rounded-[24px] border border-[#111]/10 bg-white p-4 sm:p-5">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Assignment</p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-2xl border border-[#111]/10 bg-[#fafafa] px-3 py-3">
+                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Assigned to</p>
+                                <p className="mt-1 font-bold text-[#111]">{getAssignedSalesExecutiveLabel(lead)}</p>
+                            </div>
+                            <div className="rounded-2xl border border-[#111]/10 bg-[#fafafa] px-3 py-3">
+                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Status</p>
+                                <p className="mt-1 font-bold text-[#111]">{getAssignmentStatusLabel(lead)}</p>
+                            </div>
+                            {lead.assignedSalesExecutiveEmail ? (
+                                <div className="rounded-2xl border border-[#111]/10 bg-[#fafafa] px-3 py-3 sm:col-span-2">
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Sales executive email</p>
+                                    <p className="mt-1 break-words font-bold text-[#111]">{lead.assignedSalesExecutiveEmail}</p>
+                                </div>
+                            ) : null}
+                            {lead.assignedAt ? (
+                                <div className="rounded-2xl border border-[#111]/10 bg-[#fafafa] px-3 py-3 sm:col-span-2">
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Assigned at</p>
+                                    <p className="mt-1 font-bold text-[#111]">{formatAdminDate(lead.assignedAt)}</p>
+                                </div>
+                            ) : null}
+                        </div>
+                    </section>
 
                     <section className="mt-6 rounded-[24px] border border-[#111]/10 bg-white p-4 sm:p-5">
                         <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Past names</p>
@@ -1253,6 +1297,8 @@ function LeadActivityPanel({ lead, onClose }) {
 function AdminSidebar({ user, activeSection, onNavigate, onClose = null, className = '' }) {
     const navItems = user?.role === 'lead_partner'
         ? ADMIN_NAV_ITEMS.filter((item) => ['leads', 'calls'].includes(item.section))
+        : user?.role === 'sales_executive'
+            ? ADMIN_NAV_ITEMS.filter((item) => ['dashboard', 'leads', 'calls', 'inventory', 'reports'].includes(item.section))
         : ADMIN_NAV_ITEMS;
 
     return (
@@ -1666,9 +1712,11 @@ export default function AdminPage() {
     const keysRef = useRef(null);
     const inventoryRef = useRef(null);
 
-    const canWrite = user && ['super_admin', 'manager'].includes(user.role);
+    const canWrite = user && ['super_admin', 'manager', 'sales_executive'].includes(user.role);
+    const canEditInventory = user && ['super_admin', 'manager'].includes(user.role);
     const isSuperAdmin = user?.role === 'super_admin';
     const isLeadPartner = user?.role === 'lead_partner';
+    const isSalesExecutive = user?.role === 'sales_executive';
 
     async function loadFlats() {
         const response = await fetch('/api/admin/flats', { cache: 'no-store' });
@@ -1731,8 +1779,13 @@ export default function AdminPage() {
     useEffect(() => {
         if (isLeadPartner) {
             setActiveSection('leads');
+            return;
         }
-    }, [isLeadPartner]);
+
+        if (isSalesExecutive && ['users', 'keys'].includes(activeSection)) {
+            setActiveSection('dashboard');
+        }
+    }, [activeSection, isLeadPartner, isSalesExecutive]);
 
     useEffect(() => {
         const previousOverflow = document.body.style.overflow;
@@ -1919,6 +1972,10 @@ export default function AdminPage() {
             return;
         }
 
+        if (isSalesExecutive && ['users', 'keys'].includes(section)) {
+            return;
+        }
+
         if (section === 'leads') {
             setActiveSection('leads');
             contentRef.current?.scrollTo({
@@ -1992,7 +2049,8 @@ export default function AdminPage() {
 
     async function createSignupKey() {
         const keyOption = PARTNER_KEY_OPTIONS.find((option) => option.value === keyRole)
-            || PARTNER_KEY_OPTIONS[2];
+            || PARTNER_KEY_OPTIONS.find((option) => option.value === 'channel_partner')
+            || PARTNER_KEY_OPTIONS[0];
         const response = await fetch('/api/admin/signup-keys', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2547,41 +2605,43 @@ export default function AdminPage() {
                             </div>
                         </div>
 
-                        <aside ref={keysRef} className="scroll-mt-8 rounded-[24px] border border-[#111]/10 bg-white p-4 shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px] sm:p-6">
-                            <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Super Admin Tools</p>
-                            <h2 className="mt-1 font-display text-2xl font-bold text-[#111]">Signup Keys</h2>
-                            {isSuperAdmin ? (
-                                <div className="mt-6 space-y-4">
-                                    <SelectControl
-                                        value={keyRole}
-                                        onChange={setKeyRole}
-                                        options={PARTNER_KEY_OPTIONS}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={createSignupKey}
-                                        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#111] text-sm font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0"
-                                    >
-                                        <KeyRound className="h-4 w-4" />
-                                        Create Key
-                                    </button>
-                                    {latestKey ? (
+                        {!isSalesExecutive ? (
+                            <aside ref={keysRef} className="scroll-mt-8 rounded-[24px] border border-[#111]/10 bg-white p-4 shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px] sm:p-6">
+                                <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Super Admin Tools</p>
+                                <h2 className="mt-1 font-display text-2xl font-bold text-[#111]">Signup Keys</h2>
+                                {isSuperAdmin ? (
+                                    <div className="mt-6 space-y-4">
+                                        <SelectControl
+                                            value={keyRole}
+                                            onChange={setKeyRole}
+                                            options={PARTNER_KEY_OPTIONS}
+                                        />
                                         <button
                                             type="button"
-                                            onClick={() => navigator.clipboard?.writeText(latestKey)}
-                                            className="flex w-full items-center gap-2 rounded-2xl border border-[#111]/10 bg-[#fafafa] px-4 py-4 text-left text-xs font-bold text-[#374151]"
+                                            onClick={createSignupKey}
+                                            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#111] text-sm font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0"
                                         >
-                                            <Copy className="h-4 w-4 shrink-0 text-[#111]" />
-                                            <span className="min-w-0 break-all">{latestKey}</span>
+                                            <KeyRound className="h-4 w-4" />
+                                            Create Key
                                         </button>
-                                    ) : null}
-                                </div>
-                            ) : (
-                                <p className="mt-5 text-sm leading-6 text-[#6b7280]">
-                                    Only a Super Admin can generate signup keys. Your current access is {ROLE_LABELS[user.role]}.
-                                </p>
-                            )}
-                        </aside>
+                                        {latestKey ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => navigator.clipboard?.writeText(latestKey)}
+                                                className="flex w-full items-center gap-2 rounded-2xl border border-[#111]/10 bg-[#fafafa] px-4 py-4 text-left text-xs font-bold text-[#374151]"
+                                            >
+                                                <Copy className="h-4 w-4 shrink-0 text-[#111]" />
+                                                <span className="min-w-0 break-all">{latestKey}</span>
+                                            </button>
+                                        ) : null}
+                                    </div>
+                                ) : (
+                                    <p className="mt-5 text-sm leading-6 text-[#6b7280]">
+                                        Only a Super Admin can generate signup keys. Your current access is {ROLE_LABELS[user.role]}.
+                                    </p>
+                                )}
+                            </aside>
+                        ) : null}
                     </section>
 
                     <section ref={inventoryRef} className="mt-7 scroll-mt-8 overflow-hidden rounded-[24px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px]">
@@ -2611,7 +2671,7 @@ export default function AdminPage() {
                                                 <h3 className="mt-2 text-xl font-bold tracking-[0.06em] text-[#111]">{flat.flat}</h3>
                                                 <p className="mt-1 text-sm font-bold text-[#374151]">{flat.type}</p>
                                             </div>
-                                            {!canWrite ? (
+                                            {!canEditInventory ? (
                                                 <span className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-[#111]/10 bg-white px-4 py-2 text-sm font-bold capitalize text-[#374151]">
                                                     <CheckCircle2 className="h-4 w-4 text-[#111]" />
                                                     {normalizeStatus(flat.status)}
@@ -2638,7 +2698,7 @@ export default function AdminPage() {
                                             </div>
                                         </div>
 
-                                        {canWrite ? (
+                                        {canEditInventory ? (
                                             <div className="mt-4">
                                                 <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Status</p>
                                                 <SelectControl
@@ -2684,7 +2744,7 @@ export default function AdminPage() {
                                             <td className="px-7 py-5 font-medium text-[#6b7280]">{flat.area} sqft</td>
                                             <td className="px-7 py-5 font-medium text-[#6b7280]">{flat.balconies}</td>
                                             <td className="px-7 py-5">
-                                                {canWrite ? (
+                                                {canEditInventory ? (
                                                     <SelectControl
                                                         value={normalizeStatus(flat.status)}
                                                         disabled={busyFlat === flat.flat}

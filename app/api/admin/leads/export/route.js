@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getLeadScopeFilter, requireAdmin } from '../../../../../lib/admin-auth';
+import { LEAD_ASSIGNMENT_STATUS_UNASSIGNED } from '../../../../../lib/lead-assignment';
 import { connectMongo } from '../../../../../lib/mongodb';
 import { Notification } from '../../../../../lib/models';
 import { getLeadDateRangeFilter } from '../../../../../lib/lead-date-filter';
@@ -51,6 +52,10 @@ export async function GET(request) {
         'request_label',
         'preferred_time',
         'message',
+        'assigned_sales_executive',
+        'assigned_sales_executive_email',
+        'assignment_status',
+        'assigned_at',
         'email_status',
         'email_sent_at',
         'email_error',
@@ -91,6 +96,10 @@ export async function GET(request) {
             lead.requestLabel || '',
             lead.preferredTime || '',
             lead.message || '',
+            lead.assignedSalesExecutiveName || 'Unassigned',
+            lead.assignedSalesExecutiveEmail || '',
+            lead.assignmentStatus || LEAD_ASSIGNMENT_STATUS_UNASSIGNED,
+            lead.assignedAt ? new Date(lead.assignedAt).toISOString() : '',
             lead.emailDelivery?.status || '',
             lead.emailDelivery?.sentAt ? new Date(lead.emailDelivery.sentAt).toISOString() : '',
             lead.emailDelivery?.error || '',
