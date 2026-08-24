@@ -1777,7 +1777,7 @@ export default function AdminPage() {
     }, [user, isLeadPartner, leadDateRange]);
 
     useEffect(() => {
-        if (isLeadPartner) {
+        if (isLeadPartner && !['leads', 'calls'].includes(activeSection)) {
             setActiveSection('leads');
             return;
         }
