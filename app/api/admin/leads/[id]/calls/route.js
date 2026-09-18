@@ -4,6 +4,7 @@ import { getLeadScopeFilter, requireAdmin, WRITE_ROLES } from '../../../../../..
 import {
     getCallLogFieldErrors,
     normalizeCallLogInput,
+    serializeCallLog,
 } from '../../../../../../lib/admin-call-log';
 import {
     ANSWERED_OUTCOME_CALLBACK_REQUESTED,
@@ -37,30 +38,6 @@ function getEventKey(input, phone) {
         .digest('hex');
 }
 
-function serializeCallLog(callLog, fallbackOutcome = '') {
-    if (!callLog) return null;
-
-    return {
-        id: String(callLog._id),
-        callDate: callLog.callDate || '',
-        callStatus: callLog.callOutcome || callLog.callStatus || fallbackOutcome,
-        callOutcome: callLog.callOutcome || callLog.callStatus || fallbackOutcome,
-        answeredOutcomes: Array.isArray(callLog.answeredOutcomes) ? callLog.answeredOutcomes : [],
-        callbackDueAt: callLog.callbackDueAt?.toISOString?.() || callLog.callbackDueAt || '',
-        callbackStatus: callLog.callbackStatus || 'none',
-        leadStatus: callLog.leadStatus || '',
-        remark: callLog.remark || '',
-        sharedRequirements: Boolean(callLog.sharedRequirements),
-        budget: callLog.budget || '',
-        configuration: callLog.configuration || '',
-        location: callLog.location || '',
-        authorName: callLog.authorName || 'Sales Team',
-        authorEmail: callLog.authorEmail || '',
-        idempotencyKey: callLog.idempotencyKey || '',
-        createdAt: callLog.createdAt?.toISOString?.() || '',
-        updatedAt: callLog.updatedAt?.toISOString?.() || '',
-    };
-}
 
 function buildLifecycleUpdate(callLog, eventKey, currentLifecycle, auth) {
     const events = callLog.answeredOutcomes.map((type) => ({
@@ -190,6 +167,8 @@ export async function POST(request, { params }) {
             return NextResponse.json({
                 callLog: serializeCallLog(retryCall, callLog.callOutcome),
                 lifecycle: { ...retryLifecycle, bucketLabel: getLeadBucketLabel(retryLifecycle.bucket) },
+                stage: getLeadStage(retryLifecycle, retryRecords),
+                stageLabel: getLeadStageLabel(getLeadStage(retryLifecycle, retryRecords)),
                 idempotent: true,
             });
         }
@@ -206,6 +185,8 @@ export async function POST(request, { params }) {
                 ...nextLifecycle,
                 bucketLabel: getLeadBucketLabel(nextLifecycle.bucket),
             },
+            stage: getLeadStage(nextLifecycle, phoneRecordsAfter),
+            stageLabel: getLeadStageLabel(getLeadStage(nextLifecycle, phoneRecordsAfter)),
             idempotent: false,
         },
         { status: 201 },

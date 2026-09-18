@@ -66,6 +66,7 @@ export default function Nav({ siteVariant }) {
     pathname.startsWith("/user-data-deletion");
   const isThankYouRoute = pathname.startsWith("/thank-you");
   const isLandingRoute = isReadyToMoveExperience(pathname, siteVariant);
+  const isAdminRoute = pathname.startsWith("/admin");
   const [isNavVisible, setIsNavVisible] = useState(true);
   const hideTimeoutRef = useRef(null);
 
@@ -180,7 +181,7 @@ export default function Nav({ siteVariant }) {
     router.push(href);
   };
 
-  if (isInteriorPanosRoute || isVrRoute || isLandingRoute || isThankYouRoute || isLegalPolicyRoute) {
+  if (isAdminRoute || isInteriorPanosRoute || isVrRoute || isLandingRoute || isThankYouRoute || isLegalPolicyRoute) {
     return null;
   }
 

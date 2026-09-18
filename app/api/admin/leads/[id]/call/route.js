@@ -29,6 +29,15 @@ function jsonError(error) {
     return NextResponse.json({ error: 'Unable to start the call.' }, { status: 500 });
 }
 
+function getIndiaDate() {
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(new Date());
+}
+
 export async function POST(request, { params }) {
     const auth = await requireAdmin(WRITE_ROLES);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -50,7 +59,6 @@ export async function POST(request, { params }) {
         return NextResponse.json({ error: 'Lead not found.' }, { status: 404 });
     }
 
-    let attemptKey = '';
     try {
         await connectMongo();
         const leadScope = getLeadScopeFilter(auth.user);
@@ -89,11 +97,39 @@ export async function POST(request, { params }) {
             customParam3: String(lead.source || lead.channel || 'admin'),
         });
 
+        const callLogIdempotencyKey = `daffytel-request:${result.providerRequestId || result.providerCallId || `${String(lead._id)}:${now}`}`;
+        await Notification.findOneAndUpdate(
+            { _id: lead._id, ...leadScope },
+            {
+                $push: {
+                    callLogs: {
+                        callDate: getIndiaDate(),
+                        callStatus: 'not_answered',
+                        callOutcome: 'not_answered',
+                        answeredOutcomes: [],
+                        callbackStatus: 'none',
+                        idempotencyKey: callLogIdempotencyKey,
+                        provider: 'daffytel',
+                        providerAgent: agent,
+                        providerCaller: caller,
+                        providerCallId: result.providerCallId || '',
+                        providerRequestId: result.providerRequestId || '',
+                        providerStatus: 'accepted',
+                        providerUpdatedAt: new Date(),
+                        remark: 'Click-to-call request accepted; awaiting Daffytel status callback.',
+                        authorName: auth.user.name || 'Sales Team',
+                        authorEmail: auth.user.email || '',
+                    },
+                },
+            },
+        );
+
         recentCallAttempts.set(attemptKey, now);
         return NextResponse.json({
             success: true,
             accepted: result.accepted,
             providerRequestId: result.providerRequestId,
+            providerCallId: result.providerCallId || '',
         });
     } catch (error) {
         return jsonError(error);

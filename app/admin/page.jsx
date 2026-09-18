@@ -341,6 +341,21 @@ function formatAnsweredOutcome(outcome) {
     return ANSWERED_OUTCOME_LABELS[outcome] || String(outcome || '').replaceAll('_', ' ');
 }
 
+function formatCallDuration(value) {
+    const seconds = Number(value);
+    if (!Number.isFinite(seconds) || seconds < 0) return '';
+    return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+}
+
+function safeRecordingUrl(value) {
+    try {
+        const url = new URL(String(value || ''));
+        return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';
+    } catch {
+        return '';
+    }
+}
+
 function isCallbackOverdue(lead) {
     return lead?.callback?.status === 'pending'
         && lead?.callback?.dueAt
@@ -1440,6 +1455,11 @@ function LeadCallCard({
                                             {callLog.answeredOutcomes?.length ? <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700">{callLog.answeredOutcomes.map(formatAnsweredOutcome).join(', ')}</span> : null}
                                         </div>
                                         <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#374151]">{callLog.remark}</p>
+                                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-[#6b7280]">
+                                            {formatCallDuration(callLog.durationSeconds) ? <span>Duration {formatCallDuration(callLog.durationSeconds)}</span> : null}
+                                            {callLog.providerStatus && callLog.providerStatus !== callLog.callOutcome ? <span className="border border-violet-200 bg-violet-50 px-2 py-1 text-violet-700">Provider: {callLog.providerStatus.replaceAll('_', ' ')}</span> : null}
+                                            {safeRecordingUrl(callLog.recordingUrl) ? <a href={safeRecordingUrl(callLog.recordingUrl)} target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-[#111]">Listen to recording</a> : null}
+                                        </div>
                                         {callLog.sharedRequirements ? (
                                             <div className="mt-3 flex flex-wrap gap-2">
                                                 {callLog.budget ? <span className="rounded-full border border-[#111]/10 bg-[#fafafa] px-3 py-1 text-[11px] font-bold text-[#374151]">Budget: {formatSharedRequirementValue(callLog.budget)}</span> : null}

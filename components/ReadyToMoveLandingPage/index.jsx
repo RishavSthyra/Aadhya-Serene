@@ -59,6 +59,7 @@ const PHONE_LINK = 'tel:+919620993333';
 const RERA_NUMBER = 'PRM/KA/RERA/1251/446/PR/190614/002604';
 const WHATSAPP_IMAGE = '/landing%20page%20images/whatsapp.png';
 const FORM_IMAGE = '/landing%20page%20images/interiorimage7.avif';
+const CALENDLY_URL = 'https://calendly.com/sthyra-info/new-meeting';
 
 const LANDING_IMAGES = {
   heroMain: '/landing page images/HERO_1.avif',
@@ -509,6 +510,7 @@ function useGsapReveal() {
 export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   const [activeFaq, setActiveFaq] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isCalendlyOpen, setIsCalendlyOpen] = useState(false);
   const [isWhatsAppFormOpen, setIsWhatsAppFormOpen] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [heroVariant, setHeroVariant] = useState(DEFAULT_HERO_COPY);
@@ -611,11 +613,25 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   }, [enableAutoPopup]);
 
   useEffect(() => {
-    document.body.style.overflow = isFormOpen || isWhatsAppFormOpen ? 'hidden' : '';
+    document.body.style.overflow = isFormOpen || isCalendlyOpen || isWhatsAppFormOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isFormOpen, isWhatsAppFormOpen]);
+  }, [isFormOpen, isCalendlyOpen, isWhatsAppFormOpen]);
+
+  useEffect(() => {
+    if (!isCalendlyOpen) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setIsCalendlyOpen(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCalendlyOpen]);
+
+  const openCalendly = () => setIsCalendlyOpen(true);
+  const closeCalendly = () => setIsCalendlyOpen(false);
 
   useEffect(() => {
     const leftCurtain = heroCurtainLeftRef.current;
@@ -707,6 +723,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
         }),
       });
 
+
       const payload = await response.json();
       if (!response.ok) {
         if (payload?.fieldErrors) {
@@ -727,10 +744,8 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
         message: 'Thanks! Your enquiry has been sent to our team.',
       });
       resetForm();
-
-      window.setTimeout(() => {
-        window.location.href = '/thank-you';
-      }, 700);
+      setIsFormOpen(false);
+      setIsCalendlyOpen(true);
     } catch (error) {
       setSubmitState({
         type: 'error',
@@ -2604,6 +2619,44 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isCalendlyOpen ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[1300] flex items-center justify-center bg-[rgba(10,10,12,0.72)] px-3 py-4 backdrop-blur-xl sm:p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Calendly booking form"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) closeCalendly();
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              className="relative flex h-[min(850px,calc(100vh-2rem))] w-full max-w-4xl flex-col sm:h-[min(850px,calc(100vh-3rem))]"
+            >
+              <button
+                type="button"
+                onClick={closeCalendly}
+                className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-black transition hover:bg-black hover:text-white sm:right-4 sm:top-4"
+                aria-label="Close Calendly booking"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <iframe
+                title="Schedule a meeting with Aadhya Serene"
+                src={CALENDLY_URL}
+                className="min-h-0 w-full flex-1 border-0 bg-transparent"
+              />
             </motion.div>
           </motion.div>
         ) : null}
