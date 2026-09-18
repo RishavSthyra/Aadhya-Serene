@@ -13,12 +13,13 @@ import {
 export default function GlobalBackground({ siteVariant }) {
     const pathname = usePathname();
     const isLandingRoute = isReadyToMoveExperience(pathname, siteVariant);
+    const isAdminRoute = pathname.startsWith('/admin');
     const [layout, setLayout] = useState('home');
     const [playing, setPlaying] = useState(true);
     const prevPathname = useRef(pathname);
 
     useEffect(() => {
-        if (isLandingRoute) {
+        if (isLandingRoute || isAdminRoute) {
             return;
         }
 
@@ -67,7 +68,7 @@ export default function GlobalBackground({ siteVariant }) {
     }, [isLandingRoute, pathname]); // <-- IMPORTANT: 'layout' removed to prevent overwriting custom events
 
     useEffect(() => {
-        if (isLandingRoute) {
+        if (isLandingRoute || isAdminRoute) {
             return undefined;
         }
 
@@ -87,9 +88,9 @@ export default function GlobalBackground({ siteVariant }) {
             window.removeEventListener('bg-play', handlePlay);
             window.removeEventListener('bg-pause', handlePause);
         };
-    }, [isLandingRoute]);
+    }, [isAdminRoute, isLandingRoute]);
 
-    if (isLandingRoute) {
+    if (isLandingRoute || isAdminRoute) {
         return null;
     }
 

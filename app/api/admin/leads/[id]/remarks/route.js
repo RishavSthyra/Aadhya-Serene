@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin, WRITE_ROLES } from '../../../../../../lib/admin-auth';
+import { getLeadScopeFilter, requireAdmin, WRITE_ROLES } from '../../../../../../lib/admin-auth';
 import {
     getAdminFeedbackFieldErrors,
     normalizeAdminFeedbackInput,
@@ -25,11 +25,17 @@ export async function POST(request, { params }) {
 
     await connectMongo();
     const { id } = await params;
-    const lead = await Notification.findByIdAndUpdate(
-        id,
+    const leadScope = getLeadScopeFilter(auth.user);
+    if (!leadScope) {
+        return NextResponse.json({ error: 'Lead source access is not configured.' }, { status: 403 });
+    }
+
+    const lead = await Notification.findOneAndUpdate(
+        { _id: id, ...leadScope },
         {
             $push: {
                 salesRemarks: {
+                    type: 'feedback',
                     text: feedback.text,
                     budget: feedback.budget,
                     configuration: feedback.configuration,

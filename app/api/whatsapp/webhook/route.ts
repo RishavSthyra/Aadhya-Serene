@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import {
   chatbotFlow,
@@ -9,8 +10,11 @@ import {
   type ChatbotButtonId,
 } from "@/lib/chatbot-flow";
 import {
+  claimWhatsAppIntentNotification,
   hasProcessedIncomingMessage,
   linkConversationToEnquiry,
+  markWhatsAppIntentNotificationSent,
+  releaseWhatsAppIntentNotificationClaim,
   recordConversationOutboundMessage,
   recordConversationSelection,
 } from "@/lib/whatsapp-conversation";
@@ -222,12 +226,17 @@ async function syncConversationToEnquiry(
 async function notifySalesForIntent(
   intent: "site_visit" | "callback",
   record: any,
-  conversation: any
+  conversation: any,
+  eventKey: string,
 ) {
   if (!record?._id) {
     console.error("Cannot notify sales: no enquiry record is linked to this WhatsApp conversation.");
     return;
   }
+
+  const phoneNumber = conversation.phoneNumber || record.phone;
+  const claimed = await claimWhatsAppIntentNotification(phoneNumber, intent, eventKey);
+  if (!claimed) return;
 
   const isSiteVisit = intent === "site_visit";
   const intentLabel = isSiteVisit ? "Site Visit Requested" : "Callback Requested";
@@ -235,24 +244,27 @@ async function notifySalesForIntent(
     ? "The customer requested a site visit through WhatsApp."
     : "The customer requested a callback through WhatsApp.";
 
-  await sendEnquiryNotificationEmail({
-    projectName: record.projectName || "Aadhya Serene",
-    source: record.source || "website",
-    channel: record.channel || "contact_form",
-    name: conversation.name || record.name || "Customer",
-    phone: conversation.phoneNumber || record.phone,
-    email: record.email || "",
-    requestType: isSiteVisit ? "site_visit" : "register_interest",
-    requestLabel: intentLabel,
-    preferredTime: "",
-    message: intentMessage,
-  });
+  try {
+    await sendEnquiryNotificationEmail({
+      projectName: record.projectName || "Aadhya Serene",
+      source: record.source || "website",
+      channel: record.channel || "contact_form",
+      name: conversation.name || record.name || "Customer",
+      phone: phoneNumber,
+      email: record.email || "",
+      requestType: isSiteVisit ? "site_visit" : "register_interest",
+      requestLabel: intentLabel,
+      preferredTime: "",
+      message: intentMessage,
+    });
+  } catch (error) {
+    await releaseWhatsAppIntentNotificationClaim(phoneNumber, intent, eventKey);
+    throw error;
+  }
+
+  await markWhatsAppIntentNotificationSent(phoneNumber, intent, eventKey);
 
   await updateEnquiryRecord(String(record._id), {
-    $set: {
-      "metadata.whatsappJourney.lastIntent": intent,
-      "metadata.whatsappJourney.intentNotifiedAt": new Date(),
-    },
     $push: {
       "metadata.activity": {
         type: "sales_intent_email",
@@ -265,6 +277,26 @@ async function notifySalesForIntent(
   });
 }
 
+function getWhatsAppIntentEventKey(intent: "site_visit" | "callback", messageId?: string, phoneNumber?: string) {
+  return `whatsapp:${intent}:${messageId || phoneNumber || "unknown"}`;
+}
+
+function getWebhookSignature(request: Request) {
+  return request.headers.get("x-hub-signature-256") || "";
+}
+
+async function verifyWebhookSignature(request: Request, rawBody: string) {
+  const appSecret = process.env.WHATSAPP_APP_SECRET?.trim();
+  const signature = getWebhookSignature(request);
+  if (!appSecret || !signature.startsWith("sha256=") || !rawBody) return false;
+
+  const expected = `sha256=${crypto.createHmac("sha256", appSecret).update(rawBody, "utf8").digest("hex")}`;
+  const expectedBuffer = Buffer.from(expected, "utf8");
+  const actualBuffer = Buffer.from(signature, "utf8");
+  return expectedBuffer.length === actualBuffer.length
+    && crypto.timingSafeEqual(expectedBuffer, actualBuffer);
+}
+
 async function runChatbotAction(
   action: ChatbotAction,
   context: {
@@ -272,6 +304,7 @@ async function runChatbotAction(
     record: any;
     conversation: any;
     intentWasNew: boolean;
+    intentEventKey?: string;
   }
 ) {
   const actionHandlers: Record<
@@ -286,7 +319,12 @@ async function runChatbotAction(
       sendConfiguredBrochure(context.phoneNumber, nextAction.message),
     intent: async (nextAction) => {
       if (context.intentWasNew) {
-        await notifySalesForIntent(nextAction.intent, context.record, context.conversation);
+        await notifySalesForIntent(
+          nextAction.intent,
+          context.record,
+          context.conversation,
+          context.intentEventKey || getWhatsAppIntentEventKey(nextAction.intent, undefined, context.phoneNumber),
+        );
       }
     },
   };
@@ -302,7 +340,11 @@ async function handleIncomingMessage(message: IncomingMessage) {
     return;
   }
 
-  if (await hasProcessedIncomingMessage(phoneNumber, message.id)) {
+  const transition = buttonId ? chatbotFlow[buttonId as ChatbotButtonId] : undefined;
+  const intentAction = transition?.actions.find((action) => action.type === "intent");
+  const incomingIntent = intentAction?.type === "intent" ? intentAction.intent : undefined;
+
+  if (await hasProcessedIncomingMessage(phoneNumber, message.id, incomingIntent)) {
     return;
   }
 
@@ -311,9 +353,7 @@ async function handleIncomingMessage(message: IncomingMessage) {
     return;
   }
 
-  const transition = chatbotFlow[buttonId as ChatbotButtonId];
-  const intentAction = transition.actions.find((action) => action.type === "intent");
-  const { conversation, intentWasNew } = await recordConversationSelection({
+  const { conversation, intentWasNew, intentEventKey } = await recordConversationSelection({
     phoneNumber,
     buttonId,
     nextState: transition.nextState,
@@ -329,6 +369,7 @@ async function handleIncomingMessage(message: IncomingMessage) {
       record,
       conversation,
       intentWasNew,
+      intentEventKey,
     });
   }
 }
@@ -388,7 +429,12 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const rawBody = await req.text();
+    if (!(await verifyWebhookSignature(req, rawBody))) {
+      return NextResponse.json({ received: false, error: "Invalid webhook signature." }, { status: 401 });
+    }
+
+    const body = JSON.parse(rawBody);
     const entries = body.entry || [];
 
     for (const entry of entries) {

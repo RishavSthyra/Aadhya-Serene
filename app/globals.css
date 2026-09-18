@@ -61,6 +61,23 @@ select {
     border-radius: 0 !important;
 }
 
+.editorial-admin .editorial-sidebar nav button > span:first-child {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 3rem;
+}
+
+@media (min-width: 1024px) {
+    .editorial-admin .editorial-sidebar:not(:hover) nav button > span:first-child {
+        margin-inline: auto;
+    }
+
+    .editorial-admin .editorial-sidebar:not(:hover) > div:first-child {
+        justify-content: center;
+    }
+}
+
 .editorial-admin .editorial-sidebar nav button.bg-\[\#111\] {
     border-left-color: #111;
 }

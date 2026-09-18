@@ -3,20 +3,17 @@ import { getLeadScopeFilter, requireAdmin } from '../../../../../lib/admin-auth'
 import { LEAD_ASSIGNMENT_STATUS_UNASSIGNED } from '../../../../../lib/lead-assignment';
 import { connectMongo } from '../../../../../lib/mongodb';
 import { Notification } from '../../../../../lib/models';
-import { getLeadDateRangeFilter } from '../../../../../lib/lead-date-filter';
-
-function escapeCsv(value) {
-    const text = String(value ?? '');
-    if (text.includes('"') || text.includes(',') || text.includes('\n') || text.includes('\r')) {
-        return `"${text.replaceAll('"', '""')}"`;
-    }
-
-    return text;
-}
-
-function buildCsvRow(values) {
-    return values.map(escapeCsv).join(',');
-}
+import {
+    deriveLeadLifecycle,
+    getLeadBucketLabel,
+    getLeadOperationalBucket,
+    getLeadStage,
+    getLeadStageLabel,
+    getOriginalLeadDate,
+} from '../../../../../lib/lead-lifecycle';
+import { getLeadDateRangeFilter, hasLeadDateRange, isLeadDateInRange } from '../../../../../lib/lead-date-filter';
+import { getResolvedLeadBucketConfig } from '../../../../../lib/lead-bucket-settings';
+import { buildCsvRow } from '../../../../../lib/csv';
 
 export async function GET(request) {
     const auth = await requireAdmin();
@@ -35,14 +32,50 @@ export async function GET(request) {
         return NextResponse.json({ error: dateRange.error }, { status: 400 });
     }
 
-    const leads = await Notification.find({ ...leadScope, ...dateRange.filter })
-        .sort({ createdAt: -1 })
-        .lean();
+    const [leads, bucketConfig] = await Promise.all([
+        Notification.find(leadScope).sort({ createdAt: -1 }).lean(),
+        getResolvedLeadBucketConfig(),
+    ]);
+
+    const groupedByPhone = new Map();
+    for (const lead of leads) {
+        const key = lead.phone || String(lead._id);
+        if (!groupedByPhone.has(key)) groupedByPhone.set(key, []);
+        groupedByPhone.get(key).push(lead);
+    }
+
+    const groupedLeads = [...groupedByPhone.values()]
+        .map((records) => {
+            const sorted = [...records].sort((left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0));
+            const latest = sorted[0];
+            const originalDate = getOriginalLeadDate(sorted);
+            const lifecycle = deriveLeadLifecycle(sorted);
+            const stage = getLeadStage(lifecycle, sorted);
+            return {
+                records: sorted,
+                lead: latest,
+                originalDate,
+                lifecycle,
+                stage,
+                stageLabel: getLeadStageLabel(stage),
+                operationalBucket: getLeadOperationalBucket(lifecycle, sorted),
+            };
+        })
+        .filter((group) => !hasLeadDateRange(dateRange) || isLeadDateInRange(group.originalDate, dateRange));
+
 
     const header = [
-        'submitted_at',
+        'original_lead_date',
         'updated_at',
         'project_name',
+        'lifecycle_bucket',
+        'lifecycle_bucket_label',
+        'lead_stage',
+        'lead_stage_label',
+        'callback_status',
+        'callback_due_at',
+        'latest_call_disposition',
+        'answered_outcomes',
         'channel',
         'source',
         'name',
@@ -75,18 +108,31 @@ export async function GET(request) {
         'wa_visit_time',
         'wa_call_time',
         'wa_last_incoming_text',
+        'legacy_lead_status',
+        'legacy_sales_lead_status',
         'metadata_json',
     ];
 
-    const rows = leads.map((lead) => {
+    const rows = groupedLeads.map(({ lead, originalDate, lifecycle, stage, stageLabel, operationalBucket, records }) => {
         const metadata = lead.metadata || {};
         const requestContext = metadata.requestContext || {};
         const whatsappJourney = metadata.whatsappJourney || {};
+        const callLogs = records.flatMap((record) => record.callLogs || []);
+        const latestCall = [...callLogs].sort((left, right) => new Date(right.createdAt || right.callDate || 0) - new Date(left.createdAt || left.callDate || 0))[0];
+        const answeredOutcomes = [...new Set(callLogs.flatMap((call) => call.answeredOutcomes || []))];
 
         return buildCsvRow([
-            lead.createdAt ? new Date(lead.createdAt).toISOString() : '',
+            originalDate,
             lead.updatedAt ? new Date(lead.updatedAt).toISOString() : '',
             lead.projectName || '',
+            operationalBucket || '',
+            getLeadBucketLabel(operationalBucket, bucketConfig),
+            stage || '',
+            stageLabel || '',
+            lifecycle.callback?.status || 'none',
+            lifecycle.callback?.dueAt?.toISOString?.() || lifecycle.callback?.dueAt || '',
+            latestCall?.callOutcome || latestCall?.callStatus || '',
+            answeredOutcomes.join(', '),
             lead.channel || '',
             lead.source || '',
             lead.name || '',
@@ -119,9 +165,12 @@ export async function GET(request) {
             whatsappJourney.visitTime || '',
             whatsappJourney.callTime || '',
             whatsappJourney.lastIncomingText || '',
+            lead.leadStatus || '',
+            lead.salesLeadStatus || '',
             JSON.stringify(metadata || {}),
         ]);
     });
+
 
     const csv = [buildCsvRow(header), ...rows].join('\n');
 

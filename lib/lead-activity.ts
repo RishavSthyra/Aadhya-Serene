@@ -15,6 +15,17 @@ function asIso(value: unknown) {
   return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
+function formatActivityDate(value: unknown) {
+  const date = asIso(value);
+  if (!date) return "";
+
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kolkata",
+  }).format(new Date(date));
+}
+
 function buttonLabel(buttonId: string, fallback: string) {
   const button = CHATBOT_BUTTONS[buttonId as keyof typeof CHATBOT_BUTTONS];
   return button?.label || fallback || buttonId || "Customer response";
@@ -82,7 +93,51 @@ export function buildLeadRecordActivity(lead: any) {
   });
   if (emailEvent) events.push(emailEvent);
 
+  for (const callLog of lead?.callLogs || []) {
+    const occurredAt = asIso(callLog.createdAt) || asIso(callLog.callDate);
+    if (!occurredAt) continue;
+    const disposition = callLog.callOutcome || callLog.callStatus || 'unknown';
+    events.push({
+      type: 'call_disposition',
+      title: `Call ${disposition.replaceAll('_', ' ')}`,
+      detail: callLog.remark || 'Call outcome recorded by sales.',
+      occurredAt,
+      status: disposition === 'answered' ? 'received' : 'info',
+    });
+
+    for (const outcome of callLog.answeredOutcomes || []) {
+      events.push({
+        type: 'call_outcome',
+        title: outcome.replaceAll('_', ' ').replace(/^./, (value) => value.toUpperCase()),
+        detail: outcome === 'callback_requested' && callLog.callbackDueAt
+          ? `Callback due ${formatActivityDate(callLog.callbackDueAt)}.`
+          : 'Answered-call outcome recorded by sales.',
+        occurredAt,
+        status: 'received',
+      });
+    }
+  }
+
+  for (const event of lead?.leadLifecycle?.events || []) {
+    const occurredAt = asIso(event.occurredAt);
+    if (!occurredAt) continue;
+    const title = String(event.type || 'lifecycle_event')
+      .replaceAll('_', ' ')
+      .replace(/^./, (value) => value.toUpperCase());
+    const detail = event.callbackDueAt
+      ? `Callback due ${formatActivityDate(event.callbackDueAt)}.`
+      : 'Lead lifecycle updated by the sales team.';
+    events.push({
+      type: 'lifecycle_event',
+      title,
+      detail,
+      occurredAt,
+      status: event.callbackStatus || 'info',
+    });
+  }
+
   const whatsappEvent = deliveryEvent({
+
     state: lead?.whatsappDelivery,
     title: "WhatsApp template update",
     detail: "WhatsApp delivery status updated.",
