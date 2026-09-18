@@ -9,6 +9,7 @@ import {
     CheckCircle2,
     Copy,
     Download,
+    Filter,
     Home,
     KeyRound,
     LayoutDashboard,
@@ -42,6 +43,7 @@ import {
     CALL_LOG_REQUIREMENT_NOT_MENTIONED,
     CALL_LOG_REMARK_MAX_LENGTH,
     CALL_LOG_STATUS_OPTIONS,
+    CALL_LOG_ANSWERED_OUTCOME_OPTIONS,
     getCallLogFieldErrors,
 } from '@/lib/admin-call-log';
 import {
@@ -50,11 +52,14 @@ import {
     isWhatsAppDeliverySuccessStatus,
 } from '@/lib/whatsapp-delivery';
 import {
-    getSalesLeadStatus,
-    SALES_LEAD_STATUS_COLD,
-    SALES_LEAD_STATUS_DEAD,
-    SALES_LEAD_STATUS_OPTIONS,
-} from '@/lib/lead-status';
+    ANSWERED_CALL_OUTCOME_LABELS,
+    CALL_DISPOSITION_LABELS,
+    LEAD_BUCKET_DEAD,
+    DEFAULT_LEAD_BUCKET_CONFIG,
+    LEAD_STAGE_CONFIG,
+    LEAD_STAGE_DEAD,
+} from '@/lib/lead-lifecycle';
+import { buildCsvRow } from '@/lib/csv';
 
 const ROLE_LABELS = {
     super_admin: 'Super Admin',
@@ -81,6 +86,7 @@ const LEAD_SOURCE_LABELS = {
 };
 
 const STATUS_OPTIONS = ['available', 'reserved', 'blocked', 'sold out'];
+const LEADS_PAGE_SIZE = 10;
 
 const STATUS_COLORS = {
     available: '#111111',
@@ -100,14 +106,22 @@ const CHANNEL_LABELS = {
     portal_lead: 'External Lead',
 };
 
-const LEAD_TEMPERATURES = {
-    cold: { label: 'Cold', description: 'Fresh follow-up needed', className: 'border-slate-200 bg-slate-50 text-slate-700' },
-    warm: { label: 'Warm', description: 'Interested lead', className: 'border-amber-200 bg-amber-50 text-amber-700' },
-    hot: { label: 'Hot', description: 'High-priority lead', className: 'border-red-200 bg-red-50 text-red-700' },
-};
-
 const LEAD_FILTERS = {
-    ...LEAD_TEMPERATURES,
+    new_lead: {
+        label: 'New Leads',
+        description: 'Leads requiring follow-up',
+        className: 'border-slate-200 bg-slate-50 text-slate-700',
+    },
+    site_visit_booked: {
+        label: 'Site Visit Booked',
+        description: 'Customers with a booked site visit',
+        className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    },
+    callback_requested: {
+        label: 'Asked for Callback',
+        description: 'Customers waiting for a callback',
+        className: 'border-violet-200 bg-violet-50 text-violet-700',
+    },
     dead: {
         label: 'Dead',
         description: 'Dead leads',
@@ -115,15 +129,32 @@ const LEAD_FILTERS = {
     },
 };
 
-const CALL_STATUS_LABELS = {
-    answered: 'Answered',
-    not_answered: 'Not answered',
+const CALL_STATUS_LABELS = CALL_DISPOSITION_LABELS;
+const ANSWERED_OUTCOME_LABELS = ANSWERED_CALL_OUTCOME_LABELS;
+const CALL_FILTERS = {
+    answered: { label: 'Answered' },
+    not_answered: { label: 'Not answered' },
+    switched_off: { label: 'Switched off' },
+    invalid_number: { label: 'Invalid number' },
+    callback: { label: 'Callback' },
 };
+
+function getBucketMeta(bucket, config = DEFAULT_LEAD_BUCKET_CONFIG) {
+    const configured = config.find((item) => item.key === bucket);
+    const fallback = LEAD_FILTERS[bucket] || {
+        label: bucket,
+        description: '',
+        className: 'border-[#111]/10 bg-[#fafafa] text-[#374151]',
+    };
+
+    return configured
+        ? { ...fallback, label: configured.label, description: configured.description }
+        : fallback;
+}
 
 const ADMIN_NAV_ITEMS = [
     { icon: LayoutDashboard, label: 'Dashboard', section: 'dashboard' },
     { icon: MessageSquare, label: 'Leads', section: 'leads' },
-    { icon: PhoneCall, label: 'Calls', section: 'calls' },
     { icon: Home, label: 'Inventory', section: 'inventory' },
     { icon: UsersRound, label: 'RBAC Users', section: 'users' },
     { icon: KeyRound, label: 'Signup Keys', section: 'keys' },
@@ -177,20 +208,53 @@ function getLeadJourneySummary(lead) {
     return parts.length ? parts.join(' | ') : 'WhatsApp flow started.';
 }
 
-function getLeadTemperature(lead) {
-    return getSalesLeadStatus(lead);
+function getLegacyLeadStatus(lead) {
+    return lead?.salesLeadStatus || '';
+}
+
+function hasPendingLeadCallback(lead) {
+    const callbackStatus = lead?.callback?.status || lead?.lifecycle?.callback?.status || '';
+    if (callbackStatus === 'pending') return true;
+    if (callbackStatus && callbackStatus !== 'none') return false;
+
+    return (lead?.callLogs || []).some((callLog) => (
+        (callLog?.answeredOutcomes || []).includes('callback_requested')
+        && (!callLog.callbackStatus || callLog.callbackStatus === 'pending')
+    ));
+}
+
+function isDeadLead(lead) {
+    return lead?.leadStatus === 'dead'
+        || lead?.salesLeadStatus === 'dead'
+        || lead?.bucketKey === LEAD_BUCKET_DEAD;
 }
 
 function getLeadFilterKey(lead) {
-    return getLeadTemperature(lead);
+    if (isDeadLead(lead)) return LEAD_BUCKET_DEAD;
+    if (hasPendingLeadCallback(lead)) return 'callback_requested';
+    return lead?.bucketKey || 'new_lead';
 }
 
 function getVisibleLeadsForFilter(leads, filterKey) {
+    if (filterKey === LEAD_BUCKET_DEAD) {
+        return leads.filter(isDeadLead);
+    }
+
     return leads.filter((lead) => getLeadFilterKey(lead) === filterKey);
 }
 
+function getVisibleLeadsForCallFilter(leads, filterKey) {
+    if (filterKey === 'callback') {
+        return leads.filter(hasPendingLeadCallback);
+    }
+
+    return leads.filter((lead) => (lead.callLogs || []).some((callLog) => (
+        callLog.callOutcome || callLog.callStatus
+    ) === filterKey));
+}
+
 function getLeadFilterButtonClasses(activeFilter, filterKey) {
-    if (filterKey === SALES_LEAD_STATUS_DEAD) {
+    if (filterKey === LEAD_BUCKET_DEAD) {
         return activeFilter === filterKey
             ? 'bg-[#b42318] text-white shadow-[0_8px_18px_rgba(180,35,24,0.25)]'
             : 'bg-[#b42318] text-white/90 hover:text-white';
@@ -199,6 +263,21 @@ function getLeadFilterButtonClasses(activeFilter, filterKey) {
     return activeFilter === filterKey
         ? 'bg-white text-[#111] shadow-[0_8px_18px_rgba(17,17,17,0.08)]'
         : 'text-[#6b7280] hover:text-[#111]';
+}
+
+function sortNewLeadsFirst(leads, filterKey) {
+    return [...leads].sort((left, right) => {
+        if (filterKey === 'new_lead') {
+            return new Date(right.originalDate || right.firstSeenAt || 0).getTime()
+                - new Date(left.originalDate || left.firstSeenAt || 0).getTime();
+        }
+        return new Date(right.updatedAt || right.createdAt || 0).getTime()
+            - new Date(left.updatedAt || left.createdAt || 0).getTime();
+    });
+}
+
+function getCallCount(lead) {
+    return Array.isArray(lead?.callLogs) ? lead.callLogs.length : 0;
 }
 
 function getLeadSources(lead) {
@@ -228,22 +307,23 @@ function getLeadChannelSummary(lead) {
     return channels;
 }
 
-function LeadTemperaturePill({ lead }) {
-    const temperature = getLeadTemperature(lead);
-    const meta = LEAD_FILTERS[temperature] || LEAD_TEMPERATURES.cold;
+function LeadLifecyclePill({ lead, config = DEFAULT_LEAD_BUCKET_CONFIG }) {
+    const stageMeta = LEAD_STAGE_CONFIG.find((item) => item.key === lead?.stage) || LEAD_STAGE_CONFIG[0];
+    const meta = getBucketMeta(getLeadFilterKey(lead), config);
 
     return (
-        <span className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-bold ${meta.className}`}>
-            {meta.label}
+        <span className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-bold ${stageMeta.className}`}>
+            {lead?.stageLabel || stageMeta.label || meta.label}
         </span>
     );
 }
 
-function createEmptyCallLogForm(currentStatus = SALES_LEAD_STATUS_COLD) {
+function createEmptyCallLogForm() {
     return {
         callDate: getTodayDateInputValue(),
-        callStatus: '',
-        leadStatus: currentStatus,
+        callOutcome: '',
+        answeredOutcomes: [],
+        callbackDueAt: '',
         remark: '',
         sharedRequirements: false,
         budget: CALL_LOG_REQUIREMENT_NOT_MENTIONED,
@@ -251,6 +331,118 @@ function createEmptyCallLogForm(currentStatus = SALES_LEAD_STATUS_COLD) {
         locationChoice: CALL_LOG_REQUIREMENT_NOT_MENTIONED,
         location: '',
     };
+}
+
+function formatCallOutcome(outcome) {
+    return CALL_STATUS_LABELS[outcome] || String(outcome || '').replaceAll('_', ' ');
+}
+
+function formatAnsweredOutcome(outcome) {
+    return ANSWERED_OUTCOME_LABELS[outcome] || String(outcome || '').replaceAll('_', ' ');
+}
+
+function isCallbackOverdue(lead) {
+    return lead?.callback?.status === 'pending'
+        && lead?.callback?.dueAt
+        && new Date(lead.callback.dueAt).getTime() <= Date.now();
+}
+
+function toDateTimeLocalValue(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const timezoneOffset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 16);
+}
+
+function CallbackActions({ lead, canWrite, onAction }) {
+    const [dueAt, setDueAt] = useState(() => toDateTimeLocalValue(lead?.callback?.dueAt));
+    const [busy, setBusy] = useState('');
+    const [error, setError] = useState('');
+    const overdue = isCallbackOverdue(lead);
+
+    useEffect(() => {
+        setDueAt(toDateTimeLocalValue(lead?.callback?.dueAt));
+        setError('');
+    }, [lead?.callback?.dueAt]);
+
+    if (lead?.callback?.status !== 'pending') return null;
+
+    async function submitAction(action) {
+        if (action === 'reschedule' && !dueAt) {
+            setError('Choose a new callback date and time.');
+            return;
+        }
+
+        setBusy(action);
+        setError('');
+        try {
+            await onAction?.(lead.id, action, action === 'reschedule' ? dueAt : '');
+        } finally {
+            setBusy('');
+        }
+    }
+
+    return (
+        <section className="mt-5 rounded-[22px] border border-violet-200 bg-violet-50/70 p-4 sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-violet-700">Callback queue</p>
+                    <p className="mt-1 text-sm font-bold text-[#111]">
+                        Due {lead.callback.dueAt ? formatAdminDate(lead.callback.dueAt) : 'time not set'}
+                    </p>
+                    {overdue ? <p className="mt-1 text-xs font-bold text-red-600">Overdue</p> : null}
+                </div>
+                {canWrite ? (
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={() => void submitAction('complete')}
+                            disabled={Boolean(busy)}
+                            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#111] px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
+                        >
+                            {busy === 'complete' ? 'Completing...' : 'Complete'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => void submitAction('cancel')}
+                            disabled={Boolean(busy)}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-[#111]/15 bg-white px-4 text-xs font-bold text-[#111] disabled:cursor-not-allowed disabled:opacity-45"
+                        >
+                            {busy === 'cancel' ? 'Cancelling...' : 'Cancel'}
+                        </button>
+                    </div>
+                ) : null}
+            </div>
+            {canWrite ? (
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <label className="block w-full max-w-sm">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-violet-700">Reschedule callback</span>
+                        <input
+                            type="datetime-local"
+                            value={dueAt}
+                            onChange={(event) => setDueAt(event.target.value)}
+                            className="mt-2 h-11 w-full rounded-xl border border-violet-200 bg-white px-3 text-sm text-[#111] outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10"
+                        />
+                    </label>
+                    <button
+                        type="button"
+                        onClick={() => void submitAction('reschedule')}
+                        disabled={Boolean(busy) || !dueAt}
+                        className="inline-flex h-11 items-center justify-center rounded-xl border border-violet-300 bg-white px-4 text-xs font-bold text-violet-700 disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                        {busy === 'reschedule' ? 'Rescheduling...' : 'Reschedule'}
+                    </button>
+                </div>
+            ) : null}
+            {error ? <p className="mt-3 text-xs font-bold text-red-600">{error}</p> : null}
+        </section>
+    );
+}
+
+function getLeadStatusLabel(lead) {
+    return getLegacyLeadStatus(lead) ? `Legacy: ${getLegacyLeadStatus(lead)}` : '';
 }
 
 function getSortedCallLogs(callLogs) {
@@ -265,8 +457,8 @@ function getSortedCallLogs(callLogs) {
 }
 
 const CALL_REPORT_COLUMNS = [
-    { header: 'Submitted At', key: 'submittedAt', width: 18 },
-    { header: 'Lead Segment', key: 'leadSegment', width: 14 },
+    { header: 'Original Lead Date', key: 'originalDate', width: 18 },
+    { header: 'Lead Segment', key: 'leadSegment', width: 20 },
     { header: 'Lead Name', key: 'leadName', width: 22 },
     { header: 'Assigned Sales Executive', key: 'assignedSalesExecutive', width: 24 },
     { header: 'Assignment Status', key: 'assignmentStatus', width: 16 },
@@ -277,15 +469,17 @@ const CALL_REPORT_COLUMNS = [
     { header: 'Lead Context', key: 'leadContext', width: 34 },
     { header: 'Call #', key: 'callNumber', width: 8 },
     { header: 'Call Date', key: 'callDate', width: 14 },
-    { header: 'Call Status', key: 'callStatus', width: 14 },
+    { header: 'Call Disposition', key: 'callStatus', width: 16 },
+    { header: 'Answered Outcomes', key: 'answeredOutcomes', width: 34 },
+    { header: 'Callback', key: 'callback', width: 28 },
     { header: 'Call Remark', key: 'callRemark', width: 38 },
     { header: 'Calling Feedback', key: 'callingFeedback', width: 42 },
 ];
 
 const LEAD_REPORT_COLUMNS = [
-    { header: 'Submitted At', key: 'submittedAt', width: 18 },
+    { header: 'Original Lead Date', key: 'submittedAt', width: 18 },
     { header: 'Updated At', key: 'updatedAt', width: 18 },
-    { header: 'Lead Segment', key: 'leadSegment', width: 14 },
+    { header: 'Lead Segment', key: 'leadSegment', width: 20 },
     { header: 'Lead Name', key: 'leadName', width: 22 },
     { header: 'Assigned Sales Executive', key: 'assignedSalesExecutive', width: 24 },
     { header: 'Assignment Status', key: 'assignmentStatus', width: 16 },
@@ -319,18 +513,6 @@ function formatExportDateTime(value) {
     }).format(date);
 }
 
-function escapeCsv(value) {
-    const text = String(value ?? '');
-    if (text.includes('"') || text.includes(',') || text.includes('\n') || text.includes('\r')) {
-        return `"${text.replaceAll('"', '""')}"`;
-    }
-
-    return text;
-}
-
-function buildCsvRow(values) {
-    return values.map(escapeCsv).join(',');
-}
 
 function buildLeadContextForExport(lead) {
     return [
@@ -390,16 +572,16 @@ function buildDeliveryStatusForExport(lead) {
     ].filter(Boolean).join('\n');
 }
 
-function buildLeadReportRows(leads) {
+function buildLeadReportRows(leads, bucketConfig = DEFAULT_LEAD_BUCKET_CONFIG) {
     return leads.map((lead) => {
         const callLogs = getSortedCallLogs(lead.callLogs);
         const latestFeedbackCall = callLogs.find((callLog) => callLog.sharedRequirements);
         const salesStatus = getLeadFilterKey(lead);
 
         return {
-            submittedAt: formatExportDateTime(lead.createdAt),
+            submittedAt: formatExportDateTime(lead.originalDate || lead.createdAt),
             updatedAt: formatExportDateTime(lead.updatedAt),
-            leadSegment: LEAD_FILTERS[salesStatus]?.label || salesStatus,
+            leadSegment: getBucketMeta(salesStatus, bucketConfig).label,
             leadName: lead.name || 'Unknown lead',
             assignedSalesExecutive: getAssignedSalesExecutiveLabel(lead),
             assignmentStatus: getAssignmentStatusLabel(lead),
@@ -418,14 +600,14 @@ function buildLeadReportRows(leads) {
     });
 }
 
-function buildCallReportRows(leads) {
+function buildCallReportRows(leads, bucketConfig = DEFAULT_LEAD_BUCKET_CONFIG) {
     return leads.flatMap((lead) => {
         const callLogs = getSortedCallLogs(lead.callLogs);
         const latestCall = callLogs[0];
         const salesStatus = getLeadFilterKey(lead);
         const baseRow = {
-            submittedAt: formatExportDateTime(lead.createdAt),
-            leadSegment: LEAD_FILTERS[salesStatus]?.label || salesStatus,
+            originalDate: formatExportDateTime(lead.originalDate || lead.createdAt),
+            leadSegment: getBucketMeta(salesStatus, bucketConfig).label,
             leadName: lead.name || 'Unknown lead',
             assignedSalesExecutive: getAssignedSalesExecutiveLabel(lead),
             assignmentStatus: getAssignmentStatusLabel(lead),
@@ -442,6 +624,8 @@ function buildCallReportRows(leads) {
                 callNumber: '',
                 callDate: '',
                 callStatus: 'No calls logged',
+                answeredOutcomes: '',
+                callback: '',
                 callRemark: '',
                 callingFeedback: 'No calling feedback added yet',
             }];
@@ -451,7 +635,11 @@ function buildCallReportRows(leads) {
             ...baseRow,
             callNumber: index + 1,
             callDate: callLog.callDate ? formatAdminDateOnly(callLog.callDate) : '',
-            callStatus: CALL_STATUS_LABELS[callLog.callStatus] || callLog.callStatus || '',
+            callStatus: formatCallOutcome(callLog.callOutcome || callLog.callStatus),
+            answeredOutcomes: (callLog.answeredOutcomes || []).map(formatAnsweredOutcome).join(', '),
+            callback: callLog.callbackStatus === 'pending'
+                ? `Pending${callLog.callbackDueAt ? ` · ${formatExportDateTime(callLog.callbackDueAt)}` : ''}`
+                : callLog.callbackStatus || '',
             callRemark: [
                 callLog.remark || '',
                 callLog.authorName ? `Saved by: ${callLog.authorName}` : '',
@@ -512,11 +700,13 @@ function getLeadReportRowHeight(row) {
 function CallStatusPill({ status }) {
     const tone = status === 'answered'
         ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-        : 'border-amber-200 bg-amber-50 text-amber-700';
+        : status === 'invalid_number'
+            ? 'border-red-200 bg-red-50 text-red-700'
+            : 'border-amber-200 bg-amber-50 text-amber-700';
 
     return (
         <span className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-bold ${tone}`}>
-            {CALL_STATUS_LABELS[status] || 'Unknown'}
+            {formatCallOutcome(status) || 'Unknown'}
         </span>
     );
 }
@@ -643,33 +833,29 @@ function AboutLeadPanel({ lead, onClose }) {
 function CallsPanel({
     leads,
     canWrite,
+    bucketConfig = DEFAULT_LEAD_BUCKET_CONFIG,
     onCallLogSaved,
     onOpenLeadActivity,
     onOpenLeadAbout,
+    onCallbackAction,
 }) {
     const [query, setQuery] = useState('');
-    const [leadFilter, setLeadFilter] = useState('cold');
+    const [leadFilter, setLeadFilter] = useState('answered');
 
-    const leadStats = useMemo(
-        () =>
-            leads.reduce(
-                (acc, lead) => {
-                    acc[getLeadFilterKey(lead)] += 1;
-                    return acc;
-                },
-                { cold: 0, warm: 0, hot: 0, dead: 0 },
-            ),
-        [leads],
-    );
+    const leadStats = useMemo(() => (
+        Object.keys(CALL_FILTERS).reduce((acc, filterKey) => {
+            acc[filterKey] = getVisibleLeadsForCallFilter(leads, filterKey).length;
+            return acc;
+        }, {})
+    ), [leads]);
 
     const visibleLeads = useMemo(() => {
         const normalizedQuery = query.trim().toLowerCase();
-        const filteredLeads = getVisibleLeadsForFilter(leads, leadFilter);
-        if (!normalizedQuery) {
-            return filteredLeads;
-        }
+        const filteredLeads = getVisibleLeadsForCallFilter(leads, leadFilter);
+        const sortedLeads = sortNewLeadsFirst(filteredLeads, 'activity');
+        if (!normalizedQuery) return sortedLeads;
 
-        return filteredLeads.filter((lead) =>
+        return sortedLeads.filter((lead) =>
             [
                 lead.name,
                 ...(lead.names || []),
@@ -678,9 +864,10 @@ function CallsPanel({
                 lead.source,
                 ...(lead.sources || []),
                 lead.requestLabel,
-                getLeadTemperature(lead),
+                lead.bucketLabel,
                 lead.message,
                 lead.preferredTime,
+                lead.callback?.dueAt,
                 ...(lead.submissions || []).flatMap((submission) => [
                     submission.name,
                     submission.source,
@@ -690,23 +877,21 @@ function CallsPanel({
                 ]),
                 ...(lead.callLogs || []).flatMap((callLog) => [
                     callLog.callDate,
-                    callLog.leadStatus,
-                    CALL_STATUS_LABELS[callLog.callStatus] || callLog.callStatus,
+                    formatCallOutcome(callLog.callOutcome || callLog.callStatus),
+                    ...(callLog.answeredOutcomes || []).map(formatAnsweredOutcome),
                     callLog.remark,
                     callLog.budget,
                     callLog.configuration,
                     callLog.location,
                 ]),
-            ]
-                .join(' ')
-                .toLowerCase()
-                .includes(normalizedQuery),
+            ].join(' ').toLowerCase().includes(normalizedQuery),
         );
     }, [leadFilter, leads, query]);
 
+    const filterLabel = CALL_FILTERS[leadFilter]?.label || leadFilter;
+
     async function downloadVisibleCallsReport() {
-        const reportRows = buildCallReportRows(visibleLeads);
-        const filterLabel = LEAD_FILTERS[leadFilter]?.label || leadFilter;
+        const reportRows = buildCallReportRows(visibleLeads, bucketConfig);
         const fileDate = new Date().toISOString().slice(0, 10);
 
         try {
@@ -859,22 +1044,24 @@ function CallsPanel({
                     <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Call tracking</p>
                     <h2 className="mt-1 font-display text-2xl font-bold text-[#111]">Sales call logs</h2>
                     <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6b7280]">
-                        Save each call with its outcome, updated sales lead status, and any shared customer requirements.
+                        Save each call with its disposition, customer outcomes, and any shared requirements.
                     </p>
                 </div>
                 <div className="flex w-full flex-col gap-4 xl:w-auto xl:items-end">
-                    <div className="inline-flex w-full rounded-2xl border border-[#111]/10 bg-[#f7f7f7] p-1 sm:w-auto">
-                        {Object.entries(LEAD_FILTERS).map(([filterKey, meta]) => (
-                            <button
-                                key={filterKey}
-                                type="button"
-                                onClick={() => setLeadFilter(filterKey)}
-                                className={`flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition sm:min-w-[138px] sm:flex-none ${getLeadFilterButtonClasses(leadFilter, filterKey)}`}
-                            >
-                                <span>{meta.label}</span>
-                                <span className={`rounded-full px-2 py-0.5 text-xs ${filterKey === SALES_LEAD_STATUS_DEAD ? 'bg-white/20 text-white' : 'border border-[#111]/10 bg-[#fafafa] text-[#111]'}`}>{leadStats[filterKey]}</span>
-                            </button>
-                        ))}
+                    <div className="max-w-full overflow-x-auto rounded-2xl border border-[#111]/10 bg-[#f7f7f7] p-1">
+                        <div className="inline-flex min-w-full flex-nowrap gap-1 sm:min-w-max">
+                            {Object.entries(CALL_FILTERS).map(([filterKey, meta]) => (
+                                <button
+                                    key={filterKey}
+                                    type="button"
+                                    onClick={() => setLeadFilter(filterKey)}
+                                    className={`flex shrink-0 items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition sm:min-w-[138px] ${getLeadFilterButtonClasses(leadFilter, filterKey)}`}
+                                >
+                                    <span>{meta.label}</span>
+                                    <span className="rounded-full border border-[#111]/10 bg-[#fafafa] px-2 py-0.5 text-xs text-[#111]">{leadStats[filterKey]}</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                     <div className="relative w-full xl:w-[390px]">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98a2b3]" />
@@ -906,14 +1093,16 @@ function CallsPanel({
                             key={lead.id}
                             lead={lead}
                             canWrite={canWrite}
+                            bucketConfig={bucketConfig}
                             onCallLogSaved={onCallLogSaved}
                             onOpenLeadActivity={onOpenLeadActivity}
                             onOpenLeadAbout={onOpenLeadAbout}
+                            onCallbackAction={onCallbackAction}
                         />
                     ))
                 ) : (
                     <div className="rounded-[24px] border border-dashed border-[#111]/15 bg-[#fafafa] px-6 py-12 text-center text-sm font-medium text-[#6b7280]">
-                        No {LEAD_FILTERS[leadFilter].label.toLowerCase()} leads match your current search.
+                        No {filterLabel.toLowerCase()} leads match your current search.
                     </div>
                 )}
             </div>
@@ -924,23 +1113,34 @@ function CallsPanel({
 function LeadCallCard({
     lead,
     canWrite,
+    bucketConfig = DEFAULT_LEAD_BUCKET_CONFIG,
     onCallLogSaved,
     onOpenLeadActivity,
     onOpenLeadAbout,
+    onCallbackAction,
 }) {
-    const [callForm, setCallForm] = useState(() => createEmptyCallLogForm(getLeadTemperature(lead)));
+    const [callForm, setCallForm] = useState(() => createEmptyCallLogForm());
     const [callErrors, setCallErrors] = useState({});
     const [savingCall, setSavingCall] = useState(false);
     const callLogs = getSortedCallLogs(lead.callLogs);
 
     useEffect(() => {
-        setCallForm(createEmptyCallLogForm(getLeadTemperature(lead)));
+        setCallForm(createEmptyCallLogForm());
         setCallErrors({});
-    }, [lead.id, lead.salesLeadStatus]);
+    }, [lead.id, lead.updatedAt]);
 
     function updateCallField(name, value) {
         setCallForm((current) => {
             const next = { ...current, [name]: value };
+
+            if (name === 'callOutcome' && value !== 'answered') {
+                next.answeredOutcomes = [];
+                next.callbackDueAt = '';
+            }
+
+            if (name === 'answeredOutcomes' && !value.includes('callback_requested')) {
+                next.callbackDueAt = '';
+            }
 
             if (name === 'sharedRequirements' && !value) {
                 next.budget = CALL_LOG_REQUIREMENT_NOT_MENTIONED;
@@ -1014,8 +1214,8 @@ function LeadCallCard({
                 throw new Error(payload.error || 'Unable to save call log.');
             }
 
-            onCallLogSaved(lead.id, payload.callLog);
-            setCallForm(createEmptyCallLogForm(payload.salesLeadStatus || callForm.leadStatus));
+            onCallLogSaved(lead.id, payload.callLog, payload.lifecycle);
+            setCallForm(createEmptyCallLogForm());
         } catch (error) {
             setCallErrors((current) => ({
                 ...current,
@@ -1034,7 +1234,7 @@ function LeadCallCard({
                         <button type="button" onClick={() => onOpenLeadAbout(lead)} className="text-left text-xl font-bold text-[#111] underline decoration-[#111]/20 underline-offset-4 hover:decoration-[#111]/45">
                             {lead.name || 'Unknown lead'}
                         </button>
-                        <LeadTemperaturePill lead={lead} />
+                        <LeadLifecyclePill lead={lead} config={bucketConfig} />
                     </div>
                     <p className="mt-1 text-sm font-medium text-[#374151]">{lead.phone || 'No phone'}</p>
                     <p className="mt-1 break-words text-sm text-[#6b7280]">{lead.email || 'No email captured'}</p>
@@ -1073,38 +1273,54 @@ function LeadCallCard({
                             />
                             {callErrors.callDate ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.callDate}</p> : null}
                         </label>
-                        <label className="block">
-                            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Call status</span>
+                        <label className="block lg:col-span-2">
+                            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Call disposition</span>
                             <select
-                                value={callForm.callStatus}
-                                onChange={(event) => updateCallField('callStatus', event.target.value)}
+                                value={callForm.callOutcome}
+                                onChange={(event) => updateCallField('callOutcome', event.target.value)}
                                 className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
                             >
-                                <option value="">Select status</option>
+                                <option value="">Select disposition</option>
                                 {CALL_LOG_STATUS_OPTIONS.map((status) => (
-                                    <option key={status} value={status}>
-                                        {CALL_STATUS_LABELS[status]}
-                                    </option>
+                                    <option key={status} value={status}>{CALL_STATUS_LABELS[status]}</option>
                                 ))}
                             </select>
-                            {callErrors.callStatus ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.callStatus}</p> : null}
-                        </label>
-                        <label className="block">
-                            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Lead status</span>
-                            <select
-                                value={callForm.leadStatus}
-                                onChange={(event) => updateCallField('leadStatus', event.target.value)}
-                                className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-[#fafafa] px-4 text-sm text-[#111] outline-none transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
-                            >
-                                {SALES_LEAD_STATUS_OPTIONS.map((status) => (
-                                    <option key={status} value={status}>
-                                        {LEAD_FILTERS[status]?.label || status}
-                                    </option>
-                                ))}
-                            </select>
-                            {callErrors.leadStatus ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.leadStatus}</p> : null}
+                            {callErrors.callOutcome ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.callOutcome}</p> : null}
                         </label>
                     </div>
+                    {callForm.callOutcome === 'answered' ? (
+                        <div className="mt-4 rounded-[20px] border border-[#111]/10 bg-[#fafafa] px-4 py-4">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Answered-call outcomes</p>
+                            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                                {CALL_LOG_ANSWERED_OUTCOME_OPTIONS.map((outcome) => (
+                                    <label key={outcome} className="flex items-center gap-3 rounded-2xl border border-[#111]/10 bg-white px-3 py-3 text-sm font-bold text-[#111]">
+                                        <input
+                                            type="checkbox"
+                                            checked={callForm.answeredOutcomes.includes(outcome)}
+                                            onChange={(event) => updateCallField('answeredOutcomes', event.target.checked
+                                                ? [...callForm.answeredOutcomes, outcome]
+                                                : callForm.answeredOutcomes.filter((item) => item !== outcome))}
+                                            className="h-4 w-4 rounded border border-[#111]/20 text-[#111] focus:ring-black/10"
+                                        />
+                                        {ANSWERED_OUTCOME_LABELS[outcome]}
+                                    </label>
+                                ))}
+                            </div>
+                            {callErrors.answeredOutcomes ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.answeredOutcomes}</p> : null}
+                            {callForm.answeredOutcomes.includes('callback_requested') ? (
+                                <label className="mt-4 block max-w-sm">
+                                    <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Callback due</span>
+                                    <input
+                                        type="datetime-local"
+                                        value={callForm.callbackDueAt}
+                                        onChange={(event) => updateCallField('callbackDueAt', event.target.value)}
+                                        className="mt-2 h-11 w-full rounded-2xl border border-[#111]/14 bg-white px-4 text-sm text-[#111] outline-none focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                                    />
+                                    {callErrors.callbackDueAt ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.callbackDueAt}</p> : null}
+                                </label>
+                            ) : null}
+                        </div>
+                    ) : null}
                     <div className="mt-4 rounded-[20px] border border-[#111]/10 bg-[#fafafa] px-4 py-4">
                         <label className="flex items-center gap-3 text-sm font-bold text-[#111]">
                             <input
@@ -1191,16 +1407,20 @@ function LeadCallCard({
                         {callErrors.remark ? <p className="mt-2 text-xs font-bold text-red-600">{callErrors.remark}</p> : null}
                     </label>
                     <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        {callErrors.form ? <p className="text-xs font-bold text-red-600">{callErrors.form}</p> : <span className="text-xs font-medium text-[#6b7280]">Each save updates the lead status and adds one call entry.</span>}
+                        {callErrors.form ? <p className="text-xs font-bold text-red-600">{callErrors.form}</p> : <span className="text-xs font-medium text-[#6b7280]">Each save adds one call entry and updates the lead lifecycle.</span>}
                         <button
                             type="submit"
-                            disabled={savingCall || !callForm.callDate || !callForm.callStatus || !callForm.leadStatus || !callForm.remark.trim()}
+                            disabled={savingCall || !callForm.callDate || !callForm.callOutcome || !callForm.remark.trim()}
                             className="inline-flex h-10 items-center justify-center rounded-xl bg-[#111] px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
                         >
                             {savingCall ? 'Saving...' : 'Save call'}
                         </button>
                     </div>
                 </form>
+            ) : null}
+
+            {lead.callback?.status === 'pending' ? (
+                <CallbackActions lead={lead} canWrite={canWrite} onAction={onCallbackAction} />
             ) : null}
 
             <div className="mt-5">
@@ -1216,7 +1436,8 @@ function LeadCallCard({
                                     <div>
                                         <div className="flex flex-wrap items-center gap-2">
                                             <p className="text-sm font-bold text-[#111]">{formatAdminDateOnly(callLog.callDate)}</p>
-                                            <LeadTemperaturePill lead={{ salesLeadStatus: callLog.leadStatus || getLeadTemperature(lead) }} />
+                                            <span className="rounded-full border border-[#111]/10 bg-[#fafafa] px-3 py-1.5 text-[11px] font-bold text-[#374151]">Call #{callLogs.length - callLogs.indexOf(callLog)}</span>
+                                            {callLog.answeredOutcomes?.length ? <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700">{callLog.answeredOutcomes.map(formatAnsweredOutcome).join(', ')}</span> : null}
                                         </div>
                                         <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#374151]">{callLog.remark}</p>
                                         {callLog.sharedRequirements ? (
@@ -1294,21 +1515,21 @@ function LeadActivityPanel({ lead, onClose }) {
     );
 }
 
-function AdminSidebar({ user, activeSection, onNavigate, onClose = null, className = '' }) {
+function AdminSidebar({ user, activeSection, onNavigate, onClose = null, className = '', compact = false }) {
     const navItems = user?.role === 'lead_partner'
-        ? ADMIN_NAV_ITEMS.filter((item) => ['leads', 'calls'].includes(item.section))
+        ? ADMIN_NAV_ITEMS.filter((item) => item.section === 'leads')
         : user?.role === 'sales_executive'
-            ? ADMIN_NAV_ITEMS.filter((item) => ['dashboard', 'leads', 'calls', 'inventory', 'reports'].includes(item.section))
+            ? ADMIN_NAV_ITEMS.filter((item) => ['dashboard', 'leads', 'inventory', 'reports'].includes(item.section))
         : ADMIN_NAV_ITEMS;
 
     return (
         <aside className={className}>
-            <div className="flex h-20 items-center justify-between gap-3 border-b border-[#111]/10 px-5 sm:h-24 sm:px-7">
-                <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#111] text-white shadow-[0_10px_0_rgba(17,17,17,0.12),0_22px_32px_rgba(17,17,17,0.18)]">
+            <div className={`flex h-20 items-center justify-between gap-3 border-b border-[#111]/10 px-5 sm:h-24 sm:px-7 ${compact ? 'lg:justify-center lg:px-3 lg:group-hover:justify-between lg:group-hover:px-5' : ''}`}>
+                <div className={`flex min-w-0 items-center gap-3 ${compact ? 'lg:justify-center lg:group-hover:justify-start' : ''}`}>
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#111] text-white shadow-[0_10px_0_rgba(17,17,17,0.12),0_22px_32px_rgba(17,17,17,0.18)]">
                         <Building2 className="h-5 w-5" />
                     </span>
-                    <div className="min-w-0">
+                    <div className={`admin-sidebar-label min-w-0 ${compact ? 'lg:max-w-0 lg:overflow-hidden lg:opacity-0 lg:transition-[max-width,opacity] lg:duration-300 lg:group-hover:max-w-[220px] lg:group-hover:opacity-100' : ''}`}>
                         <p className="truncate font-display text-base font-bold text-[#111] sm:text-lg">Aadhya Admin</p>
                         <p className="text-xs font-bold text-[#6b7280]">
                             {user?.role === 'lead_partner' ? 'Partner workspace' : 'Serene inventory'}
@@ -1327,28 +1548,36 @@ function AdminSidebar({ user, activeSection, onNavigate, onClose = null, classNa
                 ) : null}
             </div>
 
-            <nav className="flex-1 space-y-2 px-4 py-5 sm:px-5 sm:py-7">
+            <nav className={`flex-1 space-y-2 py-5 sm:py-7 ${compact ? 'px-2 lg:px-2 lg:group-hover:px-4' : 'px-4 sm:px-5'}`}>
                 {navItems.map(({ icon: Icon, label, section }) => (
                     <button
                         key={label}
                         type="button"
                         onClick={() => onNavigate(section)}
-                        className={`flex h-12 w-full items-center gap-3 rounded-2xl px-4 text-sm font-bold transition ${
+                        title={compact ? label : undefined}
+                        className={`flex h-12 w-full items-center rounded-2xl text-sm font-bold transition ${compact ? 'justify-center gap-0 px-0 lg:group-hover:justify-start lg:group-hover:gap-3 lg:group-hover:px-4' : 'gap-3 px-4'} ${
                             isActiveAdminSection(activeSection, section)
                                 ? 'bg-[#111] text-white shadow-[0_8px_0_rgba(17,17,17,0.08),0_18px_32px_rgba(17,17,17,0.16)]'
                                 : 'text-[#6b7280] hover:bg-white hover:text-[#111] hover:shadow-[0_10px_24px_rgba(17,17,17,0.07)]'
                         }`}
                     >
-                        <Icon className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{label}</span>
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center">
+                            <Icon className="h-4 w-4" />
+                        </span>
+                        <span className={`${compact ? 'lg:max-w-0 lg:overflow-hidden lg:opacity-0 lg:transition-[max-width,opacity] lg:duration-300 lg:group-hover:max-w-[220px] lg:group-hover:opacity-100' : ''} truncate`}>{label}</span>
                     </button>
                 ))}
             </nav>
 
-            <div className="border-t border-[#111]/10 p-4 sm:p-5">
-                <div className="rounded-[24px] border border-[#111]/10 bg-white p-4 shadow-[0_10px_0_rgba(17,17,17,0.035),inset_0_1px_0_rgba(255,255,255,1)]">
-                    <p className="truncate text-sm font-bold text-[#111]">{user.name}</p>
-                    <p className="mt-1 text-xs font-medium text-[#6b7280]">{ROLE_LABELS[user.role]}</p>
+            <div className={`border-t border-[#111]/10 p-4 sm:p-5 ${compact ? 'lg:px-2 lg:group-hover:px-4' : ''}`}>
+                <div className={`flex min-h-12 items-center border border-[#111]/10 bg-white p-4 shadow-[0_10px_0_rgba(17,17,17,0.035),inset_0_1px_0_rgba(255,255,255,1)] ${compact ? 'justify-center gap-0 lg:p-2 lg:group-hover:justify-start lg:group-hover:gap-3 lg:group-hover:p-4' : 'gap-3'}`}>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center bg-[#111] text-xs font-bold text-white">
+                        {(user.name || 'A').slice(0, 1).toUpperCase()}
+                    </span>
+                    <div className={`${compact ? 'lg:max-w-0 lg:overflow-hidden lg:opacity-0 lg:transition-[max-width,opacity] lg:duration-300 lg:group-hover:max-w-[220px] lg:group-hover:opacity-100' : ''} min-w-0`}>
+                        <p className="truncate text-sm font-bold text-[#111]">{user.name}</p>
+                        <p className="mt-1 truncate text-xs font-medium text-[#6b7280]">{ROLE_LABELS[user.role]}</p>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -1685,8 +1914,59 @@ function DeliveryPill({ label, state }) {
     );
 }
 
+function BucketSettingsPanel({ config, canEdit, onSave, saving, error }) {
+    const [draft, setDraft] = useState(config);
+
+    useEffect(() => {
+        setDraft(config);
+    }, [config]);
+
+    function updateItem(key, field, value) {
+        setDraft((current) => current.map((item) => item.key === key ? { ...item, [field]: value } : item));
+    }
+
+    return (
+        <section className="mt-7 rounded-[24px] border border-[#111]/10 bg-white p-4 shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08)] sm:rounded-[30px] sm:p-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Lead workflow</p>
+                    <h2 className="mt-1 font-display text-2xl font-bold text-[#111]">Lifecycle bucket labels</h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]">Customize the names and descriptions shown to the sales team. Bucket keys and colors stay controlled by the application.</p>
+                </div>
+                {canEdit ? (
+                    <button type="button" onClick={() => void onSave(draft)} disabled={saving} className="inline-flex h-11 items-center justify-center rounded-2xl bg-[#111] px-4 text-sm font-bold text-white disabled:opacity-45">
+                        {saving ? 'Saving...' : 'Save labels'}
+                    </button>
+                ) : null}
+            </div>
+            <div className="mt-5 grid gap-4 lg:grid-cols-3">
+                {draft.map((item) => (
+                    <article key={item.key} className="rounded-[22px] border border-[#111]/10 bg-[#fafafa] p-4">
+                        <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">
+                            Label
+                            <input value={item.label} disabled={!canEdit} onChange={(event) => updateItem(item.key, 'label', event.target.value)} maxLength={80} className="mt-2 h-11 w-full rounded-xl border border-[#111]/15 bg-white px-3 text-sm font-bold text-[#111] outline-none focus:border-[#111]/35 disabled:bg-[#f3f3f3]" />
+                        </label>
+                        <label className="mt-3 block text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">
+                            Description
+                            <textarea value={item.description} disabled={!canEdit} onChange={(event) => updateItem(item.key, 'description', event.target.value)} maxLength={180} rows={3} className="mt-2 w-full resize-y rounded-xl border border-[#111]/15 bg-white px-3 py-3 text-sm leading-5 text-[#111] outline-none focus:border-[#111]/35 disabled:bg-[#f3f3f3]" />
+                        </label>
+                        <label className="mt-3 flex items-center gap-3 text-sm font-bold text-[#374151]">
+                            <input type="checkbox" checked={item.enabled} disabled={!canEdit} onChange={(event) => updateItem(item.key, 'enabled', event.target.checked)} className="h-4 w-4" />
+                            Show bucket in navigation
+                        </label>
+                    </article>
+                ))}
+            </div>
+            {error ? <p className="mt-4 text-sm font-bold text-red-600">{error}</p> : null}
+        </section>
+    );
+}
+
 export default function AdminPage() {
     const [user, setUser] = useState(null);
+    const [bucketConfig, setBucketConfig] = useState(DEFAULT_LEAD_BUCKET_CONFIG);
+    const [bucketSettingsSaving, setBucketSettingsSaving] = useState(false);
+    const [bucketSettingsError, setBucketSettingsError] = useState('');
     const [checking, setChecking] = useState(true);
     const [flats, setFlats] = useState([]);
     const [leads, setLeads] = useState([]);
@@ -1696,10 +1976,14 @@ export default function AdminPage() {
     const [notice, setNotice] = useState('');
     const [query, setQuery] = useState('');
     const [leadQuery, setLeadQuery] = useState('');
-    const [leadTemperature, setLeadTemperature] = useState(SALES_LEAD_STATUS_COLD);
+    const [leadTemperature, setLeadTemperature] = useState('all');
+    const [leadStage, setLeadStage] = useState('all');
+    const [callbackQueueOpen, setCallbackQueueOpen] = useState(false);
     const [leadDateRange, setLeadDateRange] = useState({ startDate: '', endDate: '' });
+    const [leadPage, setLeadPage] = useState(1);
     const [dateFilterOpen, setDateFilterOpen] = useState(false);
     const [dateFilterDraft, setDateFilterDraft] = useState({ startDate: '', endDate: '' });
+    const [stageFilterOpen, setStageFilterOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState(null);
     const [selectedLeadAbout, setSelectedLeadAbout] = useState(null);
     const [activeSection, setActiveSection] = useState('dashboard');
@@ -1707,16 +1991,45 @@ export default function AdminPage() {
     const contentRef = useRef(null);
     const dashboardRef = useRef(null);
     const leadsRef = useRef(null);
-    const callsRef = useRef(null);
     const reportsRef = useRef(null);
     const keysRef = useRef(null);
     const inventoryRef = useRef(null);
 
     const canWrite = user && ['super_admin', 'manager', 'sales_executive'].includes(user.role);
+    const canEditBucketSettings = user && ['super_admin', 'manager'].includes(user.role);
     const canEditInventory = user && ['super_admin', 'manager'].includes(user.role);
     const isSuperAdmin = user?.role === 'super_admin';
     const isLeadPartner = user?.role === 'lead_partner';
     const isSalesExecutive = user?.role === 'sales_executive';
+
+    async function loadBucketConfig() {
+        const response = await fetch('/api/admin/settings', { cache: 'no-store' });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (Array.isArray(payload.config) && payload.config.length) {
+            setBucketConfig(payload.config);
+        }
+    }
+
+    async function saveBucketConfig(config) {
+        setBucketSettingsSaving(true);
+        setBucketSettingsError('');
+        try {
+            const response = await fetch('/api/admin/settings', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ config }),
+            });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.error || 'Unable to save bucket labels.');
+            setBucketConfig(Array.isArray(payload.config) ? payload.config : config);
+            setNotice('Lead lifecycle labels updated.');
+        } catch (error) {
+            setBucketSettingsError(error instanceof Error ? error.message : String(error));
+        } finally {
+            setBucketSettingsSaving(false);
+        }
+    }
 
     async function loadFlats() {
         const response = await fetch('/api/admin/flats', { cache: 'no-store' });
@@ -1771,13 +2084,13 @@ export default function AdminPage() {
     useEffect(() => {
         if (!user) return undefined;
 
-        void refreshAll();
+        void Promise.all([refreshAll(), loadBucketConfig()]);
         const intervalId = window.setInterval(refreshAll, 30000);
         return () => window.clearInterval(intervalId);
     }, [user, isLeadPartner, leadDateRange]);
 
     useEffect(() => {
-        if (isLeadPartner && !['leads', 'calls'].includes(activeSection)) {
+        if (isLeadPartner && activeSection !== 'leads') {
             setActiveSection('leads');
             return;
         }
@@ -1864,9 +2177,9 @@ export default function AdminPage() {
                 contact_form: 0,
                 whatsapp_form: 0,
                 portal_lead: 0,
-                cold: 0,
-                warm: 0,
-                hot: 0,
+                new_lead: 0,
+                site_visit_booked: 0,
+                callback_requested: 0,
                 dead: 0,
                 emailSent: 0,
                 whatsappSent: 0,
@@ -1876,7 +2189,13 @@ export default function AdminPage() {
 
     const visibleLeads = useMemo(() => {
         const normalizedQuery = leadQuery.trim().toLowerCase();
-        const filteredLeads = getVisibleLeadsForFilter(leads, leadTemperature);
+        const bucketLeads = leadTemperature === 'all'
+            ? leads
+            : getVisibleLeadsForFilter(leads, leadTemperature);
+        const stageLeads = leadStage === 'all'
+            ? bucketLeads
+            : bucketLeads.filter((lead) => lead.stage === leadStage);
+        const filteredLeads = sortNewLeadsFirst(stageLeads, leadTemperature);
         if (!normalizedQuery) return filteredLeads;
 
         return filteredLeads.filter((lead) =>
@@ -1889,7 +2208,8 @@ export default function AdminPage() {
                 ...(lead.sources || []),
                 lead.channel,
                 lead.requestLabel,
-                getLeadTemperature(lead),
+                lead.bucketLabel,
+                getLeadStatusLabel(lead),
                 lead.message,
                 lead.preferredTime,
                 ...(lead.submissions || []).flatMap((submission) => [
@@ -1908,7 +2228,31 @@ export default function AdminPage() {
                 .toLowerCase()
                 .includes(normalizedQuery),
         );
-    }, [leadQuery, leadTemperature, leads]);
+    }, [leadQuery, leadStage, leadTemperature, leads]);
+
+    const totalLeadPages = Math.max(1, Math.ceil(visibleLeads.length / LEADS_PAGE_SIZE));
+    const paginatedVisibleLeads = useMemo(() => {
+        const safePage = Math.min(leadPage, totalLeadPages);
+        const startIndex = (safePage - 1) * LEADS_PAGE_SIZE;
+        return visibleLeads.slice(startIndex, startIndex + LEADS_PAGE_SIZE);
+    }, [leadPage, totalLeadPages, visibleLeads]);
+    const leadPageStart = visibleLeads.length ? (Math.min(leadPage, totalLeadPages) - 1) * LEADS_PAGE_SIZE + 1 : 0;
+    const leadPageEnd = Math.min(Math.min(leadPage, totalLeadPages) * LEADS_PAGE_SIZE, visibleLeads.length);
+    const leadPageNumbers = useMemo(() => {
+        if (totalLeadPages <= 5) return Array.from({ length: totalLeadPages }, (_, index) => index + 1);
+
+        const currentPage = Math.min(leadPage, totalLeadPages);
+        const pages = new Set([1, totalLeadPages, currentPage, currentPage - 1, currentPage + 1]);
+        return [...pages].filter((page) => page >= 1 && page <= totalLeadPages).sort((a, b) => a - b);
+    }, [leadPage, totalLeadPages]);
+
+    useEffect(() => {
+        setLeadPage((current) => Math.min(current, totalLeadPages));
+    }, [totalLeadPages]);
+
+    useEffect(() => {
+        setLeadPage(1);
+    }, [leadQuery, leadStage, leadTemperature, leadDateRange]);
 
     const statusEntries = useMemo(
         () =>
@@ -1968,7 +2312,7 @@ export default function AdminPage() {
     function goToSection(section) {
         setSidebarOpen(false);
 
-        if (isLeadPartner && !['leads', 'calls'].includes(section)) {
+        if (isLeadPartner && section !== 'leads') {
             return;
         }
 
@@ -1985,22 +2329,12 @@ export default function AdminPage() {
             return;
         }
 
-        if (section === 'calls') {
-            setActiveSection('calls');
-            contentRef.current?.scrollTo({
-                top: 0,
-                behavior: 'smooth',
-            });
-            return;
-        }
-
         const sectionRefs = {
             dashboard: dashboardRef,
             inventory: inventoryRef,
             users: keysRef,
             keys: keysRef,
             reports: reportsRef,
-            calls: callsRef,
         };
 
         setActiveSection(section);
@@ -2069,23 +2403,74 @@ export default function AdminPage() {
         }
     }
 
-    function handleCallLogSaved(leadId, callLog) {
+    function handleCallLogSaved(leadId, callLog, lifecycle) {
         if (!leadId || !callLog) return;
 
-        const nextSalesLeadStatus = callLog.leadStatus || SALES_LEAD_STATUS_COLD;
         const updateLead = (lead) =>
             lead.id === leadId
                 ? {
                     ...lead,
-                    salesLeadStatus: nextSalesLeadStatus,
-                    leadStatus: nextSalesLeadStatus === SALES_LEAD_STATUS_DEAD ? 'dead' : 'active',
+                    lifecycle: lifecycle || lead.lifecycle,
+                    bucketKey: getLeadFilterKey({
+                        ...lead,
+                        lifecycle: lifecycle || lead.lifecycle,
+                        callback: lifecycle?.callback || lead.callback,
+                    }),
+                    bucketLabel: getBucketMeta(getLeadFilterKey({
+                        ...lead,
+                        lifecycle: lifecycle || lead.lifecycle,
+                        callback: lifecycle?.callback || lead.callback,
+                    }), bucketConfig).label,
+                    callback: lifecycle?.callback || lead.callback,
+                    latestCallDisposition: callLog.callOutcome || callLog.callStatus,
+                    latestCallAnsweredOutcomes: callLog.answeredOutcomes || [],
                     callLogs: [...(lead.callLogs || []), callLog],
+                    updatedAt: new Date().toISOString(),
                 }
                 : lead;
 
         setSelectedLead((current) => (current && current.id === leadId ? updateLead(current) : current));
         setSelectedLeadAbout((current) => (current && current.id === leadId ? updateLead(current) : current));
         setLeads((current) => current.map(updateLead));
+    }
+
+    async function handleCallbackAction(leadId, action, dueAt = '') {
+        const response = await fetch(`/api/admin/leads/${leadId}/callback`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, dueAt }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || 'Unable to update callback.');
+
+        const merge = (lead) => lead.id === leadId
+            ? {
+                ...lead,
+                lifecycle: payload.lifecycle || lead.lifecycle,
+                bucketKey: getLeadFilterKey({
+                    ...lead,
+                    lifecycle: payload.lifecycle || lead.lifecycle,
+                    callback: payload.lifecycle?.callback || lead.callback,
+                }),
+                bucketLabel: getBucketMeta(getLeadFilterKey({
+                    ...lead,
+                    lifecycle: payload.lifecycle || lead.lifecycle,
+                    callback: payload.lifecycle?.callback || lead.callback,
+                }), bucketConfig).label,
+                callback: payload.lifecycle?.callback || lead.callback,
+            }
+            : lead;
+        setLeads((current) => current.map(merge));
+        setSelectedLead((current) => current && current.id === leadId ? merge(current) : current);
+        setSelectedLeadAbout((current) => current && current.id === leadId ? merge(current) : current);
+    }
+
+    async function runCallbackAction(leadId, action, dueAt = '') {
+        try {
+            await handleCallbackAction(leadId, action, dueAt);
+        } catch (error) {
+            setNotice(error instanceof Error ? error.message : String(error));
+        }
     }
 
     async function logout() {
@@ -2097,8 +2482,8 @@ export default function AdminPage() {
     }
 
     async function downloadVisibleLeadsReport() {
-        const reportRows = buildLeadReportRows(visibleLeads);
-        const filterLabel = LEAD_FILTERS[leadTemperature]?.label || leadTemperature;
+        const reportRows = buildLeadReportRows(visibleLeads, bucketConfig);
+        const filterLabel = getBucketMeta(leadTemperature, bucketConfig).label;
         const fileDate = new Date().toISOString().slice(0, 10);
         const dateRangeLabel = leadDateRange.startDate || leadDateRange.endDate
             ? `${leadDateRange.startDate || 'Start'} to ${leadDateRange.endDate || 'Today'}`
@@ -2241,6 +2626,24 @@ export default function AdminPage() {
         setNotice('');
     }
 
+    function selectLeadFilter(temperature, stage = 'all') {
+        setLeadTemperature(temperature);
+        setLeadStage(stage);
+        setStageFilterOpen(false);
+    }
+
+    let activeLeadFilterLabel = 'All leads';
+    let activeLeadFilterCount = leads.length;
+    if (leadTemperature === LEAD_BUCKET_DEAD) {
+        activeLeadFilterLabel = 'Dead';
+        activeLeadFilterCount = leadStats.dead || 0;
+    } else if (leadStage !== 'all') {
+        activeLeadFilterLabel = LEAD_STAGE_CONFIG.find((item) => item.key === leadStage)?.label || 'Stage filter';
+        activeLeadFilterCount = leads.filter((lead) => lead.stage === leadStage).length;
+    }
+
+    const dateFilterActive = Boolean(leadDateRange.startDate || leadDateRange.endDate);
+
     if (checking) {
         return (
             <main className="font-display fixed inset-0 z-[999] flex min-h-screen items-center justify-center bg-[#f4f4f2] text-[#111]">
@@ -2268,7 +2671,8 @@ export default function AdminPage() {
                 user={user}
                 activeSection={activeSection}
                 onNavigate={goToSection}
-                className="editorial-sidebar hidden w-[292px] shrink-0 border-r border-[#111]/10 bg-[#fbfbfa] shadow-[18px_0_55px_rgba(17,17,17,0.06)] lg:flex lg:flex-col"
+                compact
+                className="editorial-sidebar group hidden w-[72px] shrink-0 border-r border-[#111]/10 bg-[#fbfbfa] shadow-[18px_0_55px_rgba(17,17,17,0.06)] transition-[width] duration-300 hover:w-[292px] lg:flex lg:flex-col"
             />
 
             <AdminSidebar
@@ -2328,7 +2732,7 @@ export default function AdminPage() {
                     ) : null}
 
                     {activeSection === 'leads' ? (
-                    <section ref={leadsRef} className="editorial-leads flex min-h-full flex-col scroll-mt-8 overflow-hidden rounded-[24px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px]">
+                    <section ref={leadsRef} className="editorial-leads flex min-h-full flex-col scroll-mt-8 overflow-visible rounded-[24px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px]">
                         <div className="flex flex-col gap-5 border-b border-[#111]/10 px-4 py-5 sm:px-7 sm:py-6">
                             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                                 <div>
@@ -2345,13 +2749,13 @@ export default function AdminPage() {
                                         type="button"
                                         onClick={openDateFilter}
                                         className={`inline-flex h-11 items-center justify-center gap-2 border px-4 text-sm font-bold transition ${
-                                            leadDateRange.startDate || leadDateRange.endDate
+                                            dateFilterActive
                                                 ? 'border-[#111] bg-[#111] text-white'
                                                 : 'border-[#111]/15 bg-white text-[#111]'
                                         }`}
                                     >
                                         <CalendarDays className="h-4 w-4" />
-                                        {leadDateRange.startDate || leadDateRange.endDate ? 'Date filter active' : 'Filter by date'}
+                                        {dateFilterActive ? 'Date filter active' : 'Filter by date'}
                                     </button>
                                     <button
                                         type="button"
@@ -2391,19 +2795,67 @@ export default function AdminPage() {
                                 </div>
                             </div>
 
+                            {leads.some(hasPendingLeadCallback) ? (
+                                <div className="border-l-2 border-violet-500 py-1 pl-4">
+                                    <button type="button" onClick={() => setCallbackQueueOpen((current) => !current)} className="flex items-center gap-2 text-sm font-bold text-violet-700">
+                                        <PhoneCall className="h-4 w-4" />
+                                        {leads.filter(hasPendingLeadCallback).length} follow-up{leads.filter(hasPendingLeadCallback).length === 1 ? '' : 's'} due
+                                    </button>
+                                    {callbackQueueOpen ? (
+                                        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+                                            {leads.filter(hasPendingLeadCallback).slice(0, 8).map((lead) => (
+                                                <a key={lead.id} href={`/admin/leads/${encodeURIComponent(lead.id)}`} target="_blank" rel="noopener noreferrer" className="text-left text-xs font-bold text-[#111] underline decoration-[#111]/25 underline-offset-4">
+                                                    {lead.name || lead.phone} · {lead.callback?.dueAt ? formatAdminDate(lead.callback.dueAt) : 'Callback requested'}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ) : null}
+
                             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                                <div className="inline-flex w-full rounded-2xl border border-[#111]/10 bg-[#f7f7f7] p-1 sm:w-auto">
-                                    {Object.entries(LEAD_FILTERS).map(([temperature, meta]) => (
-                                        <button
-                                            key={temperature}
-                                            type="button"
-                                            onClick={() => setLeadTemperature(temperature)}
-                                            className={`flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition sm:min-w-[150px] sm:flex-none ${getLeadFilterButtonClasses(leadTemperature, temperature)}`}
-                                        >
-                                            <span>{meta.label}</span>
-                                            <span className={`rounded-full px-2 py-0.5 text-xs ${temperature === SALES_LEAD_STATUS_DEAD ? 'bg-white/20 text-white' : 'border border-[#111]/10 bg-[#fafafa] text-[#111]'}`}>{leadStats[temperature]}</span>
-                                        </button>
-                                    ))}
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        aria-expanded={stageFilterOpen}
+                                        aria-haspopup="menu"
+                                        onClick={() => setStageFilterOpen((current) => !current)}
+                                        className={`inline-flex h-11 items-center gap-3 border px-4 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-black/10 ${
+                                            leadTemperature !== 'all' || leadStage !== 'all'
+                                                ? 'border-[#111] bg-[#111] text-white'
+                                                : 'border-[#111]/15 bg-white text-[#111] hover:border-[#111]/35'
+                                        }`}
+                                    >
+                                        <Filter className="h-4 w-4" />
+                                        <span>{activeLeadFilterLabel}</span>
+                                        <span className="text-xs opacity-65">
+                                            {activeLeadFilterCount}
+                                        </span>
+                                    </button>
+                                    {stageFilterOpen ? (
+                                        <div className="absolute left-0 top-[calc(100%+10px)] z-30 max-h-[min(56vh,520px)] w-[min(92vw,320px)] overflow-y-auto overscroll-contain border border-[#111]/15 bg-[#fffefa] p-3 text-left shadow-[0_18px_35px_rgba(17,17,17,0.12)]" role="menu">
+                                            <div className="flex items-start justify-between gap-4 border-b border-[#111]/10 px-2 pb-3">
+                                                <div>
+                                                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Lead filter</p>
+                                                    <p className="mt-1 text-sm text-[#4b5563]">Choose a lifecycle stage.</p>
+                                                </div>
+                                                <button type="button" onClick={() => setStageFilterOpen(false)} className="text-sm font-bold text-[#6b7280] hover:text-[#111]">Close</button>
+                                            </div>
+                                            <div className="mt-2 grid gap-1">
+                                                <button type="button" role="menuitem" onClick={() => selectLeadFilter('all')} className={`flex items-center justify-between px-2 py-2.5 text-left text-sm font-bold transition hover:bg-[#f5f4f0] ${leadTemperature === 'all' && leadStage === 'all' ? 'bg-[#f5f4f0] text-[#111]' : 'text-[#4b5563]'}`}>
+                                                    <span>All leads</span><span className="text-xs text-[#6b7280]">{leads.length}</span>
+                                                </button>
+                                                {LEAD_STAGE_CONFIG.filter((item) => item.key !== LEAD_STAGE_DEAD).map((item) => (
+                                                    <button key={item.key} type="button" role="menuitem" onClick={() => selectLeadFilter('all', item.key)} className={`flex items-center justify-between px-2 py-2.5 text-left text-sm font-bold transition hover:bg-[#f5f4f0] ${leadStage === item.key ? 'bg-[#f5f4f0] text-[#111]' : 'text-[#4b5563]'}`}>
+                                                        <span>{item.label}</span><span className="text-xs text-[#6b7280]">{leads.filter((lead) => lead.stage === item.key).length}</span>
+                                                    </button>
+                                                ))}
+                                                <button type="button" role="menuitem" onClick={() => selectLeadFilter(LEAD_BUCKET_DEAD)} className={`flex items-center justify-between px-2 py-2.5 text-left text-sm font-bold text-red-700 transition hover:bg-red-50 ${leadTemperature === LEAD_BUCKET_DEAD ? 'bg-red-50' : ''}`}>
+                                                    <span>Dead</span><span className="text-xs text-red-600">{leadStats.dead || 0}</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : null}
                                 </div>
 
                                 <div className="relative w-full xl:w-[390px]">
@@ -2419,22 +2871,22 @@ export default function AdminPage() {
                         </div>
 
                         <div className="divide-y divide-[#111]/10 xl:hidden">
-                            {visibleLeads.length ? (
-                                visibleLeads.map((lead) => (
+                            {paginatedVisibleLeads.length ? (
+                                paginatedVisibleLeads.map((lead) => (
                                     <article key={lead.id} className="px-4 py-5 sm:px-6">
                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                             <div>
                                                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#6b7280]">
-                                                    {formatAdminDate(lead.createdAt)}
+                                                    {formatAdminDate(lead.originalDate || lead.createdAt)}
                                                 </p>
-                                                <button type="button" onClick={() => setSelectedLeadAbout(lead)} className="mt-2 text-left text-lg font-bold text-[#111] underline decoration-[#111]/20 underline-offset-4 hover:decoration-[#111]/45">
+                                                <a href={`/admin/leads/${encodeURIComponent(lead.id)}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-left text-lg font-bold text-[#111] underline decoration-[#111]/20 underline-offset-4 hover:decoration-[#111]/45">
                                                     {lead.name || 'Unknown lead'}
-                                                </button>
+                                                </a>
                                                 <p className="mt-1 text-sm font-medium text-[#374151]">{lead.phone || 'No phone'}</p>
                                                 <p className="mt-1 break-words text-sm text-[#6b7280]">{lead.email || 'No email captured'}</p>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
-                                                <LeadTemperaturePill lead={lead} />
+                                                <LeadLifecyclePill lead={lead} config={bucketConfig} />
                                                 <span className="inline-flex items-center gap-2 rounded-2xl border border-[#111]/10 bg-[#fafafa] px-4 py-2 text-xs font-bold text-[#111]">
                                                     <MessageSquare className="h-4 w-4" />
                                                     {CHANNEL_LABELS[lead.channel] || lead.channel}
@@ -2464,7 +2916,7 @@ export default function AdminPage() {
                                                     {lead.whatsapp?.callbackRequested ? <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-700"><PhoneCall className="h-3 w-3" /> Callback</span> : null}
                                                     {lead.whatsapp?.siteVisitRequested ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700"><CalendarCheck2 className="h-3 w-3" /> Site visit</span> : null}
                                                 </div>
-                                                <button type="button" onClick={() => setSelectedLead(lead)} className="mt-3 text-sm font-bold text-[#111] underline decoration-[#111]/25 underline-offset-4">View lead activity</button>
+                                                <a href={`/admin/leads/${encodeURIComponent(lead.id)}`} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-bold text-[#111] underline decoration-[#111]/25 underline-offset-4">View lead activity</a>
                                                 <p className="mt-3 text-xs font-medium text-[#6b7280]">
                                                     Updated {formatAdminDate(lead.updatedAt)}
                                                 </p>
@@ -2479,7 +2931,7 @@ export default function AdminPage() {
                                 ))
                             ) : (
                                 <div className="px-4 py-10 text-center text-sm font-medium text-[#6b7280] sm:px-6">
-                                    No {LEAD_FILTERS[leadTemperature].label.toLowerCase()} leads match your current search.
+                                    No {getBucketMeta(leadTemperature, bucketConfig).label.toLowerCase()} leads match your current search.
                                 </div>
                             )}
                         </div>
@@ -2498,21 +2950,21 @@ export default function AdminPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#111]/10 text-sm">
-                                    {visibleLeads.map((lead) => (
+                                    {paginatedVisibleLeads.map((lead) => (
                                         <tr key={lead.id} className="align-top transition hover:bg-[#fafafa]">
                                             <td className="px-7 py-5 font-medium text-[#6b7280]">
-                                                <p className="font-bold text-[#111]">{formatAdminDate(lead.createdAt)}</p>
+                                                <p className="font-bold text-[#111]">{formatAdminDate(lead.originalDate || lead.createdAt)}</p>
                                                 <p className="mt-2 text-xs">Updated {formatAdminDate(lead.updatedAt)}</p>
                                             </td>
                                             <td className="px-7 py-5">
-                                                <button type="button" onClick={() => setSelectedLeadAbout(lead)} className="text-left font-bold text-[#111] underline decoration-[#111]/20 underline-offset-4 hover:decoration-[#111]/45">
+                                                <a href={`/admin/leads/${encodeURIComponent(lead.id)}`} target="_blank" rel="noopener noreferrer" className="inline-block text-left font-bold text-[#111] underline decoration-[#111]/20 underline-offset-4 hover:decoration-[#111]/45">
                                                     {lead.name || 'Unknown lead'}
-                                                </button>
+                                                </a>
                                                 <p className="mt-1 text-sm font-medium text-[#374151]">{lead.phone || 'No phone'}</p>
                                                 <p className="mt-1 text-sm text-[#6b7280]">{lead.email || 'No email captured'}</p>
                                             </td>
                                             <td className="px-7 py-5">
-                                                <LeadTemperaturePill lead={lead} />
+                                                <LeadLifecyclePill lead={lead} config={bucketConfig} />
                                                 <p className="mt-3 text-xs font-medium text-[#6b7280]">
                                                     {lead.whatsapp?.score || 0} meaningful selections
                                                 </p>
@@ -2542,9 +2994,9 @@ export default function AdminPage() {
                                                     {lead.whatsapp?.callbackRequested ? <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-700"><PhoneCall className="h-3 w-3" /> Callback</span> : null}
                                                     {lead.whatsapp?.siteVisitRequested ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700"><CalendarCheck2 className="h-3 w-3" /> Site visit</span> : null}
                                                 </div>
-                                                <button type="button" onClick={() => setSelectedLead(lead)} className="mt-3 text-sm font-bold text-[#111] underline decoration-[#111]/25 underline-offset-4">
+                                                <a href={`/admin/leads/${encodeURIComponent(lead.id)}`} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-bold text-[#111] underline decoration-[#111]/25 underline-offset-4">
                                                     View lead activity
-                                                </button>
+                                                </a>
                                             </td>
                                             <td className="px-7 py-5">
                                                 <div className="grid gap-2">
@@ -2557,16 +3009,57 @@ export default function AdminPage() {
                                 </tbody>
                             </table>
                         </div>
-                    </section>
-                    ) : activeSection === 'calls' ? (
-                    <section ref={callsRef} className="scroll-mt-8">
-                        <CallsPanel
-                            leads={leads}
-                            canWrite={canWrite}
-                            onCallLogSaved={handleCallLogSaved}
-                            onOpenLeadActivity={setSelectedLead}
-                            onOpenLeadAbout={setSelectedLeadAbout}
-                        />
+
+                        <div className="flex flex-col gap-3 border-t border-[#111]/10 px-4 py-4 text-sm text-[#6b7280] sm:flex-row sm:items-center sm:justify-between sm:px-7">
+                            <p>
+                                {visibleLeads.length
+                                    ? `Showing ${leadPageStart}–${leadPageEnd} of ${visibleLeads.length}`
+                                    : 'No leads to show'}
+                                <span className="ml-2 text-xs text-[#98a2b3]">
+                                    Page {Math.min(leadPage, totalLeadPages)} of {totalLeadPages}
+                                </span>
+                            </p>
+                            {visibleLeads.length ? (
+                                <nav className="flex max-w-full items-center gap-1 overflow-x-auto" aria-label="Lead pages">
+                                    <button
+                                        type="button"
+                                        onClick={() => setLeadPage((current) => Math.max(1, current - 1))}
+                                        disabled={leadPage <= 1}
+                                        aria-label="Previous page"
+                                        className="h-9 shrink-0 border border-[#111]/15 px-3 text-xs font-bold text-[#111] transition hover:bg-[#f5f4f0] disabled:cursor-not-allowed disabled:opacity-35"
+                                    >
+                                        Previous
+                                    </button>
+                                    {leadPageNumbers.map((page, index) => {
+                                        const previousPage = leadPageNumbers[index - 1];
+                                        const showGap = previousPage && page - previousPage > 1;
+                                        return (
+                                            <span key={page} className="flex shrink-0 items-center gap-1">
+                                                {showGap ? <span className="px-1 text-xs text-[#98a2b3]" aria-hidden="true">…</span> : null}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setLeadPage(page)}
+                                                    aria-label={`Go to page ${page}`}
+                                                    aria-current={Math.min(leadPage, totalLeadPages) === page ? 'page' : undefined}
+                                                    className={`h-9 min-w-9 border px-2 text-xs font-bold transition ${Math.min(leadPage, totalLeadPages) === page ? 'border-[#111] bg-[#111] text-white' : 'border-[#111]/15 text-[#111] hover:bg-[#f5f4f0]'}`}
+                                                >
+                                                    {page}
+                                                </button>
+                                            </span>
+                                        );
+                                    })}
+                                    <button
+                                        type="button"
+                                        onClick={() => setLeadPage((current) => Math.min(totalLeadPages, current + 1))}
+                                        disabled={leadPage >= totalLeadPages}
+                                        aria-label="Next page"
+                                        className="h-9 shrink-0 border border-[#111]/15 px-3 text-xs font-bold text-[#111] transition hover:bg-[#f5f4f0] disabled:cursor-not-allowed disabled:opacity-35"
+                                    >
+                                        Next
+                                    </button>
+                                </nav>
+                            ) : null}
+                        </div>
                     </section>
                     ) : (
                     <>
@@ -2643,6 +3136,14 @@ export default function AdminPage() {
                             </aside>
                         ) : null}
                     </section>
+
+                    <BucketSettingsPanel
+                        config={bucketConfig}
+                        canEdit={canEditBucketSettings}
+                        onSave={saveBucketConfig}
+                        saving={bucketSettingsSaving}
+                        error={bucketSettingsError}
+                    />
 
                     <section ref={inventoryRef} className="mt-7 scroll-mt-8 overflow-hidden rounded-[24px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px]">
                         <div className="flex flex-col gap-5 border-b border-[#111]/10 px-4 py-5 sm:px-7 sm:py-6 xl:flex-row xl:items-center xl:justify-between">
