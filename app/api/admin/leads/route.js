@@ -6,6 +6,21 @@ import { serializeLeadGroup } from '../../../../lib/admin-lead-read-model';
 import { getLeadDateRangeFilter, hasLeadDateRange, isLeadDateInRange } from '../../../../lib/lead-date-filter';
 import { getResolvedLeadBucketConfig } from '../../../../lib/lead-bucket-settings';
 
+const LEAD_SUMMARY_PROJECTION = [
+    'projectName', 'source', 'channel', 'name', 'phone', 'email',
+    'requestType', 'requestLabel', 'preferredTime', 'message',
+    'metadata.whatsappJourney',
+    'assignedSalesExecutiveId', 'assignedSalesExecutiveName',
+    'assignedSalesExecutiveEmail', 'assignmentStatus', 'assignedAt',
+    'leadStatus', 'salesLeadStatus', 'leadLifecycle', 'originalSubmittedAt',
+    'emailDelivery', 'whatsappDelivery', 'createdAt', 'updatedAt',
+    'callLogs._id', 'callLogs.callDate', 'callLogs.callOutcome',
+    'callLogs.callStatus', 'callLogs.answeredOutcomes',
+    'callLogs.callbackDueAt', 'callLogs.callbackStatus', 'callLogs.createdAt',
+    'callLogs.sharedRequirements', 'callLogs.budget', 'callLogs.configuration',
+    'callLogs.location', 'callLogs.authorName', 'callLogs.authorEmail',
+].join(' ');
+
 function sortByNewestDate(left, right, key = 'createdAt') {
     return new Date(right?.[key] || 0).getTime() - new Date(left?.[key] || 0).getTime();
 }
@@ -22,19 +37,28 @@ export async function GET(request) {
         return NextResponse.json({ error: 'Lead source access is not configured.' }, { status: 403 });
     }
 
-    const dateRange = getLeadDateRangeFilter(new URL(request.url).searchParams);
+    const searchParams = new URL(request.url).searchParams;
+    const dateRange = getLeadDateRangeFilter(searchParams);
+    const summary = searchParams.get('view') === 'summary';
     if (dateRange.error) {
         return NextResponse.json({ error: dateRange.error }, { status: 400 });
     }
 
+    const leadQuery = Notification.find(leadScope).sort({ createdAt: -1 });
+    if (summary) leadQuery.select(LEAD_SUMMARY_PROJECTION);
+
     const [leads, bucketConfig] = await Promise.all([
-        Notification.find(leadScope).sort({ createdAt: -1 }).lean(),
+        leadQuery.lean(),
         getResolvedLeadBucketConfig(),
     ]);
     const phoneNumbers = [...new Set(leads.map((lead) => lead.phone).filter(Boolean))];
-    const conversations = phoneNumbers.length
-        ? await WhatsAppConversation.find({ phoneNumber: { $in: phoneNumbers } }).lean()
-        : [];
+    const conversationQuery = phoneNumbers.length
+        ? WhatsAppConversation.find({ phoneNumber: { $in: phoneNumbers } })
+        : null;
+    if (summary) {
+        conversationQuery?.select('phoneNumber history.direction history.type history.buttonId history.message history.createdAt callbackRequested siteVisitRequested updatedAt');
+    }
+    const conversations = conversationQuery ? await conversationQuery.lean() : [];
     const conversationByPhone = new Map(
         conversations.map((conversation) => [conversation.phoneNumber, conversation]),
     );
@@ -47,7 +71,12 @@ export async function GET(request) {
     }
 
     const groupedLeads = [...leadsByPhone.values()]
-        .map((records) => serializeLeadGroup(records, conversationByPhone.get(records[0]?.phone), bucketConfig))
+        .map((records) => serializeLeadGroup(
+            records,
+            conversationByPhone.get(records[0]?.phone),
+            bucketConfig,
+            { summary },
+        ))
         .filter((lead) => !hasLeadDateRange(dateRange) || isLeadDateInRange(lead.originalDate, dateRange))
         .sort((left, right) => sortByNewestDate(left, right, 'createdAt'));
 

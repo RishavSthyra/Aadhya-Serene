@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
     BarChart3,
     Building2,
@@ -27,6 +27,7 @@ import {
     X,
 } from 'lucide-react';
 import { RiArrowDownSLine } from 'react-icons/ri';
+import { Toaster, toast } from 'react-hot-toast';
 import {
     Cell,
     Legend,
@@ -83,7 +84,10 @@ const LEAD_SOURCE_LABELS = {
     aurum_analytica: 'Aurum Analytica',
     '99acres': '99acres',
     magicbricks: 'MagicBricks',
+    website: 'Website',
 };
+
+const PARTNER_LEAD_SOURCES = ['aurum_analytica', '99acres', 'magicbricks'];
 
 const STATUS_OPTIONS = ['available', 'reserved', 'blocked', 'sold out'];
 const LEADS_PAGE_SIZE = 10;
@@ -276,6 +280,13 @@ function sortNewLeadsFirst(leads, filterKey) {
     });
 }
 
+function sortLeadsByNewestDate(leads) {
+    return [...leads].sort((left, right) => (
+        new Date(right.originalDate || right.createdAt || right.firstSeenAt || 0).getTime()
+        - new Date(left.originalDate || left.createdAt || left.firstSeenAt || 0).getTime()
+    ));
+}
+
 function getCallCount(lead) {
     return Array.isArray(lead?.callLogs) ? lead.callLogs.length : 0;
 }
@@ -284,6 +295,38 @@ function getLeadSources(lead) {
     return Array.isArray(lead?.sources) && lead.sources.length
         ? lead.sources
         : [lead?.source].filter(Boolean);
+}
+
+function normalizeLeadSource(source) {
+    const value = String(source || '').trim().toLowerCase();
+    const compactValue = value.replace(/[^a-z0-9]/g, '');
+
+    if (compactValue === 'aurum' || compactValue === 'aurumanalytica') return 'aurum_analytica';
+    if (compactValue === 'magicbrick' || compactValue === 'magicbricks') return 'magicbricks';
+    if (compactValue === '99acre' || compactValue === '99acres') return '99acres';
+    if (!compactValue || compactValue === 'website') return 'website';
+
+    return value.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+function getLeadSourceFilterValues(lead) {
+    const submissionSources = Array.isArray(lead?.submissions)
+        ? lead.submissions.map((submission) => submission?.source)
+        : [];
+
+    return [...new Set([
+        lead?.source || 'website',
+        ...(Array.isArray(lead?.sources) ? lead.sources : []),
+        ...submissionSources,
+    ].filter(Boolean).map(normalizeLeadSource))];
+}
+
+function getLeadSourceLabel(source) {
+    if (LEAD_SOURCE_LABELS[source]) return LEAD_SOURCE_LABELS[source];
+
+    return String(source || 'website')
+        .replaceAll('_', ' ')
+        .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 function getLeadAliases(lead) {
@@ -507,6 +550,9 @@ const LEAD_REPORT_COLUMNS = [
     { header: 'Lead Context', key: 'leadContext', width: 40 },
     { header: 'WhatsApp Signals', key: 'whatsAppSignals', width: 32 },
     { header: 'Delivery Status', key: 'deliveryStatus', width: 30 },
+    { header: 'Call Count', key: 'callCount', width: 12 },
+    { header: 'Call History', key: 'callHistory', width: 46 },
+    { header: 'Calling Remarks', key: 'callingRemarks', width: 46 },
     { header: 'Calling Feedback', key: 'callingFeedback', width: 40 },
     { header: 'Submissions', key: 'submissionCount', width: 12 },
 ];
@@ -566,6 +612,36 @@ function buildCallFeedbackSummary(callLog) {
     return lines.join('\n');
 }
 
+function buildCallHistoryForExport(callLogs) {
+    if (!callLogs.length) return 'No calls logged';
+
+    return callLogs.map((callLog, index) => {
+        const outcome = formatCallOutcome(callLog.callOutcome || callLog.callStatus) || 'Unknown outcome';
+        const outcomes = (callLog.answeredOutcomes || []).map(formatAnsweredOutcome).join(', ');
+        const callback = callLog.callbackStatus === 'pending'
+            ? `Callback pending${callLog.callbackDueAt ? ` (${formatExportDateTime(callLog.callbackDueAt)})` : ''}`
+            : '';
+
+        return [
+            `${index + 1}. ${formatExportDateTime(callLog.createdAt || callLog.callDate) || 'Date unavailable'} — ${outcome}`,
+            outcomes ? `Outcomes: ${outcomes}` : '',
+            callback,
+            callLog.authorName ? `Agent: ${callLog.authorName}` : '',
+        ].filter(Boolean).join(' | ');
+    }).join('\n');
+}
+
+function buildCallingRemarksForExport(callLogs) {
+    const remarks = callLogs.filter((callLog) => String(callLog.remark || '').trim());
+    if (!remarks.length) return 'No calling remarks added';
+
+    return remarks.map((callLog, index) => [
+        `${index + 1}. ${formatExportDateTime(callLog.createdAt || callLog.callDate) || 'Date unavailable'}`,
+        callLog.remark.trim(),
+        callLog.authorName ? `Saved by ${callLog.authorName}` : '',
+    ].filter(Boolean).join(' — ')).join('\n');
+}
+
 function buildLeadSignalsForExport(lead) {
     return [
         `Journey: ${getLeadJourneySummary(lead)}`,
@@ -590,7 +666,8 @@ function buildDeliveryStatusForExport(lead) {
 function buildLeadReportRows(leads, bucketConfig = DEFAULT_LEAD_BUCKET_CONFIG) {
     return leads.map((lead) => {
         const callLogs = getSortedCallLogs(lead.callLogs);
-        const latestFeedbackCall = callLogs.find((callLog) => callLog.sharedRequirements);
+        const latestFeedbackCall = callLogs.find((callLog) => callLog.sharedRequirements)
+            || lead.latestFeedbackCall;
         const salesStatus = getLeadFilterKey(lead);
 
         return {
@@ -609,6 +686,9 @@ function buildLeadReportRows(leads, bucketConfig = DEFAULT_LEAD_BUCKET_CONFIG) {
             leadContext: buildLeadContextForExport(lead),
             whatsAppSignals: buildLeadSignalsForExport(lead),
             deliveryStatus: buildDeliveryStatusForExport(lead),
+            callCount: callLogs.length,
+            callHistory: buildCallHistoryForExport(callLogs),
+            callingRemarks: buildCallingRemarksForExport(callLogs),
             callingFeedback: buildCallFeedbackSummary(latestFeedbackCall),
             submissionCount: getLeadSubmissionCount(lead),
         };
@@ -706,10 +786,12 @@ function getLeadReportRowHeight(row) {
         estimateWrappedLines(row.leadContext, 34),
         estimateWrappedLines(row.whatsAppSignals, 28),
         estimateWrappedLines(row.deliveryStatus, 28),
+        estimateWrappedLines(row.callHistory, 40),
+        estimateWrappedLines(row.callingRemarks, 40),
         estimateWrappedLines(row.callingFeedback, 34),
     );
 
-    return Math.min(Math.max(24, maxLines * 16), 120);
+    return Math.min(Math.max(24, maxLines * 16), 220);
 }
 
 function CallStatusPill({ status }) {
@@ -1544,10 +1626,10 @@ function AdminSidebar({ user, activeSection, onNavigate, onClose = null, classNa
 
     return (
         <aside className={className}>
-            <div className={`flex h-20 items-center justify-between gap-3 border-b border-[#111]/10 px-5 sm:h-24 sm:px-7 ${compact ? 'lg:justify-center lg:px-3 lg:group-hover:justify-between lg:group-hover:px-5' : ''}`}>
+            <div className={`flex h-16 items-center justify-between gap-3 border-b border-[#111]/10 px-4 ${compact ? 'lg:justify-center lg:px-3 lg:group-hover:justify-between lg:group-hover:px-4' : ''}`}>
                 <div className={`flex min-w-0 items-center gap-3 ${compact ? 'lg:justify-center lg:group-hover:justify-start' : ''}`}>
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#111] text-white shadow-[0_10px_0_rgba(17,17,17,0.12),0_22px_32px_rgba(17,17,17,0.18)]">
-                        <Building2 className="h-5 w-5" />
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#111] text-white shadow-[0_10px_0_rgba(17,17,17,0.12),0_22px_32px_rgba(17,17,17,0.18)]">
+                        <Building2 className="h-4 w-4" />
                     </span>
                     <div className={`admin-sidebar-label min-w-0 ${compact ? 'lg:max-w-0 lg:overflow-hidden lg:opacity-0 lg:transition-[max-width,opacity] lg:duration-300 lg:group-hover:max-w-[220px] lg:group-hover:opacity-100' : ''}`}>
                         <p className="truncate font-display text-base font-bold text-[#111] sm:text-lg">Aadhya Admin</p>
@@ -1604,6 +1686,27 @@ function AdminSidebar({ user, activeSection, onNavigate, onClose = null, classNa
     );
 }
 
+function AdminToaster() {
+    return (
+        <Toaster
+            position="top-right"
+            toastOptions={{
+                duration: 3500,
+                style: {
+                    background: '#111111',
+                    color: '#ffffff',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    padding: '12px 16px',
+                },
+                success: { iconTheme: { primary: '#86efac', secondary: '#111111' } },
+                error: { iconTheme: { primary: '#fca5a5', secondary: '#111111' } },
+            }}
+        />
+    );
+}
+
 function AuthPanel({ onAuthed }) {
     const [mode, setMode] = useState('login');
     const [form, setForm] = useState({
@@ -1614,13 +1717,11 @@ function AuthPanel({ onAuthed }) {
         secretKey: '',
     });
     const [busy, setBusy] = useState(false);
-    const [message, setMessage] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
     async function submit(event) {
         event.preventDefault();
         setBusy(true);
-        setMessage('');
 
         try {
             const endpoint = mode === 'login' ? '/api/admin/auth/login' : '/api/admin/auth/signup';
@@ -1642,7 +1743,7 @@ function AuthPanel({ onAuthed }) {
 
             onAuthed(payload.user);
         } catch (error) {
-            setMessage(error.message);
+            toast.error(error instanceof Error ? error.message : 'Authentication failed.');
         } finally {
             setBusy(false);
         }
@@ -1650,6 +1751,7 @@ function AuthPanel({ onAuthed }) {
 
     return (
         <main className="font-display fixed inset-0 z-[999] overflow-y-auto bg-[#f4f4f2] text-[#111] lg:grid lg:min-h-screen lg:grid-cols-[520px_1fr] lg:overflow-hidden">
+            <AdminToaster />
             <section className="flex flex-col justify-between gap-8 bg-[#fbfbfa] px-5 py-6 shadow-[12px_0_40px_rgba(17,17,17,0.06)] sm:px-8 sm:py-8 lg:min-h-screen">
                 <div>
                     <div className="flex items-center gap-3">
@@ -1768,12 +1870,6 @@ function AuthPanel({ onAuthed }) {
                             </>
                         ) : null}
                     </div>
-
-                    {message ? (
-                        <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                            {message}
-                        </p>
-                    ) : null}
 
                     <button
                         type="submit"
@@ -1934,7 +2030,7 @@ function DeliveryPill({ label, state }) {
     );
 }
 
-function BucketSettingsPanel({ config, canEdit, onSave, saving, error }) {
+function BucketSettingsPanel({ config, canEdit, onSave, saving }) {
     const [draft, setDraft] = useState(config);
 
     useEffect(() => {
@@ -1977,7 +2073,6 @@ function BucketSettingsPanel({ config, canEdit, onSave, saving, error }) {
                     </article>
                 ))}
             </div>
-            {error ? <p className="mt-4 text-sm font-bold text-red-600">{error}</p> : null}
         </section>
     );
 }
@@ -1986,24 +2081,27 @@ export default function AdminPage() {
     const [user, setUser] = useState(null);
     const [bucketConfig, setBucketConfig] = useState(DEFAULT_LEAD_BUCKET_CONFIG);
     const [bucketSettingsSaving, setBucketSettingsSaving] = useState(false);
-    const [bucketSettingsError, setBucketSettingsError] = useState('');
     const [checking, setChecking] = useState(true);
     const [flats, setFlats] = useState([]);
     const [leads, setLeads] = useState([]);
+    const [leadsLoading, setLeadsLoading] = useState(true);
+    const [leadsError, setLeadsError] = useState('');
+    const [reportDownloading, setReportDownloading] = useState(false);
     const [busyFlat, setBusyFlat] = useState('');
     const [keyRole, setKeyRole] = useState('channel_partner');
     const [latestKey, setLatestKey] = useState('');
-    const [notice, setNotice] = useState('');
     const [query, setQuery] = useState('');
     const [leadQuery, setLeadQuery] = useState('');
     const [leadTemperature, setLeadTemperature] = useState('all');
     const [leadStage, setLeadStage] = useState('all');
+    const [leadSource, setLeadSource] = useState('all');
     const [callbackQueueOpen, setCallbackQueueOpen] = useState(false);
     const [leadDateRange, setLeadDateRange] = useState({ startDate: '', endDate: '' });
     const [leadPage, setLeadPage] = useState(1);
     const [dateFilterOpen, setDateFilterOpen] = useState(false);
     const [dateFilterDraft, setDateFilterDraft] = useState({ startDate: '', endDate: '' });
     const [stageFilterOpen, setStageFilterOpen] = useState(false);
+    const [sourceFilterOpen, setSourceFilterOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState(null);
     const [selectedLeadAbout, setSelectedLeadAbout] = useState(null);
     const [activeSection, setActiveSection] = useState('dashboard');
@@ -2014,6 +2112,7 @@ export default function AdminPage() {
     const reportsRef = useRef(null);
     const keysRef = useRef(null);
     const inventoryRef = useRef(null);
+    const leadsRequestRef = useRef({ key: '', controller: null, promise: null });
 
     const canWrite = user && ['super_admin', 'manager', 'sales_executive'].includes(user.role);
     const canEditBucketSettings = user && ['super_admin', 'manager'].includes(user.role);
@@ -2033,7 +2132,6 @@ export default function AdminPage() {
 
     async function saveBucketConfig(config) {
         setBucketSettingsSaving(true);
-        setBucketSettingsError('');
         try {
             const response = await fetch('/api/admin/settings', {
                 method: 'PATCH',
@@ -2043,9 +2141,9 @@ export default function AdminPage() {
             const payload = await response.json();
             if (!response.ok) throw new Error(payload.error || 'Unable to save bucket labels.');
             setBucketConfig(Array.isArray(payload.config) ? payload.config : config);
-            setNotice('Lead lifecycle labels updated.');
+            toast.success('Lead lifecycle labels updated.');
         } catch (error) {
-            setBucketSettingsError(error instanceof Error ? error.message : String(error));
+            toast.error(error instanceof Error ? error.message : String(error));
         } finally {
             setBucketSettingsSaving(false);
         }
@@ -2060,13 +2158,45 @@ export default function AdminPage() {
 
     async function loadLeads() {
         const params = new URLSearchParams();
+        params.set('view', 'summary');
         if (leadDateRange.startDate) params.set('startDate', leadDateRange.startDate);
         if (leadDateRange.endDate) params.set('endDate', leadDateRange.endDate);
-        const query = params.toString();
-        const response = await fetch(`/api/admin/leads${query ? `?${query}` : ''}`, { cache: 'no-store' });
-        if (!response.ok) return;
-        const payload = await response.json();
-        setLeads(Array.isArray(payload.leads) ? payload.leads : []);
+        const requestKey = params.toString();
+
+        if (leadsRequestRef.current.key === requestKey && leadsRequestRef.current.promise) {
+            return leadsRequestRef.current.promise;
+        }
+
+        leadsRequestRef.current.controller?.abort();
+        const controller = new AbortController();
+        setLeadsLoading(true);
+        setLeadsError('');
+
+        const promise = (async () => {
+            try {
+                const response = await fetch(`/api/admin/leads?${requestKey}`, {
+                    cache: 'no-store',
+                    signal: controller.signal,
+                });
+                if (!response.ok) throw new Error('Unable to load leads.');
+                const payload = await response.json();
+                if (leadsRequestRef.current.controller === controller) {
+                    setLeads(Array.isArray(payload.leads) ? payload.leads : []);
+                }
+            } catch (error) {
+                if (error?.name !== 'AbortError' && leadsRequestRef.current.controller === controller) {
+                    setLeadsError(error instanceof Error ? error.message : 'Unable to load leads.');
+                }
+            } finally {
+                if (leadsRequestRef.current.controller === controller) {
+                    leadsRequestRef.current = { key: requestKey, controller: null, promise: null };
+                    setLeadsLoading(false);
+                }
+            }
+        })();
+
+        leadsRequestRef.current = { key: requestKey, controller, promise };
+        return promise;
     }
 
     async function refreshAll() {
@@ -2105,7 +2235,9 @@ export default function AdminPage() {
         if (!user) return undefined;
 
         void Promise.all([refreshAll(), loadBucketConfig()]);
-        const intervalId = window.setInterval(refreshAll, 30000);
+        const intervalId = window.setInterval(() => {
+            if (document.visibilityState === 'visible') void refreshAll();
+        }, 30000);
         return () => window.clearInterval(intervalId);
     }, [user, isLeadPartner, leadDateRange]);
 
@@ -2207,15 +2339,43 @@ export default function AdminPage() {
         );
     }, [leads]);
 
-    const visibleLeads = useMemo(() => {
-        const normalizedQuery = leadQuery.trim().toLowerCase();
-        const bucketLeads = leadTemperature === 'all'
+    const leadSourceKeysById = useMemo(() => new Map(
+        leads.map((lead) => [lead.id, getLeadSourceFilterValues(lead)]),
+    ), [leads]);
+
+    const leadSourceOptions = useMemo(() => {
+        const counts = new Map(PARTNER_LEAD_SOURCES.map((source) => [source, 0]));
+
+        for (const sourceKeys of leadSourceKeysById.values()) {
+            for (const source of sourceKeys) {
+                counts.set(source, (counts.get(source) || 0) + 1);
+            }
+        }
+
+        return [...counts.entries()].map(([source, count]) => ({
+            value: source,
+            label: getLeadSourceLabel(source),
+            count,
+        }));
+    }, [leadSourceKeysById]);
+
+    const sourceFilteredLeads = useMemo(() => (
+        leadSource === 'all'
             ? leads
-            : getVisibleLeadsForFilter(leads, leadTemperature);
+            : leads.filter((lead) => leadSourceKeysById.get(lead.id)?.includes(leadSource))
+    ), [leadSource, leadSourceKeysById, leads]);
+
+    const deferredLeadQuery = useDeferredValue(leadQuery);
+
+    const visibleLeads = useMemo(() => {
+        const normalizedQuery = deferredLeadQuery.trim().toLowerCase();
+        const bucketLeads = leadTemperature === 'all'
+            ? sourceFilteredLeads
+            : getVisibleLeadsForFilter(sourceFilteredLeads, leadTemperature);
         const stageLeads = leadStage === 'all'
             ? bucketLeads
             : bucketLeads.filter((lead) => lead.stage === leadStage);
-        const filteredLeads = sortNewLeadsFirst(stageLeads, leadTemperature);
+        const filteredLeads = sortLeadsByNewestDate(stageLeads);
         if (!normalizedQuery) return filteredLeads;
 
         return filteredLeads.filter((lead) =>
@@ -2248,7 +2408,7 @@ export default function AdminPage() {
                 .toLowerCase()
                 .includes(normalizedQuery),
         );
-    }, [leadQuery, leadStage, leadTemperature, leads]);
+    }, [deferredLeadQuery, leadStage, leadTemperature, sourceFilteredLeads]);
 
     const totalLeadPages = Math.max(1, Math.ceil(visibleLeads.length / LEADS_PAGE_SIZE));
     const paginatedVisibleLeads = useMemo(() => {
@@ -2272,7 +2432,7 @@ export default function AdminPage() {
 
     useEffect(() => {
         setLeadPage(1);
-    }, [leadQuery, leadStage, leadTemperature, leadDateRange]);
+    }, [leadQuery, leadSource, leadStage, leadTemperature, leadDateRange]);
 
     const statusEntries = useMemo(
         () =>
@@ -2376,7 +2536,6 @@ export default function AdminPage() {
 
     async function updateStatus(flatId, status) {
         setBusyFlat(flatId);
-        setNotice('');
 
         try {
             const response = await fetch(`/api/admin/flats/${flatId}`, {
@@ -2393,9 +2552,9 @@ export default function AdminPage() {
             setFlats((current) =>
                 current.map((flat) => (flat.flat === flatId ? payload.flat : flat)),
             );
-            setNotice(`Flat ${flatId} updated to ${status}.`);
+            toast.success(`Flat ${flatId} updated to ${status}.`);
         } catch (error) {
-            setNotice(error.message);
+            toast.error(error instanceof Error ? error.message : 'Unable to update flat.');
         } finally {
             setBusyFlat('');
         }
@@ -2418,8 +2577,9 @@ export default function AdminPage() {
         if (response.ok) {
             setLatestKey(payload.key.key);
             await navigator.clipboard?.writeText(payload.key.key).catch(() => {});
+            toast.success('Signup key created and copied.');
         } else {
-            setNotice(payload.error || 'Unable to create signup key.');
+            toast.error(payload.error || 'Unable to create signup key.');
         }
     }
 
@@ -2488,21 +2648,52 @@ export default function AdminPage() {
     async function runCallbackAction(leadId, action, dueAt = '') {
         try {
             await handleCallbackAction(leadId, action, dueAt);
+            toast.success(action === 'reschedule'
+                ? 'Callback rescheduled.'
+                : action === 'complete'
+                    ? 'Callback completed.'
+                    : 'Callback cancelled.');
         } catch (error) {
-            setNotice(error instanceof Error ? error.message : String(error));
+            toast.error(error instanceof Error ? error.message : String(error));
         }
     }
 
     async function logout() {
+        leadsRequestRef.current.controller?.abort();
         await fetch('/api/admin/auth/logout', { method: 'POST' });
         setSidebarOpen(false);
         setUser(null);
         setFlats([]);
         setLeads([]);
+        setLeadsLoading(true);
     }
 
     async function downloadVisibleLeadsReport() {
-        const reportRows = buildLeadReportRows(visibleLeads, bucketConfig);
+        setReportDownloading(true);
+        const reportToastId = toast.loading('Preparing the report with complete call logs…');
+
+        const params = new URLSearchParams();
+        if (leadDateRange.startDate) params.set('startDate', leadDateRange.startDate);
+        if (leadDateRange.endDate) params.set('endDate', leadDateRange.endDate);
+
+        let reportLeads;
+        try {
+            const query = params.toString();
+            const response = await fetch(`/api/admin/leads${query ? `?${query}` : ''}`, { cache: 'no-store' });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.error || 'Unable to load call logs for the report.');
+
+            const completeLeadsById = new Map(
+                (Array.isArray(payload.leads) ? payload.leads : []).map((lead) => [lead.id, lead]),
+            );
+            reportLeads = visibleLeads.map((lead) => completeLeadsById.get(lead.id) || lead);
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Unable to prepare the report.', { id: reportToastId });
+            setReportDownloading(false);
+            return;
+        }
+
+        const reportRows = buildLeadReportRows(reportLeads, bucketConfig);
         const filterLabel = getBucketMeta(leadTemperature, bucketConfig).label;
         const fileDate = new Date().toISOString().slice(0, 10);
         const dateRangeLabel = leadDateRange.startDate || leadDateRange.endDate
@@ -2611,6 +2802,7 @@ export default function AdminPage() {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
+            toast.success('Report downloaded with complete call logs and calling remarks.', { id: reportToastId });
         } catch (error) {
             const csv = buildLeadsCsv(reportRows);
             const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
@@ -2624,6 +2816,9 @@ export default function AdminPage() {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
+            toast.success('CSV report downloaded with complete call logs and calling remarks.', { id: reportToastId });
+        } finally {
+            setReportDownloading(false);
         }
     }
 
@@ -2638,12 +2833,11 @@ export default function AdminPage() {
             && dateFilterDraft.endDate
             && dateFilterDraft.startDate > dateFilterDraft.endDate
         ) {
-            setNotice('End date cannot be before start date.');
+            toast.error('End date cannot be before start date.');
             return;
         }
         setLeadDateRange(dateFilterDraft);
         setDateFilterOpen(false);
-        setNotice('');
     }
 
     function selectLeadFilter(temperature, stage = 'all') {
@@ -2652,17 +2846,27 @@ export default function AdminPage() {
         setStageFilterOpen(false);
     }
 
+    function selectLeadSource(source) {
+        setLeadSource(source);
+        setSourceFilterOpen(false);
+    }
+
     let activeLeadFilterLabel = 'All leads';
-    let activeLeadFilterCount = leads.length;
+    let activeLeadFilterCount = sourceFilteredLeads.length;
     if (leadTemperature === LEAD_BUCKET_DEAD) {
         activeLeadFilterLabel = 'Dead';
-        activeLeadFilterCount = leadStats.dead || 0;
+        activeLeadFilterCount = getVisibleLeadsForFilter(sourceFilteredLeads, LEAD_BUCKET_DEAD).length;
     } else if (leadStage !== 'all') {
         activeLeadFilterLabel = LEAD_STAGE_CONFIG.find((item) => item.key === leadStage)?.label || 'Stage filter';
-        activeLeadFilterCount = leads.filter((lead) => lead.stage === leadStage).length;
+        activeLeadFilterCount = sourceFilteredLeads.filter((lead) => lead.stage === leadStage).length;
     }
 
     const dateFilterActive = Boolean(leadDateRange.startDate || leadDateRange.endDate);
+    const activeLeadSourceLabel = leadSource === 'all' ? 'All sources' : getLeadSourceLabel(leadSource);
+    const activeLeadSourceCount = leadSource === 'all'
+        ? leads.length
+        : leadSourceOptions.find((option) => option.value === leadSource)?.count || 0;
+    const initialLeadsLoading = leadsLoading && leads.length === 0;
 
     if (checking) {
         return (
@@ -2678,6 +2882,7 @@ export default function AdminPage() {
 
     return (
         <main className="editorial-admin font-display fixed inset-0 z-[999] flex min-h-screen overflow-hidden bg-[#f4f4f2] text-[#111]">
+            <AdminToaster />
             {sidebarOpen ? (
                 <button
                     type="button"
@@ -2706,20 +2911,20 @@ export default function AdminPage() {
             />
 
             <section className="flex min-w-0 flex-1 flex-col">
-                <header className="editorial-header flex min-h-[88px] shrink-0 flex-wrap items-start justify-between gap-4 border-b border-[#111]/10 bg-[#fbfbfa] px-4 py-4 shadow-[0_14px_40px_rgba(17,17,17,0.05)] sm:px-6 lg:h-24 lg:flex-nowrap lg:items-center lg:px-9">
-                    <div className="flex min-w-0 items-start gap-3">
+                <header className="editorial-header flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#111]/10 bg-[#fbfbfa] px-3 py-2 shadow-[0_14px_40px_rgba(17,17,17,0.05)] sm:px-5 lg:h-16 lg:flex-nowrap lg:px-6">
+                    <div className="flex min-w-0 items-center gap-3">
                         <button
                             type="button"
                             onClick={() => setSidebarOpen(true)}
-                            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#111]/10 bg-white text-[#111] shadow-[0_7px_0_rgba(17,17,17,0.04),0_16px_32px_rgba(17,17,17,0.06)] lg:hidden"
+                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#111]/10 bg-white text-[#111] shadow-[0_7px_0_rgba(17,17,17,0.04),0_16px_32px_rgba(17,17,17,0.06)] lg:hidden"
                         >
                             <Menu className="h-5 w-5" />
                         </button>
                         <div className="min-w-0">
-                            <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">
                                 {activeSectionMeta.eyebrow}
                             </p>
-                            <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#111] sm:text-3xl">
+                            <h1 className="text-lg font-bold leading-tight tracking-tight text-[#111] sm:text-xl">
                                 {activeSectionMeta.title}
                             </h1>
                         </div>
@@ -2728,7 +2933,7 @@ export default function AdminPage() {
                         <button
                             type="button"
                             onClick={refreshAll}
-                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[#111]/10 bg-white px-4 text-sm font-bold text-[#111] shadow-[0_7px_0_rgba(17,17,17,0.04),0_16px_32px_rgba(17,17,17,0.06)] transition hover:-translate-y-0.5 sm:w-auto"
+                            className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-[#111]/10 bg-white px-3 text-xs font-bold text-[#111] shadow-[0_7px_0_rgba(17,17,17,0.04),0_16px_32px_rgba(17,17,17,0.06)] transition hover:-translate-y-0.5 sm:w-auto"
                         >
                             <RefreshCcw className="h-4 w-4" />
                             Refresh
@@ -2736,7 +2941,7 @@ export default function AdminPage() {
                         <button
                             type="button"
                             onClick={logout}
-                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#111] px-5 text-sm font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0 sm:w-auto"
+                            className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-[#111] px-4 text-xs font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0 sm:w-auto"
                         >
                             <LogOut className="h-4 w-4" />
                             Logout
@@ -2745,30 +2950,21 @@ export default function AdminPage() {
                 </header>
 
                 <div ref={contentRef} className="editorial-content min-h-0 flex-1 scroll-smooth overflow-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-0 lg:py-0">
-                    {notice ? (
-                        <p className="mb-5 rounded-2xl border border-[#111]/10 bg-white px-4 py-3 text-sm font-bold text-[#111] shadow-[0_12px_28px_rgba(17,17,17,0.08)] sm:mb-6 sm:px-5">
-                            {notice}
-                        </p>
-                    ) : null}
-
                     {activeSection === 'leads' ? (
                     <section ref={leadsRef} className="editorial-leads flex min-h-full flex-col scroll-mt-8 overflow-visible rounded-[24px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px]">
-                        <div className="flex flex-col gap-5 border-b border-[#111]/10 px-4 py-5 sm:px-7 sm:py-6">
-                            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                                <div>
-                                    <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6b7280]">Lead Management</p>
-                                    <h2 className="mt-1 font-display text-2xl font-bold text-[#111]">Lead directory</h2>
-                                    <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6b7280]">
-                                        {isLeadPartner
-                                            ? 'This account can view and export only leads submitted by your source.'
-                                            : 'A live view of every enquiry, WhatsApp interaction, and sales follow-up.'}
+                        <div className="flex flex-col gap-2 border-b border-[#111]/10 px-4 py-3 sm:px-5">
+                            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                                <div className="flex min-w-0 items-baseline gap-3">
+                                    <h2 className="shrink-0 font-display text-lg font-bold text-[#111]">Lead directory</h2>
+                                    <p className="hidden truncate text-xs text-[#6b7280] 2xl:block">
+                                        {isLeadPartner ? 'Leads submitted by your source' : 'Enquiries and sales follow-ups'}
                                     </p>
                                 </div>
                                 <div className="relative flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                                     <button
                                         type="button"
                                         onClick={openDateFilter}
-                                        className={`inline-flex h-11 items-center justify-center gap-2 border px-4 text-sm font-bold transition ${
+                                        className={`inline-flex h-9 items-center justify-center gap-2 border px-3 text-xs font-bold transition ${
                                             dateFilterActive
                                                 ? 'border-[#111] bg-[#111] text-white'
                                                 : 'border-[#111]/15 bg-white text-[#111]'
@@ -2779,13 +2975,14 @@ export default function AdminPage() {
                                     </button>
                                     <button
                                         type="button"
+                                        disabled={reportDownloading || initialLeadsLoading}
                                         onClick={() => {
                                             void downloadVisibleLeadsReport();
                                         }}
-                                        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#111] px-5 text-sm font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0 sm:w-auto"
+                                        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-[#111] px-4 text-xs font-bold text-white shadow-[0_8px_0_rgba(17,17,17,0.12),0_18px_34px_rgba(17,17,17,0.22)] transition hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-wait disabled:opacity-55 sm:w-auto"
                                     >
-                                        <Download className="h-4 w-4" />
-                                        Download Report
+                                        {reportDownloading ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                        {reportDownloading ? 'Preparing…' : 'Download Report'}
                                     </button>
                                     {dateFilterOpen ? (
                                         <div className="absolute right-0 top-[calc(100%+10px)] z-30 w-full min-w-[300px] border border-[#111]/15 bg-[#fffefa] p-5 text-left shadow-[0_18px_35px_rgba(17,17,17,0.12)] sm:w-[350px]">
@@ -2816,13 +3013,13 @@ export default function AdminPage() {
                             </div>
 
                             {leads.some(hasPendingLeadCallback) ? (
-                                <div className="border-l-2 border-violet-500 py-1 pl-4">
-                                    <button type="button" onClick={() => setCallbackQueueOpen((current) => !current)} className="flex items-center gap-2 text-sm font-bold text-violet-700">
-                                        <PhoneCall className="h-4 w-4" />
+                                <div className="flex min-w-0 items-center gap-4 border-l-2 border-violet-500 py-0.5 pl-3">
+                                    <button type="button" onClick={() => setCallbackQueueOpen((current) => !current)} className="flex shrink-0 items-center gap-2 text-xs font-bold text-violet-700">
+                                        <PhoneCall className="h-3.5 w-3.5" />
                                         {leads.filter(hasPendingLeadCallback).length} follow-up{leads.filter(hasPendingLeadCallback).length === 1 ? '' : 's'} due
                                     </button>
                                     {callbackQueueOpen ? (
-                                        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+                                        <div className="flex min-w-0 flex-1 flex-nowrap gap-4 overflow-x-auto py-1">
                                             {leads.filter(hasPendingLeadCallback).slice(0, 8).map((lead) => (
                                                 <a key={lead.id} href={`/admin/leads/${encodeURIComponent(lead.id)}`} target="_blank" rel="noopener noreferrer" className="text-left text-xs font-bold text-[#111] underline decoration-[#111]/25 underline-offset-4">
                                                     {lead.name || lead.phone} · {lead.callback?.dueAt ? formatAdminDate(lead.callback.dueAt) : 'Callback requested'}
@@ -2833,58 +3030,108 @@ export default function AdminPage() {
                                 </div>
                             ) : null}
 
-                            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                                <div className="relative">
-                                    <button
-                                        type="button"
-                                        aria-expanded={stageFilterOpen}
-                                        aria-haspopup="menu"
-                                        onClick={() => setStageFilterOpen((current) => !current)}
-                                        className={`inline-flex h-11 items-center gap-3 border px-4 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-black/10 ${
-                                            leadTemperature !== 'all' || leadStage !== 'all'
-                                                ? 'border-[#111] bg-[#111] text-white'
-                                                : 'border-[#111]/15 bg-white text-[#111] hover:border-[#111]/35'
-                                        }`}
-                                    >
-                                        <Filter className="h-4 w-4" />
-                                        <span>{activeLeadFilterLabel}</span>
-                                        <span className="text-xs opacity-65">
-                                            {activeLeadFilterCount}
-                                        </span>
-                                    </button>
-                                    {stageFilterOpen ? (
-                                        <div className="absolute left-0 top-[calc(100%+10px)] z-30 max-h-[min(56vh,520px)] w-[min(92vw,320px)] overflow-y-auto overscroll-contain border border-[#111]/15 bg-[#fffefa] p-3 text-left shadow-[0_18px_35px_rgba(17,17,17,0.12)]" role="menu">
-                                            <div className="flex items-start justify-between gap-4 border-b border-[#111]/10 px-2 pb-3">
-                                                <div>
-                                                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Lead filter</p>
-                                                    <p className="mt-1 text-sm text-[#4b5563]">Choose a lifecycle stage.</p>
+                            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                                <div className="flex flex-wrap items-start gap-2">
+                                    <div className="relative">
+                                        <button
+                                            type="button"
+                                            aria-expanded={stageFilterOpen}
+                                            aria-haspopup="menu"
+                                            onClick={() => {
+                                                setSourceFilterOpen(false);
+                                                setStageFilterOpen((current) => !current);
+                                            }}
+                                            className={`inline-flex h-9 items-center gap-2 border px-3 text-xs font-bold transition focus:outline-none focus:ring-4 focus:ring-black/10 ${
+                                                leadTemperature !== 'all' || leadStage !== 'all'
+                                                    ? 'border-[#111] bg-[#111] text-white'
+                                                    : 'border-[#111]/15 bg-white text-[#111] hover:border-[#111]/35'
+                                            }`}
+                                        >
+                                            <Filter className="h-4 w-4" />
+                                            <span>{activeLeadFilterLabel}</span>
+                                            <span className="text-xs opacity-65">
+                                                {initialLeadsLoading ? '…' : activeLeadFilterCount}
+                                            </span>
+                                        </button>
+                                        {stageFilterOpen ? (
+                                            <div className="absolute left-0 top-[calc(100%+10px)] z-30 max-h-[min(56vh,520px)] w-[min(92vw,320px)] overflow-y-auto overscroll-contain border border-[#111]/15 bg-[#fffefa] p-3 text-left shadow-[0_18px_35px_rgba(17,17,17,0.12)]" role="menu">
+                                                <div className="flex items-start justify-between gap-4 border-b border-[#111]/10 px-2 pb-3">
+                                                    <div>
+                                                        <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Lead filter</p>
+                                                        <p className="mt-1 text-sm text-[#4b5563]">Choose a lifecycle stage.</p>
+                                                    </div>
+                                                    <button type="button" onClick={() => setStageFilterOpen(false)} className="text-sm font-bold text-[#6b7280] hover:text-[#111]">Close</button>
                                                 </div>
-                                                <button type="button" onClick={() => setStageFilterOpen(false)} className="text-sm font-bold text-[#6b7280] hover:text-[#111]">Close</button>
-                                            </div>
-                                            <div className="mt-2 grid gap-1">
-                                                <button type="button" role="menuitem" onClick={() => selectLeadFilter('all')} className={`flex items-center justify-between px-2 py-2.5 text-left text-sm font-bold transition hover:bg-[#f5f4f0] ${leadTemperature === 'all' && leadStage === 'all' ? 'bg-[#f5f4f0] text-[#111]' : 'text-[#4b5563]'}`}>
-                                                    <span>All leads</span><span className="text-xs text-[#6b7280]">{leads.length}</span>
-                                                </button>
-                                                {LEAD_STAGE_CONFIG.filter((item) => item.key !== LEAD_STAGE_DEAD).map((item) => (
-                                                    <button key={item.key} type="button" role="menuitem" onClick={() => selectLeadFilter('all', item.key)} className={`flex items-center justify-between px-2 py-2.5 text-left text-sm font-bold transition hover:bg-[#f5f4f0] ${leadStage === item.key ? 'bg-[#f5f4f0] text-[#111]' : 'text-[#4b5563]'}`}>
-                                                        <span>{item.label}</span><span className="text-xs text-[#6b7280]">{leads.filter((lead) => lead.stage === item.key).length}</span>
+                                                <div className="mt-2 grid gap-1">
+                                                    <button type="button" role="menuitem" onClick={() => selectLeadFilter('all')} className={`flex items-center justify-between px-2 py-2.5 text-left text-sm font-bold transition hover:bg-[#f5f4f0] ${leadTemperature === 'all' && leadStage === 'all' ? 'bg-[#f5f4f0] text-[#111]' : 'text-[#4b5563]'}`}>
+                                                        <span>All leads</span><span className="text-xs text-[#6b7280]">{sourceFilteredLeads.length}</span>
                                                     </button>
-                                                ))}
-                                                <button type="button" role="menuitem" onClick={() => selectLeadFilter(LEAD_BUCKET_DEAD)} className={`flex items-center justify-between px-2 py-2.5 text-left text-sm font-bold text-red-700 transition hover:bg-red-50 ${leadTemperature === LEAD_BUCKET_DEAD ? 'bg-red-50' : ''}`}>
-                                                    <span>Dead</span><span className="text-xs text-red-600">{leadStats.dead || 0}</span>
-                                                </button>
+                                                    {LEAD_STAGE_CONFIG.filter((item) => item.key !== LEAD_STAGE_DEAD).map((item) => (
+                                                        <button key={item.key} type="button" role="menuitem" onClick={() => selectLeadFilter('all', item.key)} className={`flex items-center justify-between px-2 py-2.5 text-left text-sm font-bold transition hover:bg-[#f5f4f0] ${leadStage === item.key ? 'bg-[#f5f4f0] text-[#111]' : 'text-[#4b5563]'}`}>
+                                                            <span>{item.label}</span><span className="text-xs text-[#6b7280]">{sourceFilteredLeads.filter((lead) => lead.stage === item.key).length}</span>
+                                                        </button>
+                                                    ))}
+                                                    <button type="button" role="menuitem" onClick={() => selectLeadFilter(LEAD_BUCKET_DEAD)} className={`flex items-center justify-between px-2 py-2.5 text-left text-sm font-bold text-red-700 transition hover:bg-red-50 ${leadTemperature === LEAD_BUCKET_DEAD ? 'bg-red-50' : ''}`}>
+                                                        <span>Dead</span><span className="text-xs text-red-600">{getVisibleLeadsForFilter(sourceFilteredLeads, LEAD_BUCKET_DEAD).length}</span>
+                                                    </button>
+                                                </div>
                                             </div>
+                                        ) : null}
+                                    </div>
+
+                                    {!isLeadPartner ? (
+                                        <div className="relative order-first">
+                                        <button
+                                            type="button"
+                                            aria-expanded={sourceFilterOpen}
+                                            aria-haspopup="menu"
+                                            onClick={() => {
+                                                setStageFilterOpen(false);
+                                                setSourceFilterOpen((current) => !current);
+                                            }}
+                                            className={`inline-flex h-9 items-center gap-2 border px-3 text-xs font-bold transition focus:outline-none focus:ring-4 focus:ring-black/10 ${
+                                                leadSource !== 'all'
+                                                    ? 'border-[#111] bg-[#111] text-white'
+                                                    : 'border-[#111]/15 bg-white text-[#111] hover:border-[#111]/35'
+                                            }`}
+                                        >
+                                            <Building2 className="h-4 w-4" />
+                                            <span>{activeLeadSourceLabel}</span>
+                                            <span className="text-xs opacity-65">{initialLeadsLoading ? '…' : activeLeadSourceCount}</span>
+                                            <RiArrowDownSLine className="h-5 w-5" />
+                                        </button>
+                                        {sourceFilterOpen ? (
+                                            <div className="absolute left-0 top-[calc(100%+10px)] z-30 max-h-[min(56vh,520px)] w-[min(92vw,300px)] overflow-y-auto overscroll-contain border border-[#111]/15 bg-[#fffefa] p-3 text-left shadow-[0_18px_35px_rgba(17,17,17,0.12)]" role="menu">
+                                                <div className="flex items-start justify-between gap-4 border-b border-[#111]/10 px-2 pb-3">
+                                                    <div>
+                                                        <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Lead source</p>
+                                                        <p className="mt-1 text-sm text-[#4b5563]">Filter by lead partner.</p>
+                                                    </div>
+                                                    <button type="button" onClick={() => setSourceFilterOpen(false)} className="text-sm font-bold text-[#6b7280] hover:text-[#111]">Close</button>
+                                                </div>
+                                                <div className="mt-2 grid gap-1">
+                                                    <button type="button" role="menuitem" onClick={() => selectLeadSource('all')} className={`flex items-center justify-between px-2 py-2.5 text-left text-sm font-bold transition hover:bg-[#f5f4f0] ${leadSource === 'all' ? 'bg-[#f5f4f0] text-[#111]' : 'text-[#4b5563]'}`}>
+                                                        <span>All sources</span><span className="text-xs text-[#6b7280]">{leads.length}</span>
+                                                    </button>
+                                                    {leadSourceOptions.map((option) => (
+                                                        <button key={option.value} type="button" role="menuitem" onClick={() => selectLeadSource(option.value)} className={`flex items-center justify-between px-2 py-2.5 text-left text-sm font-bold transition hover:bg-[#f5f4f0] ${leadSource === option.value ? 'bg-[#f5f4f0] text-[#111]' : 'text-[#4b5563]'}`}>
+                                                            <span>{option.label}</span><span className="text-xs text-[#6b7280]">{option.count}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : null}
                                         </div>
                                     ) : null}
                                 </div>
 
-                                <div className="relative w-full xl:w-[390px]">
+                                <div className="relative w-full lg:w-[320px]">
                                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98a2b3]" />
                                     <input
                                         value={leadQuery}
                                         onChange={(event) => setLeadQuery(event.target.value)}
                                         placeholder="Search this lead group..."
-                                        className="h-12 w-full rounded-2xl border border-[#111]/14 bg-white pl-10 pr-4 text-sm font-medium text-[#111] outline-none shadow-[0_7px_0_rgba(17,17,17,0.035),0_16px_32px_rgba(17,17,17,0.05)] transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
+                                        className="h-9 w-full rounded-xl border border-[#111]/14 bg-white pl-9 pr-3 text-xs font-medium text-[#111] outline-none shadow-[0_7px_0_rgba(17,17,17,0.035),0_16px_32px_rgba(17,17,17,0.05)] transition focus:border-[#111]/35 focus:ring-4 focus:ring-black/5"
                                     />
                                 </div>
                             </div>
@@ -2951,7 +3198,9 @@ export default function AdminPage() {
                                 ))
                             ) : (
                                 <div className="px-4 py-10 text-center text-sm font-medium text-[#6b7280] sm:px-6">
-                                    No {getBucketMeta(leadTemperature, bucketConfig).label.toLowerCase()} leads match your current search.
+                                    {initialLeadsLoading ? (
+                                        <span className="inline-flex items-center gap-2"><RefreshCcw className="h-4 w-4 animate-spin" /> Loading leads…</span>
+                                    ) : leadsError ? leadsError : `No ${getBucketMeta(leadTemperature, bucketConfig).label.toLowerCase()} leads match your current search.`}
                                 </div>
                             )}
                         </div>
@@ -2970,7 +3219,7 @@ export default function AdminPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#111]/10 text-sm">
-                                    {paginatedVisibleLeads.map((lead) => (
+                                    {paginatedVisibleLeads.length ? paginatedVisibleLeads.map((lead) => (
                                         <tr key={lead.id} className="align-top transition hover:bg-[#fafafa]">
                                             <td className="px-7 py-5 font-medium text-[#6b7280]">
                                                 <p className="font-bold text-[#111]">{formatAdminDate(lead.originalDate || lead.createdAt)}</p>
@@ -3025,14 +3274,24 @@ export default function AdminPage() {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )) : (
+                                        <tr>
+                                            <td colSpan={7} className="px-7 py-16 text-center text-sm font-medium text-[#6b7280]">
+                                                {initialLeadsLoading ? (
+                                                    <span className="inline-flex items-center gap-2"><RefreshCcw className="h-4 w-4 animate-spin" /> Loading leads…</span>
+                                                ) : leadsError ? leadsError : `No ${getBucketMeta(leadTemperature, bucketConfig).label.toLowerCase()} leads match your current search.`}
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
 
                         <div className="flex flex-col gap-3 border-t border-[#111]/10 px-4 py-4 text-sm text-[#6b7280] sm:flex-row sm:items-center sm:justify-between sm:px-7">
                             <p>
-                                {visibleLeads.length
+                                {initialLeadsLoading
+                                    ? 'Loading leads…'
+                                    : visibleLeads.length
                                     ? `Showing ${leadPageStart}–${leadPageEnd} of ${visibleLeads.length}`
                                     : 'No leads to show'}
                                 <span className="ml-2 text-xs text-[#98a2b3]">
@@ -3162,7 +3421,6 @@ export default function AdminPage() {
                         canEdit={canEditBucketSettings}
                         onSave={saveBucketConfig}
                         saving={bucketSettingsSaving}
-                        error={bucketSettingsError}
                     />
 
                     <section ref={inventoryRef} className="mt-7 scroll-mt-8 overflow-hidden rounded-[24px] border border-[#111]/10 bg-white shadow-[0_18px_0_rgba(17,17,17,0.035),0_28px_70px_rgba(17,17,17,0.08),inset_0_1px_0_rgba(255,255,255,1)] sm:rounded-[30px]">
