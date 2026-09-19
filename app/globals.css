@@ -120,7 +120,7 @@ select {
 }
 
 .editorial-admin .editorial-leads > div:first-child {
-    padding-block: 2rem;
+    padding-block: 0.75rem;
 }
 
 .editorial-admin .editorial-leads thead {
