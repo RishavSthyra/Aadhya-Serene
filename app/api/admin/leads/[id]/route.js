@@ -37,5 +37,6 @@ export async function GET(request, { params }) {
     return NextResponse.json({
         lead: serializeLeadGroup(records, conversation, bucketConfig),
         canWrite: ['super_admin', 'manager', 'sales_executive'].includes(auth.user.role),
+        canInspectDaffytelWebhook: ['super_admin', 'manager'].includes(auth.user.role),
     });
 }

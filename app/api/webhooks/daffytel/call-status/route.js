@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { NextResponse } from 'next/server';
 import { connectMongo } from '../../../../../lib/mongodb';
-import { Notification } from '../../../../../lib/models';
+import { DaffytelWebhookEvent, Notification } from '../../../../../lib/models';
 import {
     getDaffytelWebhookSecretFromPayload,
     parseDaffytelCallStatusPayload,
@@ -62,6 +62,39 @@ function safeObjectId(value) {
     return mongoose.isValidObjectId(value) ? new mongoose.Types.ObjectId(value) : null;
 }
 
+function getPayloadKeys(payload) {
+    return payload && typeof payload === 'object' && !Array.isArray(payload)
+        ? Object.keys(payload).slice(0, 80)
+        : [];
+}
+
+function getCallerTail(value) {
+    const digits = String(value || '').replace(/\D/g, '');
+    return digits ? digits.slice(-4) : '';
+}
+
+async function recordWebhookEvent({ event, payload, eventKey = '', outcome, httpStatus, error = '', matchedLeadId = '', matchedCallLogId = '' }) {
+    try {
+        await connectMongo();
+        await DaffytelWebhookEvent.create({
+            eventKey,
+            outcome,
+            httpStatus,
+            providerCallId: event?.providerCallId || '',
+            providerStatus: event?.providerStatus || '',
+            leadId: event?.leadId || '',
+            matchedLeadId: matchedLeadId ? String(matchedLeadId) : '',
+            matchedCallLogId: matchedCallLogId ? String(matchedCallLogId) : '',
+            callerTail: getCallerTail(event?.caller),
+            agent: event?.agent || '',
+            error: String(error || '').slice(0, 500),
+            payloadKeys: getPayloadKeys(payload),
+        });
+    } catch (auditError) {
+        console.error('Unable to record Daffytel webhook audit event', auditError);
+    }
+}
+
 function buildProviderUpdate(event, eventKey) {
     const set = {
         'callLogs.$.callStatus': event.callOutcome,
@@ -97,7 +130,12 @@ function findCandidateRecord(records, event) {
     if (matchingProviderCall) return matchingProviderCall;
 
     const recentCandidates = candidates.filter(({ callLog }) => {
-        if (callLog.provider || callLog.providerCallId || callLog.providerRequestId) return false;
+        const isPendingDaffytelCall = callLog.provider === 'daffytel'
+            && callLog.providerStatus === 'accepted'
+            && !callLog.providerEventKey;
+        if (!isPendingDaffytelCall && (callLog.provider || callLog.providerCallId || callLog.providerRequestId)) {
+            return false;
+        }
         const timestamp = new Date(callLog.createdAt || callLog.callDate || 0).getTime();
         return Number.isFinite(timestamp) && Math.abs(eventTimestamp - timestamp) <= MATCH_WINDOW_MS;
     });
@@ -118,7 +156,10 @@ function findCandidateRecord(records, event) {
 export async function POST(request) {
     const payload = await readPayload(request);
     const configuredSecret = String(process.env.DAFFYTEL_C2C_WEBHOOK_API || '').trim();
-    if (!configuredSecret) return response({ received: false, error: 'Webhook is not configured.' }, 503);
+    if (!configuredSecret) {
+        await recordWebhookEvent({ payload, outcome: 'not_configured', httpStatus: 503, error: 'Webhook is not configured.' });
+        return response({ received: false, error: 'Webhook is not configured.' }, 503);
+    }
 
     const querySecret = new URL(request.url).searchParams.get('webhook_secret') || '';
     const providedSecret = getDaffytelWebhookSecretFromPayload(payload)
@@ -126,11 +167,15 @@ export async function POST(request) {
         || getBearerToken(request)
         || querySecret;
     if (!verifyDaffytelWebhookSecret(providedSecret, configuredSecret)) {
+        await recordWebhookEvent({ payload, outcome: 'invalid_secret', httpStatus: 401, error: 'Invalid webhook secret.' });
         return response({ received: false, error: 'Invalid webhook secret.' }, 401);
     }
 
     const event = parseDaffytelCallStatusPayload(payload);
-    if (!event) return response({ received: false, error: 'Invalid webhook payload.' }, 400);
+    if (!event) {
+        await recordWebhookEvent({ payload, outcome: 'invalid_payload', httpStatus: 400, error: 'Invalid webhook payload.' });
+        return response({ received: false, error: 'Invalid webhook payload.' }, 400);
+    }
 
     const eventKey = getEventKey(event);
     await connectMongo();
@@ -152,7 +197,10 @@ export async function POST(request) {
         }
     }
 
-    if (!records.length) return response({ received: false, error: 'No matching lead.' }, 409);
+    if (!records.length) {
+        await recordWebhookEvent({ event, payload, eventKey, outcome: 'unmatched', httpStatus: 409, error: 'No matching lead.' });
+        return response({ received: false, error: 'No matching lead.' }, 409);
+    }
 
     const matchingProviderCall = event.providerCallId
         ? records.flatMap((record) => (record.callLogs || []).map((callLog) => ({ record, callLog })))
@@ -162,6 +210,15 @@ export async function POST(request) {
             ))
         : null;
     if (matchingProviderCall?.callLog.providerEventKey === eventKey) {
+        await recordWebhookEvent({
+            event,
+            payload,
+            eventKey,
+            outcome: 'duplicate',
+            httpStatus: 200,
+            matchedLeadId: matchingProviderCall.record._id,
+            matchedCallLogId: matchingProviderCall.callLog._id,
+        });
         return response({ received: true, duplicate: true });
     }
     if (matchingProviderCall) {
@@ -176,14 +233,37 @@ export async function POST(request) {
             { $set: buildProviderUpdate(event, eventKey) },
             { new: true },
         ).lean();
+        await recordWebhookEvent({
+            event,
+            payload,
+            eventKey,
+            outcome: updated ? 'updated' : 'duplicate',
+            httpStatus: 200,
+            matchedLeadId: matchingProviderCall.record._id,
+            matchedCallLogId: matchingProviderCall.callLog._id,
+        });
         return response({ received: true, updated: Boolean(updated), providerCallId: event.providerCallId });
     }
 
     const candidate = findCandidateRecord(records, event);
-    if (!candidate) return response({ received: false, error: 'No matching call.' }, 409);
+    if (!candidate) {
+        await recordWebhookEvent({ event, payload, eventKey, outcome: 'unmatched', httpStatus: 409, error: 'No matching call.' });
+        return response({ received: false, error: 'No matching call.' }, 409);
+    }
 
     const isDuplicate = candidate.callLog.providerEventKey === eventKey;
-    if (isDuplicate) return response({ received: true, duplicate: true });
+    if (isDuplicate) {
+        await recordWebhookEvent({
+            event,
+            payload,
+            eventKey,
+            outcome: 'duplicate',
+            httpStatus: 200,
+            matchedLeadId: candidate.record._id,
+            matchedCallLogId: candidate.callLog._id,
+        });
+        return response({ received: true, duplicate: true });
+    }
 
     const filter = {
         _id: candidate.record._id,
@@ -193,12 +273,31 @@ export async function POST(request) {
     };
     const update = { $set: buildProviderUpdate(event, eventKey) };
     const updated = await Notification.findOneAndUpdate(filter, update, { new: true }).lean();
-    if (!updated) return response({ received: true, duplicate: true });
+    if (!updated) {
+        await recordWebhookEvent({
+            event,
+            payload,
+            eventKey,
+            outcome: 'duplicate',
+            httpStatus: 200,
+            matchedLeadId: candidate.record._id,
+            matchedCallLogId: candidate.callLog._id,
+        });
+        return response({ received: true, duplicate: true });
+    }
 
+    await recordWebhookEvent({
+        event,
+        payload,
+        eventKey,
+        outcome: 'updated',
+        httpStatus: 200,
+        matchedLeadId: candidate.record._id,
+        matchedCallLogId: candidate.callLog._id,
+    });
     return response({ received: true, updated: true, providerCallId: event.providerCallId || '' });
 }
 
 export async function GET() {
     return response({ error: 'Method not allowed.' }, 405);
 }
-

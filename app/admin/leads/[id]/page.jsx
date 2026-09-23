@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Mail, MessageSquare, Phone, Plus, Save, X } from 'lucide-react';
+import { ArrowLeft, Mail, MessageSquare, Phone, Plus, RefreshCcw, Save, X } from 'lucide-react';
+import { Toaster, toast } from 'react-hot-toast';
 import {
     ANSWERED_CALL_OUTCOME_LABELS,
     CALL_DISPOSITION_LABELS,
@@ -69,6 +70,42 @@ function StatusBadge({ label }) {
     return <span className="inline-flex items-center rounded-full bg-[#111] px-3 py-1.5 text-xs font-bold text-white">{label}</span>;
 }
 
+function AdminToaster() {
+    return (
+        <Toaster
+            position="top-right"
+            toastOptions={{
+                duration: 4500,
+                style: {
+                    borderRadius: '0px',
+                    border: '1px solid rgba(17,17,17,0.12)',
+                    background: '#111',
+                    color: '#fff',
+                    fontWeight: 700,
+                    boxShadow: '0 18px 50px rgba(17,17,17,0.18)',
+                },
+                success: { iconTheme: { primary: '#22c55e', secondary: '#111' } },
+                error: { iconTheme: { primary: '#ef4444', secondary: '#111' } },
+            }}
+        />
+    );
+}
+
+function getWebhookStatusMessage(payload) {
+    if (!payload?.configured) return 'Daffytel webhook secret is missing on the CRM server.';
+    const latest = payload.latestEvent;
+    if (!latest) return 'No Daffytel callback has reached CRM yet after enabling the Post-CRM API.';
+
+    const status = latest.providerStatus ? ` (${latest.providerStatus.replaceAll('_', ' ')})` : '';
+    const when = latest.createdAt ? ` at ${formatDate(latest.createdAt)}` : '';
+    if (latest.outcome === 'updated') return `Webhook is working. Latest callback matched a lead${status}${when}.`;
+    if (latest.outcome === 'duplicate') return `Webhook is connected. Latest callback was a duplicate${status}${when}.`;
+    if (latest.outcome === 'invalid_secret') return 'Daffytel reached CRM, but the webhook secret did not match.';
+    if (latest.outcome === 'invalid_payload') return 'Daffytel reached CRM, but the callback payload did not include a usable final call status.';
+    if (latest.outcome === 'unmatched') return `Daffytel reached CRM, but CRM could not match it to a lead/call${latest.error ? `: ${latest.error}` : ''}.`;
+    return `Latest webhook event: ${latest.outcome}${status}${when}.`;
+}
+
 function CallForm({ lead, canWrite, onSaved }) {
     const [form, setForm] = useState(createCallForm);
     const [errors, setErrors] = useState({});
@@ -88,16 +125,23 @@ function CallForm({ lead, canWrite, onSaved }) {
     async function submit(event) {
         event.preventDefault();
         const fieldErrors = getCallLogFieldErrors(form);
-        if (Object.keys(fieldErrors).length) { setErrors(fieldErrors); return; }
+        if (Object.keys(fieldErrors).length) {
+            setErrors(fieldErrors);
+            toast.error('Please correct the highlighted call fields.');
+            return;
+        }
         setSaving(true); setErrors({});
+        const toastId = toast.loading('Saving call log...');
         try {
             const response = await fetch(`/api/admin/leads/${lead.id}/calls`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
             const payload = await response.json();
             if (!response.ok) throw Object.assign(new Error(payload.error || 'Unable to save call.'), { fieldErrors: payload.fieldErrors });
             onSaved(payload.callLog, payload.lifecycle, payload.stage, payload.stageLabel);
             setForm(createCallForm());
+            toast.success(payload.idempotent ? 'This call log was already saved.' : 'Call log saved.', { id: toastId });
         } catch (error) {
-            setErrors(error.fieldErrors || { form: error.message });
+            setErrors(error.fieldErrors || {});
+            toast.error(error.message || 'Unable to save call.', { id: toastId });
         } finally { setSaving(false); }
     }
 
@@ -111,7 +155,7 @@ function CallForm({ lead, canWrite, onSaved }) {
             </div>
             {form.callOutcome === 'answered' ? <div className="mt-4 border-y border-[#111]/10 py-4"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#6b7280]">Answered outcomes</p><div className="mt-3 flex flex-wrap gap-4">{CALL_LOG_ANSWERED_OUTCOME_OPTIONS.map((item) => <label key={item} className="flex items-center gap-2 text-sm font-medium text-[#111]"><input type="checkbox" checked={form.answeredOutcomes.includes(item)} onChange={(event) => update('answeredOutcomes', event.target.checked ? [...form.answeredOutcomes, item] : form.answeredOutcomes.filter((value) => value !== item))} />{ANSWERED_CALL_OUTCOME_LABELS[item]}</label>)}</div>{form.answeredOutcomes.includes('callback_requested') ? <label className="mt-4 block max-w-sm text-xs font-bold uppercase tracking-[0.12em] text-[#6b7280]">Callback due<input type="datetime-local" value={form.callbackDueAt} onChange={(event) => update('callbackDueAt', event.target.value)} className="mt-2 h-11 w-full border border-[#111]/15 bg-transparent px-3 text-sm font-medium normal-case tracking-normal text-[#111]" /></label> : null}</div> : null}
             <label className="mt-4 block text-xs font-bold uppercase tracking-[0.12em] text-[#6b7280]">Call notes<textarea value={form.remark} onChange={(event) => update('remark', event.target.value)} maxLength={CALL_LOG_REMARK_MAX_LENGTH} rows={3} className="mt-2 w-full border border-[#111]/15 bg-transparent px-3 py-3 text-sm font-medium normal-case tracking-normal text-[#111]" placeholder="What happened on the call?" /></label>
-            {errors.form ? <p className="mt-2 text-xs font-bold text-red-600">{errors.form}</p> : null}<button type="submit" disabled={saving} className="mt-4 inline-flex h-11 items-center gap-2 bg-[#111] px-5 text-sm font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{saving ? 'Saving...' : 'Save call'}</button>
+            <button type="submit" disabled={saving} className="mt-4 inline-flex h-11 items-center gap-2 bg-[#111] px-5 text-sm font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{saving ? 'Saving...' : 'Save call'}</button>
         </form>
     );
 }
@@ -125,10 +169,10 @@ function LeadDetailPage() {
     const [savingNote, setSavingNote] = useState(false);
     const [stageBusy, setStageBusy] = useState('');
     const [canWrite, setCanWrite] = useState(false);
+    const [canInspectDaffytelWebhook, setCanInspectDaffytelWebhook] = useState(false);
     const [callBusy, setCallBusy] = useState(false);
     const [callStarted, setCallStarted] = useState(false);
-    const [callMessage, setCallMessage] = useState('');
-    const [callError, setCallError] = useState('');
+    const [checkingWebhook, setCheckingWebhook] = useState(false);
     const callRequestRef = useRef(null);
     const [stageSelectorValue, setStageSelectorValue] = useState('');
     const [stageDialog, setStageDialog] = useState(null);
@@ -144,14 +188,13 @@ function LeadDetailPage() {
             setLead(payload.lead);
             setStageSelectorValue('');
             setCanWrite(Boolean(payload.canWrite));
+            setCanInspectDaffytelWebhook(Boolean(payload.canInspectDaffytelWebhook));
             const callStorageKey = `aadhya-serene:c2c-started:${payload.lead.id}`;
             try {
                 setCallStarted(window.sessionStorage.getItem(callStorageKey) === '1');
             } catch {
                 setCallStarted(false);
             }
-            setCallMessage('');
-            setCallError('');
         } catch (loadError) { setError(loadError.message); } finally { setLoading(false); }
     }
 
@@ -169,8 +212,6 @@ function LeadDetailPage() {
         });
         callRequestRef.current = request;
         setCallBusy(true);
-        setCallMessage('');
-        setCallError('');
 
         try {
             const response = await request;
@@ -192,12 +233,35 @@ function LeadDetailPage() {
             } catch {
                 // Session storage may be unavailable in private browsing.
             }
-            setCallMessage('Call request accepted. Daffytel will connect the agent and lead.');
+            toast.success('Call request accepted. Check webhook after the call ends.');
         } catch (callStartError) {
-            setCallError(callStartError.message);
+            toast.error(callStartError.message);
         } finally {
             if (callRequestRef.current === request) callRequestRef.current = null;
             setCallBusy(false);
+        }
+    }
+
+    async function checkDaffytelWebhook() {
+        if (checkingWebhook) return;
+        setCheckingWebhook(true);
+        const toastId = toast.loading('Checking Daffytel webhook...');
+        try {
+            const response = await fetch('/api/admin/daffytel/webhook-status', { cache: 'no-store' });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.error || 'Unable to check Daffytel webhook.');
+            const message = getWebhookStatusMessage(payload);
+            const latestOutcome = payload.latestEvent?.outcome || '';
+            const toastOptions = { id: toastId, duration: 6500 };
+            if (['updated', 'duplicate'].includes(latestOutcome)) {
+                toast.success(message, toastOptions);
+            } else {
+                toast.error(message, toastOptions);
+            }
+        } catch (webhookError) {
+            toast.error(webhookError.message, { id: toastId });
+        } finally {
+            setCheckingWebhook(false);
         }
     }
 
@@ -268,9 +332,23 @@ function LeadDetailPage() {
 
     return (
         <main className="editorial-detail min-h-screen bg-[#f4f4f2] text-[#111]">
+            <AdminToaster />
             <div className="mx-auto max-w-[1500px] px-5 py-7 sm:px-10 sm:py-10 lg:px-16 lg:py-12">
                 <a href="/admin" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-[#6b7280] transition hover:text-[#111]"><ArrowLeft className="h-4 w-4" />Back to Leads</a>
-                <header className="mt-10 grid gap-8 border-b border-[#111]/15 pb-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#6b7280]">Lead workspace / {lead.source || 'Website'}</p><h1 className="mt-4 max-w-4xl font-display text-4xl font-bold leading-[1.05] tracking-[-0.04em] sm:text-5xl">{lead.name || 'Unknown lead'}</h1><p className="mt-5 text-base text-[#4b5563]">{lead.phone || 'No phone'}{lead.email ? `  ·  ${lead.email}` : ''}</p></div><div className="flex flex-wrap items-center gap-2 lg:justify-end"><StatusBadge label={lead.stageLabel || getLeadStageLabel(lead.stage)} /><a href={`mailto:${lead.email || ''}`} className="inline-flex h-11 items-center gap-2 border border-[#111]/15 px-4 text-sm font-bold transition hover:bg-white"><Mail className="h-4 w-4" />Email</a><a href={`https://wa.me/${String(lead.phone || '').replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="inline-flex h-11 items-center gap-2 border border-[#111]/15 px-4 text-sm font-bold transition hover:bg-white"><MessageSquare className="h-4 w-4" />WhatsApp</a><div className="flex w-[280px] max-w-full shrink-0 flex-col items-start gap-2"><button type="button" onClick={() => void startClickToCall()} disabled={!canWrite || !lead.phone || callBusy || callStarted} className="inline-flex h-11 w-32 shrink-0 items-center justify-center gap-2 whitespace-nowrap border border-[#111]/15 px-4 text-sm font-bold transition hover:bg-white disabled:cursor-not-allowed disabled:border-[#111]/10 disabled:bg-[#111]/5 disabled:text-[#6b7280]" title={!canWrite ? 'Your account has read-only access' : !lead.phone ? 'This lead has no usable phone number' : callStarted ? 'A call has already been requested for this lead' : 'Start a click-to-call'}><Phone className="h-4 w-4" />{callBusy ? 'Calling...' : callStarted ? 'Requested' : 'Call'}</button>{callMessage ? <p className="w-full max-w-full break-words text-xs font-bold leading-5 text-green-700" role="status">{callMessage}</p> : null}{callError ? <p className="w-full max-w-full break-words text-xs font-bold leading-5 text-red-600" role="alert">{callError}</p> : null}</div></div></header>
+                <header className="mt-10 grid gap-8 border-b border-[#111]/15 pb-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                    <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#6b7280]">Lead workspace / {lead.source || 'Website'}</p>
+                        <h1 className="mt-4 max-w-4xl font-display text-4xl font-bold leading-[1.05] tracking-[-0.04em] sm:text-5xl">{lead.name || 'Unknown lead'}</h1>
+                        <p className="mt-5 text-base text-[#4b5563]">{lead.phone || 'No phone'}{lead.email ? `  ·  ${lead.email}` : ''}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                        <StatusBadge label={lead.stageLabel || getLeadStageLabel(lead.stage)} />
+                        <a href={`mailto:${lead.email || ''}`} className="inline-flex h-11 items-center gap-2 border border-[#111]/15 px-4 text-sm font-bold transition hover:bg-white"><Mail className="h-4 w-4" />Email</a>
+                        <a href={`https://wa.me/${String(lead.phone || '').replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="inline-flex h-11 items-center gap-2 border border-[#111]/15 px-4 text-sm font-bold transition hover:bg-white"><MessageSquare className="h-4 w-4" />WhatsApp</a>
+                        <button type="button" onClick={() => void startClickToCall()} disabled={!canWrite || !lead.phone || callBusy || callStarted} className="inline-flex h-11 w-32 shrink-0 items-center justify-center gap-2 whitespace-nowrap border border-[#111]/15 px-4 text-sm font-bold transition hover:bg-white disabled:cursor-not-allowed disabled:border-[#111]/10 disabled:bg-[#111]/5 disabled:text-[#6b7280]" title={!canWrite ? 'Your account has read-only access' : !lead.phone ? 'This lead has no usable phone number' : callStarted ? 'A call has already been requested for this lead' : 'Start a click-to-call'}><Phone className="h-4 w-4" />{callBusy ? 'Calling...' : callStarted ? 'Requested' : 'Call'}</button>
+                        {canInspectDaffytelWebhook ? <button type="button" onClick={() => void checkDaffytelWebhook()} disabled={checkingWebhook} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap border border-[#111]/15 px-4 text-sm font-bold transition hover:bg-white disabled:cursor-not-allowed disabled:border-[#111]/10 disabled:bg-[#111]/5 disabled:text-[#6b7280]" title="Check whether Daffytel callbacks are reaching CRM"><RefreshCcw className={`h-4 w-4 ${checkingWebhook ? 'animate-spin' : ''}`} />{checkingWebhook ? 'Checking...' : 'Check webhook'}</button> : null}
+                    </div>
+                </header>
                 <nav className="mt-7 flex gap-7 overflow-x-auto border-b border-[#111]/15" aria-label="Lead detail tabs">{TABS.map((item) => <button key={item.key} type="button" onClick={() => setTab(item.key)} className={`whitespace-nowrap border-b-2 px-0 pb-4 text-sm font-bold transition ${tab === item.key ? 'border-[#111] text-[#111]' : 'border-transparent text-[#6b7280] hover:text-[#111]'}`}>{item.label}</button>)}</nav>
                 {error ? <p className="mt-5 border-l-2 border-red-600 px-3 py-2 text-sm font-bold text-red-600">{error}</p> : null}
 
