@@ -3,7 +3,6 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { flatsData } from '../lib/flats';
-
 const FLATS_CACHE_TTL_MS = 5 * 60 * 1000;
 let cachedFlatsPayload = flatsData;
 let cachedFlatsAt = 0;
