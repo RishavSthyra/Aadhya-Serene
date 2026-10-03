@@ -124,9 +124,11 @@ export function buildLeadRecordActivity(lead: any) {
     const title = String(event.type || 'lifecycle_event')
       .replaceAll('_', ' ')
       .replace(/^./, (value) => value.toUpperCase());
-    const detail = event.callbackDueAt
-      ? `Callback due ${formatActivityDate(event.callbackDueAt)}.`
-      : 'Lead lifecycle updated by the sales team.';
+    const detail = event.note
+      ? event.note
+      : event.callbackDueAt
+        ? `Callback due ${formatActivityDate(event.callbackDueAt)}.`
+        : 'Lead lifecycle updated by the sales team.';
     events.push({
       type: 'lifecycle_event',
       title,

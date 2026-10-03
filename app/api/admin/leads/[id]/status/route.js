@@ -21,9 +21,14 @@ export async function PATCH(request, { params }) {
 
     const body = await request.json();
     const leadStatus = String(body?.leadStatus || '').trim().toLowerCase();
+    const note = String(body?.reason || body?.note || '').trim().slice(0, 5000);
 
     if (!LEAD_STATUS_OPTIONS.includes(leadStatus)) {
         return NextResponse.json({ error: 'Invalid lead status.' }, { status: 400 });
+    }
+
+    if (leadStatus === 'dead' && !note) {
+        return NextResponse.json({ error: 'Add a reason before marking this lead dead.' }, { status: 400 });
     }
 
     await connectMongo();
@@ -80,6 +85,7 @@ export async function PATCH(request, { params }) {
                     callId: '',
                     callbackDueAt: null,
                     callbackStatus: 'none',
+                    note,
                 },
             },
         },

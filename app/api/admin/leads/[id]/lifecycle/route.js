@@ -52,6 +52,10 @@ export async function POST(request, { params }) {
     }
 
     const note = String(body?.note || '').trim().slice(0, 5000);
+    if (type === 'dead' && !note) {
+        return NextResponse.json({ error: 'Add a reason before marking this lead dead.' }, { status: 400 });
+    }
+
     await connectMongo();
     const { id } = await params;
     const leadScope = getLeadScopeFilter(auth.user);
