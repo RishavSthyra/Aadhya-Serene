@@ -59,7 +59,6 @@ const PHONE_LINK = 'tel:+919620993333';
 const RERA_NUMBER = 'PRM/KA/RERA/1251/446/PR/190614/002604';
 const WHATSAPP_IMAGE = '/landing%20page%20images/whatsapp.png';
 const FORM_IMAGE = '/landing%20page%20images/interiorimage7.avif';
-const CALENDLY_URL = 'https://calendly.com/sthyra-info/new-meeting';
 
 const LANDING_IMAGES = {
   heroMain: '/landing page images/HERO_1.avif',
@@ -341,7 +340,6 @@ const DEFAULT_HERO_COPY = {
   h1Line2: 'Manyata Tech Park.',
 };
 
-const LEAD_CONVERSION_VALUE = 99;
 const CALL_CONVERSION_VALUE = 25;
 const CONVERSION_CURRENCY = 'INR';
 const PRIVACY_URL = '/privacy-policy';
@@ -364,25 +362,6 @@ function trackEvent(name, params) {
     if (typeof window.gtag === 'function') {
       window.gtag('event', name, params || {});
     }
-  } catch (_) { }
-}
-
-function reportLeadConversion(value = LEAD_CONVERSION_VALUE) {
-  if (typeof window === 'undefined') return;
-  try {
-    if (typeof window.gtag === 'function') {
-      window.gtag('event', 'conversion', {
-        send_to: 'AW-{{ADS_ID}}/{{LEAD_LABEL}}',
-        value,
-        currency: CONVERSION_CURRENCY,
-      });
-    }
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({
-      event: 'lead_conversion',
-      value,
-      currency: CONVERSION_CURRENCY,
-    });
   } catch (_) { }
 }
 
@@ -510,7 +489,6 @@ function useGsapReveal() {
 export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   const [activeFaq, setActiveFaq] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isCalendlyOpen, setIsCalendlyOpen] = useState(false);
   const [isWhatsAppFormOpen, setIsWhatsAppFormOpen] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [heroVariant, setHeroVariant] = useState(DEFAULT_HERO_COPY);
@@ -613,25 +591,11 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
   }, [enableAutoPopup]);
 
   useEffect(() => {
-    document.body.style.overflow = isFormOpen || isCalendlyOpen || isWhatsAppFormOpen ? 'hidden' : '';
+    document.body.style.overflow = isFormOpen || isWhatsAppFormOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isFormOpen, isCalendlyOpen, isWhatsAppFormOpen]);
-
-  useEffect(() => {
-    if (!isCalendlyOpen) return undefined;
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') setIsCalendlyOpen(false);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isCalendlyOpen]);
-
-  const openCalendly = () => setIsCalendlyOpen(true);
-  const closeCalendly = () => setIsCalendlyOpen(false);
+  }, [isFormOpen, isWhatsAppFormOpen]);
 
   useEffect(() => {
     const leftCurtain = heroCurtainLeftRef.current;
@@ -723,7 +687,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
         }),
       });
 
-
       const payload = await response.json();
       if (!response.ok) {
         if (payload?.fieldErrors) {
@@ -737,15 +700,12 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
         config: formData.config,
       });
 
-      reportLeadConversion();
-
       setSubmitState({
         type: 'success',
         message: 'Thanks! Your enquiry has been sent to our team.',
       });
       resetForm();
-      setIsFormOpen(false);
-      setIsCalendlyOpen(true);
+      window.location.href = `/thank-you?token=${encodeURIComponent(payload.thankYouToken)}`;
     } catch (error) {
       setSubmitState({
         type: 'error',
@@ -758,7 +718,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
 
   const heroFormSubmit = (event) => {
     event.preventDefault();
-    trackEvent('Lead', { location: 'hero_inline_form' });
+    trackEvent('lead_form_submit_attempt', { location: 'hero_inline_form' });
     submitForm(event);
   };
 
@@ -1359,7 +1319,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   <button
                     type="button"
                     onClick={() => {
-                      trackEvent('Lead', { location: 'video_visit_cta' });
+                      trackEvent('lead_form_open', { location: 'video_visit_cta' });
                       setIsFormOpen(true);
                     }}
                     className="inline-flex min-h-[54px] items-center gap-3 bg-black px-7 text-sm font-semibold uppercase tracking-[0.22em] text-white transition hover:-translate-y-0.5"
@@ -1612,7 +1572,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                       <button
                         type="button"
                         onClick={() => {
-                          trackEvent('Lead', { location: 'config_visit_cta' });
+                          trackEvent('lead_form_open', { location: 'config_visit_cta' });
                           setIsFormOpen(true);
                         }}
                         className="inline-flex min-h-[54px] items-center gap-2 border border-black/10 bg-white px-6 text-sm font-semibold text-black transition hover:-translate-y-0.5 hover:border-black hover:bg-black hover:text-white"
@@ -1694,7 +1654,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                 <button
                   type="button"
                   onClick={() => {
-                    trackEvent('Lead', { location: 'amenities_visit_cta' });
+                    trackEvent('lead_form_open', { location: 'amenities_visit_cta' });
                     setIsFormOpen(true);
                   }}
                   className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-black transition hover:text-[#a9772f]"
@@ -1775,7 +1735,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   <button
                     type="button"
                     onClick={() => {
-                      trackEvent('Lead', { location: 'location_visit_cta' });
+                      trackEvent('lead_form_open', { location: 'location_visit_cta' });
                       setIsFormOpen(true);
                     }}
                     className="mt-7 inline-flex min-h-[52px] items-center gap-3 border border-black bg-black px-5 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-transparent hover:text-black"
@@ -1953,7 +1913,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   <button
                     type="button"
                     onClick={() => {
-                      trackEvent('Lead', { location: 'offer_visit_cta' });
+                      trackEvent('lead_form_open', { location: 'offer_visit_cta' });
                       setIsFormOpen(true);
                     }}
                     className="inline-flex min-h-[54px] items-center gap-3 bg-black px-6 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5"
@@ -2174,7 +2134,7 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                 <button
                   type="button"
                   onClick={() => {
-                    trackEvent('Lead', { location: 'final_visit_cta' });
+                    trackEvent('lead_form_open', { location: 'final_visit_cta' });
                     setIsFormOpen(true);
                   }}
                   className="inline-flex min-h-[52px] items-center gap-2 rounded-full bg-black px-5 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5"
@@ -2619,44 +2579,6 @@ export default function ReadyToMoveLandingPage({ enableAutoPopup = false }) {
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isCalendlyOpen ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[1300] flex items-center justify-center bg-[rgba(10,10,12,0.72)] px-3 py-4 backdrop-blur-xl sm:p-6"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Calendly booking form"
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) closeCalendly();
-            }}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 24, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 16, scale: 0.98 }}
-              className="relative flex h-[min(850px,calc(100vh-2rem))] w-full max-w-4xl flex-col sm:h-[min(850px,calc(100vh-3rem))]"
-            >
-              <button
-                type="button"
-                onClick={closeCalendly}
-                className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-black transition hover:bg-black hover:text-white sm:right-4 sm:top-4"
-                aria-label="Close Calendly booking"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <iframe
-                title="Schedule a meeting with Aadhya Serene"
-                src={CALENDLY_URL}
-                className="min-h-0 w-full flex-1 border-0 bg-transparent"
-              />
             </motion.div>
           </motion.div>
         ) : null}

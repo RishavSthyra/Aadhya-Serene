@@ -160,7 +160,7 @@ export default function EnquiryContactPage() {
       setStatusMessage(result.message || 'Your enquiry has been sent successfully.');
 
       window.setTimeout(() => {
-        window.location.href = '/thank-you';
+        window.location.href = `/thank-you?token=${encodeURIComponent(result.thankYouToken)}`;
       }, 700);
     } catch (error) {
       setSubmitState('error');

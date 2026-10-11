@@ -179,7 +179,7 @@ export default function Contact() {
       setStatusMessage(result.message || 'Your enquiry has been sent successfully.');
 
       window.setTimeout(() => {
-        window.location.href = '/thank-you';
+        window.location.href = `/thank-you?token=${encodeURIComponent(result.thankYouToken)}`;
       }, 700);
     } catch (error) {
       setSubmitState('error');

@@ -17,6 +17,7 @@ import {
   contactApiSchema,
   createValidationErrorResponse,
 } from '@/lib/validation/enquiry';
+import { createThankYouToken } from '@/lib/thank-you-token';
 
 export async function POST(request) {
   const missingConfigFields = getMissingMailConfigFields();
@@ -153,6 +154,7 @@ export async function POST(request) {
 
     return NextResponse.json({
       message: 'Your enquiry has been saved and emailed to our team. We will reach out shortly.',
+      thankYouToken: createThankYouToken(record._id),
     });
   } catch (error) {
     console.error('Contact enquiry processing failed:', error);

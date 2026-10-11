@@ -1,9 +1,26 @@
 import Link from 'next/link';
 import Script from 'next/script';
+import { redirect } from 'next/navigation';
 import React from "react";
 import { BackgroundLines } from "@/components/ui/background-lines";
- 
-export default function ThankYouPage() {
+import ThankYouUrlCleaner from '@/components/ThankYouUrlCleaner';
+import { verifyThankYouToken } from '@/lib/thank-you-token';
+
+export const metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
+export default async function ThankYouPage({ searchParams }) {
+  const params = await searchParams;
+  const verifiedToken = verifyThankYouToken(params?.token);
+
+  if (!verifiedToken) {
+    redirect('/');
+  }
+
   return (
     <>
       <Script id="google-ads-submit-lead-conversion" strategy="afterInteractive">
@@ -11,10 +28,12 @@ export default function ThankYouPage() {
           gtag('event', 'conversion', {
             'send_to': 'AW-18286156175/gN3uCL7IwskcEI-zwo9E',
             'value': 1.0,
-            'currency': 'INR'
+            'currency': 'INR',
+            'transaction_id': '${verifiedToken.leadId}'
           });
         `}
       </Script>
+      <ThankYouUrlCleaner />
       <BackgroundLines className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
         <div className="relative z-20 mx-auto flex w-full max-w-5xl flex-col items-center justify-center bg-transparent pt-24 text-center sm:pt-28">
           <span className="inline-flex rounded-full border border-[#d8c4a2] bg-[#f6efe1] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#a9772f]">

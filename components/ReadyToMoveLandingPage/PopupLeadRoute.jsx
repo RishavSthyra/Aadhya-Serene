@@ -101,7 +101,7 @@ export default function PopupLeadRoute() {
       resetForm();
 
       window.setTimeout(() => {
-        window.location.href = '/thank-you';
+        window.location.href = `/thank-you?token=${encodeURIComponent(payload.thankYouToken)}`;
       }, 700);
     } catch (error) {
       setSubmitState({
